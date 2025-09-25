@@ -1,17 +1,17 @@
 # todo
 
 ## フェーズ1: プロジェクト雛形
-- [ ] `app-by-codex/features/time-tracker/` ディレクトリを作成しVite + React + TSを初期化
-- [ ] 共有設定や共通スクリプトは `app-by-codex/shared/` 等に配置しつつ、ESLint / Prettier / Vitest / Testing Library / Playwright をセットアップ
-- [ ] `npm run lint && npm run test:unit && npm run test:e2e && npm run build` が成功することを確認
+- [x] `app-by-codex/features/time-tracker/` ディレクトリを作成しVite + React + TSを初期化
+- [x] 共有設定や共通スクリプトは `app-by-codex/shared/` 等に配置しつつ、ESLint / Prettier / Vitest / Testing Library / Playwright をセットアップ
+- [x] `npm run lint && npm run test:unit && npm run test:e2e && npm run build` が成功することを確認
 
 ## フェーズ2: ドメインとタイマー基盤
-- [ ] セッション/ドラフト用の型と reducer、`useRunningSession` フックを実装
-- [ ] タイマー・ドラフト変換ロジックのユニットテストを追加
+- [x] セッション/ドラフト用の型と reducer、`useRunningSession` フックを実装
+- [x] タイマー・ドラフト変換ロジックのユニットテストを追加
 
 ## フェーズ3: 即時スタートUI
-- [ ] 入力フィールド + スタート/ストップボタンのUIと挙動を実装
-- [ ] 空入力バリデーションとタイマー開始のコンポーネントテストを追加
+- [x] 入力フィールド + スタート/ストップボタンのUIと挙動を実装
+- [x] 空入力バリデーションとタイマー開始のコンポーネントテストを追加
 
 ## フェーズ4: 進行中セッション編集
 - [ ] タイトル/タグ/プロジェクト編集UIを追加しドラフトに反映
