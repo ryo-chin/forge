@@ -1,9 +1,9 @@
 name: Prototype Deploy
 
 on:
-  push:
-    branches:
-      - '**prototype**'
+#  push:
+#    branches:
+#      - '**prototype**'
   workflow_dispatch:
     inputs:
       branch:
