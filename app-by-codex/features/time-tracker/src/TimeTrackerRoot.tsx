@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './index.css';
 import { useRunningSession } from './hooks/useRunningSession';
+import type { TimeTrackerSession } from './types';
 
 const formatTimer = (seconds: number) => {
   const mm = Math.floor(seconds / 60)
@@ -14,9 +15,16 @@ const formatTimer = (seconds: number) => {
 
 export function TimeTrackerRoot() {
   const [inputValue, setInputValue] = useState('');
+  const [sessions, setSessions] = useState<TimeTrackerSession[]>([]);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [tagsInput, setTagsInput] = useState('');
+  const [projectInput, setProjectInput] = useState('');
+  const [skillInput, setSkillInput] = useState('');
+  const [intensityInput, setIntensityInput] = useState('');
+  const [notesInput, setNotesInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { state, start, stop } = useRunningSession();
+  const { state, start, stop, updateDraft } = useRunningSession();
   const isRunning = state.status === 'running';
   const elapsedSeconds = state.elapsedSeconds;
   const runningDraftTitle = state.status === 'running' ? state.draft.title : null;
@@ -33,6 +41,26 @@ export function TimeTrackerRoot() {
     return () => window.removeEventListener('keydown', handleFocusShortcut);
   }, []);
 
+  useEffect(() => {
+    if (state.status === 'running') {
+      const draft = state.draft;
+      setTagsInput((draft.tags ?? []).join(', '));
+      setProjectInput(draft.project ?? '');
+      setSkillInput(draft.skill ?? '');
+      setIntensityInput(draft.intensity ?? '');
+      setNotesInput(draft.notes ?? '');
+    } else {
+      setTagsInput('');
+      setProjectInput('');
+      setSkillInput('');
+      setIntensityInput('');
+      setNotesInput('');
+      setIsDetailsOpen(false);
+    }
+    // 起動時と停止時のみ初期値を同期するため、status 以外の依存は意図的に無視する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status]);
+
   const canStart = useMemo(
     () => inputValue.trim().length > 0 && !isRunning,
     [inputValue, isRunning],
@@ -47,10 +75,14 @@ export function TimeTrackerRoot() {
   }, [canStart, inputValue, start]);
 
   const handleStop = useCallback(() => {
-    if (runningDraftTitle) {
-      setInputValue(runningDraftTitle);
+    const titleForInput = runningDraftTitle;
+    const session = stop();
+    if (!session) return;
+    if (titleForInput) {
+      setInputValue(titleForInput);
     }
-    stop();
+    setSessions((prev) => [session, ...prev].slice(0, 5));
+    setIsDetailsOpen(false);
   }, [runningDraftTitle, stop]);
 
   const handlePrimaryAction = useCallback(() => {
@@ -85,6 +117,11 @@ export function TimeTrackerRoot() {
   const primaryLabel = isRunning ? '停止' : '開始';
   const primaryDisabled = !isRunning && !canStart;
   const timerLabel = formatTimer(elapsedSeconds);
+  const draftTags = tagsInput;
+  const draftProject = projectInput;
+  const draftSkill = skillInput;
+  const draftIntensity = intensityInput;
+  const draftNotes = notesInput;
 
   return (
     <main className="time-tracker">
@@ -134,6 +171,137 @@ export function TimeTrackerRoot() {
             <span>計測中</span>
             <span className="time-tracker__timer">{timerLabel}</span>
           </div>
+        ) : null}
+
+        <div className="time-tracker__details">
+          <button
+            type="button"
+            className="time-tracker__details-toggle"
+            onClick={() => setIsDetailsOpen((prev) => !prev)}
+            disabled={!isRunning}
+            aria-expanded={isDetailsOpen}
+          >
+            {isDetailsOpen ? '詳細を閉じる' : '＋ 詳細編集'}
+          </button>
+
+          {isDetailsOpen && (
+            <form className="time-tracker__details-form">
+              <div className="time-tracker__field">
+                <label htmlFor="detail-title">タイトル</label>
+                <input
+                  id="detail-title"
+                  type="text"
+                  value={runningDraftTitle ?? ''}
+                  onChange={(event) => updateDraft({ title: event.target.value })}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="time-tracker__field">
+                <label htmlFor="detail-tags">タグ (カンマ区切り)</label>
+                <input
+                  id="detail-tags"
+                  type="text"
+                  value={draftTags}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setTagsInput(value);
+                    const tags = value
+                      .split(',')
+                      .map((tag) => tag.trim())
+                      .filter(Boolean);
+                    updateDraft({ tags });
+                  }}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="time-tracker__field">
+                <label htmlFor="detail-project">プロジェクト</label>
+                <input
+                  id="detail-project"
+                  type="text"
+                  value={draftProject}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setProjectInput(value);
+                    updateDraft({ project: value || undefined });
+                  }}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="time-tracker__field">
+                <label htmlFor="detail-skill">スキル / カテゴリ</label>
+                <input
+                  id="detail-skill"
+                  type="text"
+                  value={draftSkill}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSkillInput(value);
+                    updateDraft({ skill: value || undefined });
+                  }}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="time-tracker__field-group">
+                <div className="time-tracker__field">
+                  <label htmlFor="detail-intensity">強度</label>
+                  <select
+                    id="detail-intensity"
+                    value={draftIntensity}
+                    onChange={(event) => {
+                      const value = event.target.value as
+                        | 'low'
+                        | 'medium'
+                        | 'high'
+                        | '';
+                      setIntensityInput(value);
+                      updateDraft({ intensity: value || undefined });
+                    }}
+                  >
+                    <option value="">--</option>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                  </select>
+                </div>
+              </div>
+              <div className="time-tracker__field">
+                <label htmlFor="detail-notes">メモ</label>
+                <textarea
+                  id="detail-notes"
+                  value={draftNotes}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setNotesInput(value);
+                    updateDraft({ notes: value || undefined });
+                  }}
+                  rows={3}
+                />
+              </div>
+            </form>
+          )}
+        </div>
+
+        {sessions.length > 0 ? (
+          <section className="time-tracker__history" aria-label="最近の記録">
+            <h2>最近の記録</h2>
+            <ul>
+              {sessions.map((session) => (
+                <li key={session.id} className="time-tracker__history-item">
+                  <div className="time-tracker__history-main">
+                    <strong>{session.title}</strong>
+                    <span>{formatTimer(session.durationSeconds)}</span>
+                  </div>
+                  <div className="time-tracker__history-meta">
+                    {session.project ? <span>#{session.project}</span> : null}
+                    {session.tags?.length ? (
+                      <span>{session.tags.map((tag) => `#${tag}`).join(' ')}</span>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         ) : null}
       </div>
     </main>
