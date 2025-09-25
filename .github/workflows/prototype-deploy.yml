@@ -1,0 +1,152 @@
+name: Prototype Deploy
+
+on:
+  push:
+    branches:
+      - '**prototype**'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'デプロイ対象ブランチ（`prototype` を含むこと）'
+        required: true
+        type: string
+
+jobs:
+  deploy-prototype:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      EVENT_NAME: ${{ github.event_name }}
+      MANUAL_BRANCH: ${{ inputs.branch }}
+      DEFAULT_REF: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Derive branch info
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            branch="$MANUAL_BRANCH"
+            if [ -z "$branch" ]; then
+              echo "::error::workflow_dispatch では branch 入力が必要です" >&2
+              exit 1
+            fi
+          else
+            branch="$DEFAULT_REF"
+          fi
+
+          if [[ "$branch" != *prototype* ]]; then
+            echo "::error::ブランチ名に prototype を含めてください: $branch" >&2
+            exit 1
+          fi
+
+          sanitized=$(echo "$branch" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed -E 's/^-+|-+$//g')
+          if [ -z "$sanitized" ]; then
+            sanitized="prototype"
+          fi
+
+          echo "branch_raw=$branch" >> "$GITHUB_OUTPUT"
+          echo "branch_sanitized=$sanitized" >> "$GITHUB_OUTPUT"
+
+      - name: Validate deploy script
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="prototype/${{ steps.vars.outputs.branch_raw }}"
+          script="$dir/deploy.sh"
+
+          if [ ! -d "$dir" ]; then
+            echo "::error::プロトタイプディレクトリが存在しません: $dir" >&2
+            exit 1
+          fi
+
+          if [ ! -f "$script" ]; then
+            echo "::error::デプロイスクリプトが存在しません: $script" >&2
+            exit 1
+          fi
+
+          if [ ! -x "$script" ]; then
+            echo "スクリプトに実行権限を付与します: $script"
+            chmod +x "$script"
+          fi
+
+      - name: Run deploy script
+        id: deploy
+        shell: bash
+        env:
+          BRANCH_NAME_RAW: ${{ steps.vars.outputs.branch_raw }}
+          SANITIZED_BRANCH: ${{ steps.vars.outputs.branch_sanitized }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          script="prototype/${BRANCH_NAME_RAW}/deploy.sh"
+
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN と CLOUDFLARE_ACCOUNT_ID をリポジトリシークレットに設定してください" >&2
+            exit 1
+          fi
+
+          "$script"
+
+      - name: Summarize deploy result
+        if: ${{ steps.deploy.outputs.DEPLOY_URL != '' }}
+        shell: bash
+        run: |
+          cat <<REPORT >> "$GITHUB_STEP_SUMMARY"
+          ## Prototype Deploy
+          - ブランチ: `${{ steps.vars.outputs.branch_raw }}`
+          - Worker 名: `${{ steps.vars.outputs.branch_sanitized }}`
+          - URL: [${{ steps.deploy.outputs.DEPLOY_URL }}](${{ steps.deploy.outputs.DEPLOY_URL }})
+          REPORT
+
+      - name: Comment on PR
+        if: ${{ steps.deploy.outputs.DEPLOY_URL != '' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const {owner, repo} = context.repo;
+            const branch = `${{ steps.vars.outputs.branch_raw }}`;
+            const url = `${{ steps.deploy.outputs.DEPLOY_URL }}`;
+
+            const {data: prs} = await github.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${branch}`,
+              state: 'open'
+            });
+
+            if (!prs.length) {
+              core.info('対象 PR が見つかりませんでした。コメント投稿をスキップします。');
+              return;
+            }
+
+            const body = [
+              '🚀 プロトタイプを Cloudflare Workers にデプロイしました。',
+              '',
+              `- ブランチ: \`${branch}\``,
+              `- URL: ${url}`
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prs[0].number,
+              body
+            });
