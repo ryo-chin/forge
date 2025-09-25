@@ -16,10 +16,5 @@
 - `wrangler.toml` の `name` は仮の値で構わない（Actions で `--name ${SANITIZED_BRANCH}` を指定して上書きする）。
 - `wrangler deploy` はビルド済みアセットを Workers の静的配信としてアップロードする。必要に応じて `[vars]` や `[kv_namespaces]` などを追加すること。
 
-### 拡張パターン（カスタム Worker 実装が必要な場合）
-- Worker コードを自前で書く場合は `wrangler.toml` の `main` にエントリーポイントを設定し、ビルドにより `dist/worker.js` 等を生成すること。
-- この場合も `npm run build` で Worker バンドルが再生成されるようにし、`wrangler deploy --name ${SANITIZED_BRANCH}` で上書き可能な状態を保つこと。
-
 ### その他
 - ローカル開発用の `npm run dev` などは任意で用意して良い。Wrangler や Vite などの開発サーバーを利用して構わない。
-- 任意で `deploy.sh` 等のラッパースクリプトを用意しても良いが、GitHub Actions は `npm run build` と `npx wrangler deploy` を直接呼び出す運用である。
