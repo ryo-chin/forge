@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Training Tracker Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <div class="hero-inner">
+          <h1 class="sr-only">Training Tracker</h1>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="quick-entry"
+              placeholder="何をやる？"
+              autocomplete="off"
+              aria-label="何をやる？入力するとすぐに計測が始まります"
+            />
+            <ul id="suggestions" class="suggestions" role="listbox" aria-label="候補一覧"></ul>
+          </div>
+          <p class="hero-hint">キーワードを入力して Enter / 候補選択で即開始</p>
+        </div>
+      </section>
+
+      <section class="overlay" id="session-overlay" aria-live="polite" hidden>
+        <div class="overlay-card">
+          <header class="overlay-header">
+            <div class="task-name" role="group" aria-label="タスク名称">
+              <label class="sr-only" for="task-name-input">タスク名称</label>
+              <input id="task-name-input" type="text" />
+            </div>
+            <div class="timer" aria-live="polite">
+              <span id="timer-display">00:00:00</span>
+            </div>
+          </header>
+
+          <div class="quick-controls">
+            <div class="primary-actions">
+              <button type="button" id="pause-btn" aria-pressed="false">⏸ 一時停止</button>
+              <button type="button" id="stop-btn" class="danger">■ 停止</button>
+            </div>
+            <div class="nudge-buttons" role="group" aria-label="開始時刻を微調整">
+              <button data-shift="-10">-10m</button>
+              <button data-shift="-5">-5m</button>
+              <button data-shift="5">+5m</button>
+              <button data-shift="10">+10m</button>
+            </div>
+            <button id="details-toggle" type="button" aria-expanded="false">＋ 詳細編集</button>
+          </div>
+
+          <div id="details-panel" class="details" hidden>
+            <div class="details-grid">
+              <section class="detail-block">
+                <h2>開始時刻の調整</h2>
+                <div class="slider-row">
+                  <label for="start-slider">スクラバー</label>
+                  <input type="range" id="start-slider" min="-120" max="60" value="0" step="1" />
+                  <output id="slider-value">現在との差: ±0分</output>
+                </div>
+                <div class="chip-row" role="group" aria-label="よく使う補正値">
+                  <button class="chip" data-shift="-5">-5m</button>
+                  <button class="chip" data-shift="-10">-10m</button>
+                  <button class="chip" data-shift="-30">-30m</button>
+                  <button class="chip" data-shift="-60">-1h</button>
+                </div>
+                <div class="natural-input">
+                  <label for="natural-start">ナチュラル入力</label>
+                  <div class="natural-input-row">
+                    <input id="natural-start" type="text" placeholder="例: 9:10 / -25m / 10分前" />
+                    <button id="apply-natural" type="button">適用</button>
+                  </div>
+                  <p class="hint" id="natural-hint"></p>
+                </div>
+                <button id="undo-btn" type="button" disabled>元に戻す</button>
+              </section>
+
+              <section class="detail-block">
+                <h2>タグ / スキル / プロジェクト</h2>
+                <label for="tag-input">タグ追加</label>
+                <div class="tag-input-row">
+                  <input id="tag-input" type="text" placeholder="タグを入力" />
+                  <button id="add-tag" type="button">追加</button>
+                </div>
+                <div class="chip-row" id="tag-suggestions" role="list"></div>
+                <div class="selected-tags" id="selected-tags" aria-live="polite"></div>
+              </section>
+
+              <section class="detail-block">
+                <h2>メモ</h2>
+                <label class="sr-only" for="note-input">メモ</label>
+                <textarea id="note-input" rows="4" placeholder="気づきや根拠メモ"></textarea>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="log" aria-live="polite">
+        <h2>今日の記録</h2>
+        <ul id="log-list" class="log-list"></ul>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
