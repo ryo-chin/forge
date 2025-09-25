@@ -63,29 +63,54 @@ jobs:
           echo "branch_raw=$branch" >> "$GITHUB_OUTPUT"
           echo "branch_sanitized=$sanitized" >> "$GITHUB_OUTPUT"
 
-      - name: Validate deploy script
+      - name: Ensure prototype directory exists
         shell: bash
         run: |
           set -euo pipefail
           dir="prototype/${{ steps.vars.outputs.branch_raw }}"
-          script="$dir/deploy.sh"
-
           if [ ! -d "$dir" ]; then
             echo "::error::プロトタイプディレクトリが存在しません: $dir" >&2
             exit 1
           fi
 
-          if [ ! -f "$script" ]; then
-            echo "::error::デプロイスクリプトが存在しません: $script" >&2
+      - name: Validate project directory
+        shell: bash
+        working-directory: prototype/${{ steps.vars.outputs.branch_raw }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f package.json ]; then
+            echo "::error::package.json が見つかりません。npm run build を実行できません" >&2
             exit 1
           fi
 
-          if [ ! -x "$script" ]; then
-            echo "スクリプトに実行権限を付与します: $script"
-            chmod +x "$script"
+          if [ ! -f wrangler.toml ]; then
+            echo "::error::wrangler.toml が見つかりません。Wrangler の設定を追加してください" >&2
+            exit 1
           fi
 
-      - name: Run deploy script
+      - name: Install dependencies
+        shell: bash
+        working-directory: prototype/${{ steps.vars.outputs.branch_raw }}
+        run: |
+          set -euo pipefail
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-fund --no-audit
+          fi
+
+      - name: Run build
+        shell: bash
+        working-directory: prototype/${{ steps.vars.outputs.branch_raw }}
+        env:
+          BRANCH_NAME_RAW: ${{ steps.vars.outputs.branch_raw }}
+          SANITIZED_BRANCH: ${{ steps.vars.outputs.branch_sanitized }}
+        run: |
+          set -euo pipefail
+          npm run build
+
+      - name: Deploy with Wrangler
         id: deploy
         shell: bash
         env:
@@ -93,16 +118,42 @@ jobs:
           SANITIZED_BRANCH: ${{ steps.vars.outputs.branch_sanitized }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: prototype/${{ steps.vars.outputs.branch_raw }}
         run: |
           set -euo pipefail
-          script="prototype/${BRANCH_NAME_RAW}/deploy.sh"
 
           if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
             echo "::error::CLOUDFLARE_API_TOKEN と CLOUDFLARE_ACCOUNT_ID をリポジトリシークレットに設定してください" >&2
             exit 1
           fi
 
-          "$script"
+          export NPX_YES=1
+          logfile="$(mktemp)"
+
+          if ! NPX_YES=1 npx wrangler deploy \
+            --name "$SANITIZED_BRANCH" \
+            --var "BRANCH_NAME=$BRANCH_NAME_RAW" \
+            | tee "$logfile"; then
+            echo "::error::wrangler deploy に失敗しました" >&2
+            cat "$logfile" >&2
+            exit 1
+          fi
+
+          deploy_url="$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' "$logfile" | tail -n1 || true)"
+
+          if [ -z "$deploy_url" ]; then
+            deploy_url=$(NPX_YES=1 npx wrangler deployments list \
+              --name "$SANITIZED_BRANCH" \
+              | grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' | head -n1 || true)
+          fi
+
+          rm -f "$logfile"
+
+          if [ -n "$deploy_url" ]; then
+            echo "DEPLOY_URL=$deploy_url" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::デプロイ URL を特定できませんでした。wrangler の出力を確認してください" >&2
+          fi
 
       - name: Summarize deploy result
         if: ${{ steps.deploy.outputs.DEPLOY_URL != '' }}
