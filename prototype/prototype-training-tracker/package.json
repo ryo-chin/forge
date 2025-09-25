@@ -1,0 +1,14 @@
+{
+  "name": "prototype-training-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && npx wrangler dev --local --config wrangler.toml",
+    "deploy": "npm run build && npx wrangler deploy --config wrangler.toml"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}

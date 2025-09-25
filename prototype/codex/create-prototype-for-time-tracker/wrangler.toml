@@ -1,0 +1,8 @@
+name = "prototype-placeholder"
+compatibility_date = "2024-03-20"
+
+[vars]
+APP_TITLE = "Training Tracker Prototype"
+
+[assets]
+directory = "."

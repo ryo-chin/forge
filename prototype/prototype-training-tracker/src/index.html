@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Training Tracker Prototype</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="brand">Training Tracker Prototype</div>
+        <div class="header-meta">
+          <span class="meta-chip" id="streakChip">Streak: 0日</span>
+          <span class="meta-chip" id="weeklyTotalChip">今週: 0h 00m</span>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="hero" aria-label="セッション開始">
+          <div class="input-card">
+            <label for="taskInput" class="input-label">何を鍛錬しますか？</label>
+            <div class="input-row">
+              <input
+                id="taskInput"
+                class="task-input"
+                type="text"
+                placeholder="例: スケール練習 120bpm"
+                autocomplete="off"
+                aria-describedby="suggestions"
+              />
+              <button id="startButton" class="primary">開始</button>
+            </div>
+            <div id="suggestions" class="suggestions" role="listbox" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section id="activeSession" class="active-session" hidden aria-live="polite">
+          <div class="timer-card">
+            <div class="timer-main">
+              <div>
+                <div class="active-label">計測中</div>
+                <div class="active-title" id="activeTaskTitle"></div>
+              </div>
+              <div class="timer-display" id="timerDisplay">00:00</div>
+            </div>
+
+            <div class="quick-adjust">
+              <button class="ghost" data-adjust="-10">-10分</button>
+              <button class="ghost" data-adjust="-5">-5分</button>
+              <button class="ghost" data-adjust="5">+5分</button>
+              <button class="ghost" data-adjust="10">+10分</button>
+              <button class="ghost" id="undoAdjust" disabled>元に戻す</button>
+            </div>
+
+            <div class="session-actions">
+              <button class="secondary" id="toggleDetails">詳細編集</button>
+              <button class="danger" id="stopSession">終了</button>
+            </div>
+
+            <div id="detailPanel" class="detail-panel" hidden>
+              <div class="detail-group">
+                <header>開始時刻の調整</header>
+                <div class="detail-row">
+                  <label for="startSlider">スクラバー</label>
+                  <input id="startSlider" type="range" min="-120" max="30" value="0" />
+                  <div class="range-hint">
+                    <span id="startDelta">±0分</span>
+                    <span id="startClock"></span>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <label for="naturalStartInput">ナチュラル入力</label>
+                  <div class="natural-row">
+                    <input
+                      id="naturalStartInput"
+                      type="text"
+                      placeholder="例: -25m / 9:10 / 昨日 22:05"
+                    />
+                    <button class="ghost" id="applyNatural">適用</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-group">
+                <header>メタ情報</header>
+                <div class="detail-row">
+                  <label for="skillInput">スキル/領域</label>
+                  <input id="skillInput" type="text" placeholder="例: フィンガリング" />
+                </div>
+                <div class="detail-row">
+                  <label for="tagsInput">タグ</label>
+                  <input id="tagsInput" type="text" placeholder="カンマ区切りで入力" />
+                </div>
+                <div class="detail-row">
+                  <label for="intensitySelect">強度</label>
+                  <select id="intensitySelect">
+                    <option value="">未設定</option>
+                    <option value="light">軽め</option>
+                    <option value="medium">標準</option>
+                    <option value="intense">追い込み</option>
+                  </select>
+                </div>
+                <div class="detail-row">
+                  <label for="notesInput">メモ</label>
+                  <textarea id="notesInput" rows="3" placeholder="気づきや課題をメモ"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-label="セッション一覧" class="timeline">
+          <header class="section-header">
+            <h2>今日の記録</h2>
+            <button class="ghost" id="clearHistory">履歴をクリア</button>
+          </header>
+          <div id="timelineList" class="timeline-list" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="sessionItemTemplate">
+      <article class="session-item">
+        <div class="session-main">
+          <div class="session-title"></div>
+          <div class="session-meta"></div>
+        </div>
+        <div class="session-side">
+          <div class="session-duration"></div>
+          <button class="ghost small edit-session">編集</button>
+        </div>
+      </article>
+    </template>
+
+    <dialog id="sessionEditor">
+      <form method="dialog" class="editor-form">
+        <header>
+          <h3>セッション編集</h3>
+        </header>
+        <label class="editor-field">
+          タスク名称
+          <input name="title" type="text" required />
+        </label>
+        <label class="editor-field">
+          開始時刻
+          <input name="start" type="datetime-local" required />
+        </label>
+        <label class="editor-field">
+          終了時刻
+          <input name="end" type="datetime-local" required />
+        </label>
+        <label class="editor-field">
+          スキル/領域
+          <input name="skill" type="text" />
+        </label>
+        <label class="editor-field">
+          タグ
+          <input name="tags" type="text" placeholder="カンマ区切り" />
+        </label>
+        <label class="editor-field">
+          強度
+          <select name="intensity">
+            <option value="">未設定</option>
+            <option value="light">軽め</option>
+            <option value="medium">標準</option>
+            <option value="intense">追い込み</option>
+          </select>
+        </label>
+        <label class="editor-field">
+          メモ
+          <textarea name="notes" rows="3"></textarea>
+        </label>
+        <menu class="editor-menu">
+          <button value="cancel">キャンセル</button>
+          <button value="delete" class="danger">削除</button>
+          <button value="save" class="primary">保存</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
