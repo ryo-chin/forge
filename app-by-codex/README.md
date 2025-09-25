@@ -21,3 +21,7 @@ npm install
 - `npm run test:unit` — Vitest でユニットテストを実行
 - `npm run test:e2e` — Playwright でE2Eテストを実行
 - `npm run build` — 型チェックと本番ビルドを実行
+
+## 参考ドキュメント
+
+- CSS ガイドライン: `docs/adr/app-by-codex/20250925-css-guidelines.md`

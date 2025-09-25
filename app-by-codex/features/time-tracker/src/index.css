@@ -1,114 +1,163 @@
 .time-tracker {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 4rem;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 1.5rem;
+  background: #f5f7fb;
+  color: #0f172a;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+}
+
+.time-tracker__panel {
+  width: 100%;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
+  align-items: center;
+  text-align: center;
 }
 
 .time-tracker__header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2.2rem;
-  font-weight: 700;
-}
-
-.time-tracker__header p {
   margin: 0;
-  color: #4b5563;
-}
-
-.time-tracker__timer {
-  background: #ffffff;
-  border-radius: 1.5rem;
-  padding: 2rem;
-  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  align-items: stretch;
-}
-
-.timer-face {
-  font-size: 3.5rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.quick-input {
-  font-size: 1.25rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid #d1d5db;
-}
-
-.controls {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-button.primary,
-button.secondary {
-  min-width: 120px;
-  padding: 0.65rem 1.25rem;
-  font-size: 1rem;
-  border-radius: 9999px;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-button.primary {
-  background: #2563eb;
-  color: #ffffff;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
-}
-
-button.secondary {
-  background: #e5e7eb;
+  font-size: 3rem;
+  font-weight: 600;
   color: #1f2937;
 }
 
-button:disabled {
+.time-tracker__header p {
+  margin: 0.75rem 0 0;
+  font-size: 1.1rem;
+  color: #6b7280;
+}
+
+.time-tracker__composer {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  padding: 0.75rem 0.75rem 0.75rem 1.5rem;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+}
+
+.time-tracker__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  color: #111827;
+  outline: none;
+}
+
+.time-tracker__input::placeholder {
+  color: #9ca3af;
+}
+
+.time-tracker__action {
+  border: none;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  color: #4b5563;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.time-tracker__action:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(100, 116, 139, 0.25);
+  background: #dbe0e6;
+}
+
+.time-tracker__action:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-.time-tracker__log {
-  background: transparent;
-}
-
-.session-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.time-tracker__hints {
   display: flex;
-  flex-direction: column;
   gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  color: #9ca3af;
 }
 
-.session-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+.time-tracker__hints kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d0d7e2;
+  background: #eef1f6;
+  font-family: 'SFMono-Regular', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #4b5563;
 }
 
-.session-meta {
-  color: #6b7280;
-  font-size: 0.9rem;
+.time-tracker__dot {
+  font-size: 1.25rem;
+  line-height: 1;
+  transform: translateY(-1px);
 }
 
-.empty-state {
-  color: #6b7280;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  background: #fff;
-  box-shadow: inset 0 0 0 1px rgba(209, 213, 219, 0.7);
-  text-align: center;
+.time-tracker__status {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.time-tracker__timer {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .time-tracker {
+    padding: 4rem 1rem;
+  }
+
+  .time-tracker__header h1 {
+    font-size: 2.3rem;
+  }
+
+  .time-tracker__composer {
+    flex-direction: column;
+    border-radius: 2rem;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .time-tracker__input {
+    width: 100%;
+    font-size: 1.3rem;
+    padding: 0.5rem 0.25rem;
+  }
+
+  .time-tracker__action {
+    width: 100%;
+  }
+
+  .time-tracker__hints {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
 }

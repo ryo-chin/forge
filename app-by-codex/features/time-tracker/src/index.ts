@@ -1,2 +1,7 @@
 export { TimeTrackerRoot } from './TimeTrackerRoot';
-export type { TimeTrackerSession } from './types';
+export { useRunningSession } from './hooks/useRunningSession';
+export type {
+  TimeTrackerSession,
+  SessionDraft,
+  RunningSessionState,
+} from './types';
