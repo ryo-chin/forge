@@ -96,7 +96,7 @@ export function loadTimerState(): TimerState {
           ? new Date(parsedState.currentSession.endTime)
           : undefined,
       } : null,
-      sessions: parsedState.sessions.map((session: any) => ({
+      sessions: parsedState.sessions.map((session: Session) => ({
         ...session,
         startTime: new Date(session.startTime),
         endTime: session.endTime ? new Date(session.endTime) : undefined,
@@ -137,11 +137,10 @@ export function clearStorage(): void {
  */
 export function getStorageInfo(): { used: number; total: number; percentage: number } {
   try {
-    let totalSize = 0
     let usedSize = 0
 
-    for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
+    for (const key in localStorage) {
+      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
         usedSize += localStorage[key].length + key.length
       }
     }

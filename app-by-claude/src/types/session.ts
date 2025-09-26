@@ -26,3 +26,21 @@ export interface CreateSessionInput {
   project?: string
   skill?: string
 }
+
+// Draft types for editing sessions in progress
+export interface SessionDraft {
+  taskName?: string
+  tags?: string[]
+  project?: string
+  skill?: string
+}
+
+export interface DraftAction {
+  type: 'UPDATE_TASK_NAME' | 'ADD_TAG' | 'REMOVE_TAG' | 'SET_PROJECT' | 'SET_SKILL' | 'CLEAR_DRAFT'
+  payload?: string
+}
+
+export interface DraftState {
+  draft: SessionDraft
+  hasChanges: boolean
+}

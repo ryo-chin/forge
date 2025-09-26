@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Home } from '../Home'
 import { useTimerStore } from '../../stores/timer'
@@ -141,7 +141,7 @@ describe('Home Component', () => {
       // Try to press Enter during composition - should not start session
       fireEvent.keyDown(input, {
         key: 'Enter',
-        nativeEvent: { isComposing: true } as any
+        nativeEvent: { isComposing: true } as KeyboardEvent
       })
 
       expect(mockStartSession).not.toHaveBeenCalled()
@@ -150,7 +150,7 @@ describe('Home Component', () => {
       fireEvent.compositionEnd(input)
       fireEvent.keyDown(input, {
         key: 'Enter',
-        nativeEvent: { isComposing: false } as any
+        nativeEvent: { isComposing: false } as KeyboardEvent
       })
 
       expect(mockStartSession).toHaveBeenCalledWith({
@@ -169,6 +169,55 @@ describe('Home Component', () => {
 
       expect(mockStartSession).toHaveBeenCalled()
       expect(input).toHaveValue('')
+    })
+
+    it('should show loading state while starting session', async () => {
+      const user = userEvent.setup()
+      render(<Home />)
+
+      const input = screen.getByRole('textbox')
+      await user.type(input, 'Test Task')
+
+      const button = screen.getByRole('button', { name: /開始/i })
+
+      // Click the start button
+      await user.click(button)
+
+      // Should show loading state briefly
+      expect(screen.getByText(/開始中.../)).toBeInTheDocument()
+    })
+
+    it('should disable input and button during loading', async () => {
+      const user = userEvent.setup()
+      render(<Home />)
+
+      const input = screen.getByRole('textbox')
+      await user.type(input, 'Test Task')
+
+      const button = screen.getByRole('button', { name: /開始/i })
+
+      // Click the start button
+      await user.click(button)
+
+      // Button should be disabled during loading
+      expect(button).toBeDisabled()
+    })
+
+    it('should prevent multiple submissions during loading', async () => {
+      const user = userEvent.setup()
+      render(<Home />)
+
+      const input = screen.getByRole('textbox')
+      await user.type(input, 'Test Task')
+
+      // Submit via Enter key
+      await user.keyboard('{Enter}')
+
+      // Try to submit again immediately
+      await user.keyboard('{Enter}')
+
+      // Should only call startSession once
+      expect(mockStartSession).toHaveBeenCalledTimes(1)
     })
   })
 

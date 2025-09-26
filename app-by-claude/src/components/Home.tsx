@@ -5,9 +5,10 @@ import { TimerDisplay } from './TimerDisplay'
 export const Home: React.FC = () => {
   const [taskInput, setTaskInput] = useState('')
   const [isComposing, setIsComposing] = useState(false)
+  const [isStarting, setIsStarting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const { currentSession, status, startSession } = useTimerStore()
+  const { currentSession, startSession } = useTimerStore()
 
   // Focus input on mount
   useEffect(() => {
@@ -32,11 +33,18 @@ export const Home: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (taskInput.trim()) {
-      startSession({ taskName: taskInput.trim() })
-      setTaskInput('')
+    if (taskInput.trim() && !isStarting) {
+      setIsStarting(true)
+      try {
+        startSession({ taskName: taskInput.trim() })
+        setTaskInput('')
+        // Small delay for visual feedback
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } finally {
+        setIsStarting(false)
+      }
     }
   }
 
@@ -59,6 +67,7 @@ export const Home: React.FC = () => {
   }
 
   const isInputEmpty = !taskInput.trim()
+  const isDisabled = isInputEmpty || isStarting
 
   // Show timer display if session is active
   if (currentSession) {
@@ -100,14 +109,21 @@ export const Home: React.FC = () => {
             {/* Start Button */}
             <button
               type="submit"
-              disabled={isInputEmpty}
+              disabled={isDisabled}
               className={`absolute right-2 top-2 bottom-2 px-6 rounded-full font-medium transition-all duration-200 ${
-                isInputEmpty
+                isDisabled
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50'
               }`}
             >
-              開始
+              {isStarting ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  開始中...
+                </div>
+              ) : (
+                '開始'
+              )}
             </button>
           </div>
 
