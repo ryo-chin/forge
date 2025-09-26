@@ -11,6 +11,8 @@ const INTENSITY_VALUES = new Set<'low' | 'medium' | 'high'>([
   'high',
 ]);
 
+const RUNNING_TIMER_ID = 'time-tracker-running-timer';
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -146,6 +148,36 @@ const formatTimer = (seconds: number) => {
   return `${mm}:${ss}`;
 };
 
+const formatDurationForAria = (seconds: number) => {
+  if (seconds <= 0) return '0秒';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours}時間`);
+  if (minutes > 0) parts.push(`${minutes}分`);
+  if (parts.length === 0 || remainingSeconds > 0) {
+    parts.push(`${remainingSeconds}秒`);
+  }
+  return parts.join('');
+};
+
+const describeHistorySession = (session: TimeTrackerSession) => {
+  const parts = [
+    `タイトル ${session.title}`,
+    `所要時間 ${formatDurationForAria(session.durationSeconds)}`,
+  ];
+  if (session.project) parts.push(`プロジェクト ${session.project}`);
+  if (session.tags?.length) parts.push(`タグ ${session.tags.join('、')}`);
+  if (session.skill) parts.push(`スキル ${session.skill}`);
+  return parts.join('、');
+};
+
+const createNudgeLabel = (deltaMinutes: number) =>
+  deltaMinutes > 0
+    ? `経過時間を${deltaMinutes}分延長`
+    : `経過時間を${Math.abs(deltaMinutes)}分短縮`;
+
 export function TimeTrackerRoot() {
   const initialSessionsRef = useRef<TimeTrackerSession[] | null>(null);
   if (initialSessionsRef.current === null) {
@@ -186,6 +218,9 @@ export function TimeTrackerRoot() {
   const projectMenuRef = useRef<HTMLDivElement>(null);
   const projectSearchRef = useRef<HTMLInputElement>(null);
   const pendingProjectRef = useRef<string | null>(null);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const projectMenuPrevOpenRef = useRef(false);
 
   const { state, start, stop, updateDraft, adjustDuration } = useRunningSession({
     initialState: initialRunningStateRef.current ?? undefined,
@@ -222,6 +257,37 @@ export function TimeTrackerRoot() {
   }, [modalState, state.status, closeModal]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (modalState) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      const focusTarget =
+        modalContainerRef.current?.querySelector<HTMLElement>(
+          '[data-autofocus="true"], input, button, textarea, select, [tabindex]:not([tabindex="-1"])',
+        ) ?? modalContainerRef.current;
+      focusTarget?.focus();
+      return;
+    }
+    const previous = previousFocusRef.current;
+    if (previous && typeof previous.focus === 'function') {
+      previous.focus();
+    }
+    previousFocusRef.current = null;
+  }, [modalState]);
+
+  useEffect(() => {
+    if (!modalState) return;
+    if (typeof window === 'undefined') return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        closeModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [closeModal, modalState]);
+
+  useEffect(() => {
     if (!isProjectMenuOpen) return;
     const handleClick = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -255,6 +321,13 @@ export function TimeTrackerRoot() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [composerProject, isProjectMenuOpen]);
+
+  useEffect(() => {
+    if (!isProjectMenuOpen && projectMenuPrevOpenRef.current) {
+      projectTriggerRef.current?.focus();
+    }
+    projectMenuPrevOpenRef.current = isProjectMenuOpen;
+  }, [isProjectMenuOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -510,6 +583,33 @@ export function TimeTrackerRoot() {
     ],
   );
 
+  const handleModalKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Tab' || !modalContainerRef.current) return;
+      const focusable = Array.from(
+        modalContainerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+      if (focusable.length === 0) {
+        event.preventDefault();
+        modalContainerRef.current.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    },
+    [],
+  );
+
   const modalSaveDisabled = useMemo(() => {
     if (!modalState) return true;
     if (modalTitleInput.trim().length === 0) return true;
@@ -586,6 +686,33 @@ export function TimeTrackerRoot() {
     [applyProject, filteredProjectSuggestions, handleProjectSubmit],
   );
 
+  const handleProjectMenuKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Tab' || !projectMenuRef.current) return;
+      const focusable = Array.from(
+        projectMenuRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+      if (focusable.length === 0) {
+        event.preventDefault();
+        projectMenuRef.current.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    },
+    [],
+  );
+
   return (
     <main className="time-tracker">
       <div className="time-tracker__panel">
@@ -623,6 +750,9 @@ export function TimeTrackerRoot() {
                 ref={projectMenuRef}
                 role="dialog"
                 aria-label="プロジェクトを選択"
+                aria-modal="true"
+                tabIndex={-1}
+                onKeyDown={handleProjectMenuKeyDown}
               >
                 <label className="time-tracker__sr-only" htmlFor="project-search">
                   プロジェクトを検索・設定
@@ -713,23 +843,46 @@ export function TimeTrackerRoot() {
         {isRunning ? (
           <div className="time-tracker__status" aria-live="polite">
             <span>計測中</span>
-            <span className="time-tracker__timer">{timerLabel}</span>
+            <span className="time-tracker__timer" id={RUNNING_TIMER_ID}>
+              {timerLabel}
+            </span>
           </div>
         ) : null}
 
         <div className="time-tracker__details">
           {isRunning ? (
-            <div className="time-tracker__nudges" role="group" aria-label="作業時間の調整">
-              <button type="button" onClick={() => handleNudge(-10)}>
+            <div
+              className="time-tracker__nudges"
+              role="group"
+              aria-label="作業時間の調整"
+              aria-describedby={RUNNING_TIMER_ID}
+            >
+              <button
+                type="button"
+                onClick={() => handleNudge(-10)}
+                aria-label={createNudgeLabel(-10)}
+              >
                 -10分
               </button>
-              <button type="button" onClick={() => handleNudge(-5)}>
+              <button
+                type="button"
+                onClick={() => handleNudge(-5)}
+                aria-label={createNudgeLabel(-5)}
+              >
                 -5分
               </button>
-              <button type="button" onClick={() => handleNudge(5)}>
+              <button
+                type="button"
+                onClick={() => handleNudge(5)}
+                aria-label={createNudgeLabel(5)}
+              >
                 +5分
               </button>
-              <button type="button" onClick={() => handleNudge(10)}>
+              <button
+                type="button"
+                onClick={() => handleNudge(10)}
+                aria-label={createNudgeLabel(10)}
+              >
                 +10分
               </button>
             </div>
@@ -750,37 +903,51 @@ export function TimeTrackerRoot() {
           <section className="time-tracker__history" aria-label="最近の記録">
             <h2>最近の記録</h2>
             <ul>
-              {sessions.map((session) => (
-                <li key={session.id} className="time-tracker__history-item">
-                  <div className="time-tracker__history-main">
-                    <strong>{session.title}</strong>
-                    <span>{formatTimer(session.durationSeconds)}</span>
-                  </div>
-                  <div className="time-tracker__history-meta">
-                    {session.project ? <span>#{session.project}</span> : null}
-                    {session.tags?.length ? (
-                      <span>{session.tags.map((tag) => `#${tag}`).join(' ')}</span>
-                    ) : null}
-                    {session.skill ? <span>@{session.skill}</span> : null}
-                  </div>
-                  <div className="time-tracker__history-actions">
-                    <button
-                      type="button"
-                      className="time-tracker__history-button"
-                      onClick={() => handleEditHistory(session.id)}
-                    >
-                      編集
-                    </button>
-                    <button
-                      type="button"
-                      className="time-tracker__history-button time-tracker__history-button--danger"
-                      onClick={() => handleDeleteHistory(session.id)}
-                    >
-                      削除
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {sessions.map((session) => {
+                const titleId = `history-session-${session.id}-title`;
+                const descriptionId = `history-session-${session.id}-description`;
+                return (
+                  <li
+                    key={session.id}
+                    className="time-tracker__history-item"
+                    aria-labelledby={titleId}
+                    aria-describedby={descriptionId}
+                  >
+                    <span className="time-tracker__sr-only" id={descriptionId}>
+                      {describeHistorySession(session)}
+                    </span>
+                    <div className="time-tracker__history-main">
+                      <strong id={titleId}>{session.title}</strong>
+                      <span>{formatTimer(session.durationSeconds)}</span>
+                    </div>
+                    <div className="time-tracker__history-meta">
+                      {session.project ? <span>#{session.project}</span> : null}
+                      {session.tags?.length ? (
+                        <span>{session.tags.map((tag) => `#${tag}`).join(' ')}</span>
+                      ) : null}
+                      {session.skill ? <span>@{session.skill}</span> : null}
+                    </div>
+                    <div className="time-tracker__history-actions">
+                      <button
+                        type="button"
+                        className="time-tracker__history-button"
+                        onClick={() => handleEditHistory(session.id)}
+                        aria-label={`「${session.title}」を編集`}
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        className="time-tracker__history-button time-tracker__history-button--danger"
+                        onClick={() => handleDeleteHistory(session.id)}
+                        aria-label={`「${session.title}」を削除`}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}
@@ -794,13 +961,16 @@ export function TimeTrackerRoot() {
         ) : null}
       </div>
       {modalState ? (
-        <div
-          className="time-tracker__modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="session-editor-title"
-        >
-          <div className="time-tracker__modal">
+        <div className="time-tracker__modal-backdrop" role="presentation">
+          <div
+            ref={modalContainerRef}
+            className="time-tracker__modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="session-editor-title"
+            tabIndex={-1}
+            onKeyDown={handleModalKeyDown}
+          >
             <h2 id="session-editor-title">
               {modalState.type === 'history' ? '記録を編集' : '計測中の詳細を編集'}
             </h2>
@@ -813,6 +983,7 @@ export function TimeTrackerRoot() {
                   value={modalTitleInput}
                   onChange={(event) => setModalTitleInput(event.target.value)}
                   autoComplete="off"
+                  data-autofocus="true"
                 />
               </div>
               <div className="time-tracker__field">

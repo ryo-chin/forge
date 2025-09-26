@@ -71,9 +71,15 @@ describe('TimeTrackerRoot', () => {
     fireEvent.change(input, { target: { value: 'ギター練習' } });
     fireEvent.click(screen.getByRole('button', { name: '開始' }));
 
-    fireEvent.click(screen.getByRole('button', { name: '+5分' }));
+    const nudgeGroup = screen.getByRole('group', { name: '作業時間の調整' });
+    expect(nudgeGroup).toHaveAttribute('aria-describedby', 'time-tracker-running-timer');
 
-    expect(screen.getByText('05:00')).toBeInTheDocument();
+    const timerElement = screen.getByText('00:00');
+    expect(timerElement).toHaveAttribute('id', 'time-tracker-running-timer');
+
+    fireEvent.click(screen.getByRole('button', { name: '経過時間を5分延長' }));
+
+    expect(timerElement).toHaveTextContent('05:00');
   });
 
   it('クイックナッジで作業時間を減算できるが0未満にはならない', () => {
@@ -83,8 +89,8 @@ describe('TimeTrackerRoot', () => {
     fireEvent.change(input, { target: { value: 'ギター練習' } });
     fireEvent.click(screen.getByRole('button', { name: '開始' }));
 
-    fireEvent.click(screen.getByRole('button', { name: '+5分' }));
-    fireEvent.click(screen.getByRole('button', { name: '-5分' }));
+    fireEvent.click(screen.getByRole('button', { name: '経過時間を5分延長' }));
+    fireEvent.click(screen.getByRole('button', { name: '経過時間を5分短縮' }));
 
     expect(screen.getByText('00:00')).toBeInTheDocument();
   });
@@ -112,6 +118,56 @@ describe('TimeTrackerRoot', () => {
     expect(screen.getByText('ギター練習 - 集中')).toBeInTheDocument();
     const history = screen.getByRole('region', { name: '最近の記録' });
     expect(within(history).getByText('#daily-practice')).toBeInTheDocument();
+    expect(
+      within(history).getByRole('button', { name: '「ギター練習 - 集中」を編集' }),
+    ).toBeInTheDocument();
+    expect(
+      within(history).getByRole('button', { name: '「ギター練習 - 集中」を削除' }),
+    ).toBeInTheDocument();
+  });
+
+  it('詳細編集モーダルを開くとタイトル入力にフォーカスする', async () => {
+    render(<TimeTrackerRoot />);
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: 'ギター練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    const detailButton = screen.getByRole('button', { name: '詳細編集' });
+    fireEvent.click(detailButton);
+
+    const titleField = screen.getByLabelText('タイトル');
+    await waitFor(() => {
+      expect(titleField).toHaveFocus();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
+    fireEvent.click(screen.getByRole('button', { name: '停止' }));
+  });
+
+  it('モーダルを閉じると開いた時にフォーカスしていた要素へ戻る', async () => {
+    render(<TimeTrackerRoot />);
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: 'ギター練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    const detailButton = screen.getByRole('button', { name: '詳細編集' });
+    detailButton.focus();
+    fireEvent.click(detailButton);
+
+    const titleField = screen.getByLabelText('タイトル');
+    await waitFor(() => {
+      expect(titleField).toHaveFocus();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
+
+    await waitFor(() => {
+      expect(detailButton).toHaveFocus();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '停止' }));
   });
 
   it('履歴モーダルでタイトルと時刻を再編集できる', () => {
@@ -122,7 +178,7 @@ describe('TimeTrackerRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: '開始' }));
     fireEvent.click(screen.getByRole('button', { name: '停止' }));
 
-    fireEvent.click(screen.getByRole('button', { name: '編集' }));
+    fireEvent.click(screen.getByRole('button', { name: '「ギター練習」を編集' }));
 
     fireEvent.change(screen.getByLabelText('タイトル'), {
       target: { value: '基礎トレーニング' },
@@ -146,6 +202,13 @@ describe('TimeTrackerRoot', () => {
     expect(screen.getByText('基礎トレーニング')).toBeInTheDocument();
     expect(screen.getByText('#updated-project')).toBeInTheDocument();
     expect(screen.getByText('05:00')).toBeInTheDocument();
+    const history = screen.getByRole('region', { name: '最近の記録' });
+    expect(
+      within(history).getByRole('button', { name: '「基礎トレーニング」を編集' }),
+    ).toBeInTheDocument();
+    expect(
+      within(history).getByRole('button', { name: '「基礎トレーニング」を削除' }),
+    ).toBeInTheDocument();
   });
 
   it('プロジェクトメニューで選択した値が開始時に適用される', () => {
@@ -167,6 +230,50 @@ describe('TimeTrackerRoot', () => {
     expect(within(history).getByText('#daily-practice')).toBeInTheDocument();
   });
 
+  it('プロジェクトメニューを閉じるとトリガーボタンへフォーカスが戻る', async () => {
+    render(<TimeTrackerRoot />);
+
+    const trigger = screen.getByRole('button', { name: 'プロジェクトを選択' });
+    fireEvent.click(trigger);
+
+    const projectInput = screen.getByLabelText('プロジェクトを検索・設定');
+    await waitFor(() => {
+      expect(projectInput).toHaveFocus();
+    });
+
+    fireEvent.mouseDown(document.body);
+
+    await waitFor(() => {
+      expect(trigger).toHaveFocus();
+    });
+  });
+
+  it('プロジェクトメニュー内でTabキーがダイアログ内を循環する', async () => {
+    render(<TimeTrackerRoot />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを選択' }));
+
+    const projectInput = screen.getByLabelText('プロジェクトを検索・設定');
+    await waitFor(() => {
+      expect(projectInput).toHaveFocus();
+    });
+
+    const popover = screen.getByRole('dialog', { name: 'プロジェクトを選択' });
+    const actionButton = screen.getByRole('button', { name: 'プロジェクトを未設定にする' });
+
+    fireEvent.keyDown(popover, { key: 'Tab', shiftKey: true });
+    await waitFor(() => {
+      expect(actionButton).toHaveFocus();
+    });
+
+    fireEvent.keyDown(popover, { key: 'Tab' });
+    await waitFor(() => {
+      expect(projectInput).toHaveFocus();
+    });
+
+    fireEvent.mouseDown(document.body);
+  });
+
   it('履歴の削除はUndoで元に戻せる', () => {
     render(<TimeTrackerRoot />);
 
@@ -177,7 +284,7 @@ describe('TimeTrackerRoot', () => {
 
     expect(screen.getByText('ギター練習')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '削除' }));
+    fireEvent.click(screen.getByRole('button', { name: '「ギター練習」を削除' }));
 
     expect(screen.queryByText('ギター練習')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '元に戻す' })).toBeInTheDocument();
