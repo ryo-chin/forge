@@ -11,6 +11,7 @@ type NowFn = () => number;
 export type UseRunningSessionOptions = {
   now?: NowFn;
   tickIntervalMs?: number;
+  initialState?: RunningSessionState;
 };
 
 export type RunningSessionApi = {
@@ -28,11 +29,15 @@ const DEFAULT_INTERVAL = 1000;
 export const useRunningSession = (
   options: UseRunningSessionOptions = {},
 ): RunningSessionApi => {
-  const { now = defaultNow, tickIntervalMs = DEFAULT_INTERVAL } = options;
+  const {
+    now = defaultNow,
+    tickIntervalMs = DEFAULT_INTERVAL,
+    initialState,
+  } = options;
 
   const [state, dispatch] = useReducer(
     runningSessionReducer,
-    initialRunningSessionState,
+    initialState ?? initialRunningSessionState,
   );
 
   useEffect(() => {
