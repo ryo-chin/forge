@@ -4,6 +4,8 @@ import { useDraftReducer } from '../hooks/useDraftReducer'
 
 export const TimerDisplay: React.FC = () => {
   const [showEditForm, setShowEditForm] = useState(false)
+  const [isEditingTaskName, setIsEditingTaskName] = useState(false)
+  const [taskNameInput, setTaskNameInput] = useState('')
 
   const {
     session,
@@ -18,10 +20,8 @@ export const TimerDisplay: React.FC = () => {
 
   // Initialize draft with current session data
   const { state: draftState, actions: draftActions } = useDraftReducer({
-    taskName: session?.taskName || '',
     tags: session?.tags || [],
     project: session?.project || '',
-    skill: session?.skill || '',
   })
 
   // Toggle edit form
@@ -29,12 +29,40 @@ export const TimerDisplay: React.FC = () => {
     setShowEditForm(!showEditForm)
     if (!showEditForm && session) {
       // Reset draft when opening form
-      draftActions.updateTaskName(session.taskName)
       draftActions.setProject(session.project || '')
-      draftActions.setSkill(session.skill || '')
       draftActions.clearDraft()
       // Add existing tags
       session.tags?.forEach(tag => draftActions.addTag(tag))
+    }
+  }
+
+  // Task name inline editing
+  const startEditingTaskName = () => {
+    if (session) {
+      setTaskNameInput(session.taskName)
+      setIsEditingTaskName(true)
+    }
+  }
+
+  const saveTaskName = () => {
+    if (taskNameInput.trim() && taskNameInput.trim() !== session?.taskName) {
+      updateSession({ taskName: taskNameInput.trim() })
+    }
+    setIsEditingTaskName(false)
+  }
+
+  const cancelTaskNameEdit = () => {
+    setIsEditingTaskName(false)
+    setTaskNameInput('')
+  }
+
+  const handleTaskNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveTaskName()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelTaskNameEdit()
     }
   }
 
@@ -98,23 +126,61 @@ export const TimerDisplay: React.FC = () => {
         {/* Task Name */}
         <div className="mb-6">
           <div className="flex items-center justify-center">
-            <h1 className="text-2xl md:text-3xl font-light text-gray-900 truncate px-4">
-              {session.taskName}
-            </h1>
-            <button
-              onClick={toggleEditForm}
-              className="ml-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200 border border-gray-200 hover:border-blue-300"
-              title="編集"
-              aria-label="編集"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
+            {isEditingTaskName ? (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={taskNameInput}
+                  onChange={(e) => setTaskNameInput(e.target.value)}
+                  onKeyDown={handleTaskNameKeyDown}
+                  onBlur={saveTaskName}
+                  className="text-2xl md:text-3xl font-light text-gray-900 bg-white border-b-2 border-blue-500 focus:outline-none px-2 py-1 text-center"
+                  autoFocus
+                />
+                <button
+                  onClick={saveTaskName}
+                  className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
+                  title="保存"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={cancelTaskNameEdit}
+                  className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded"
+                  title="キャンセル"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <h1
+                  className="text-2xl md:text-3xl font-light text-gray-900 truncate px-4 cursor-pointer hover:bg-gray-50 rounded py-2 transition-colors"
+                  onClick={startEditingTaskName}
+                  title="クリックして編集"
+                >
+                  {session.taskName}
+                </h1>
+                <button
+                  onClick={toggleEditForm}
+                  className="ml-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200 border border-gray-200 hover:border-blue-300"
+                  title="詳細編集"
+                  aria-label="詳細編集"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Display session info */}
-          {(session.tags?.length || session.project || session.skill) && (
+          {(session.tags?.length || session.project) && (
             <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm">
               {/* Tags */}
               {(session.tags || []).map((tag, index) => (
@@ -133,33 +199,13 @@ export const TimerDisplay: React.FC = () => {
                 </span>
               )}
 
-              {/* Skill */}
-              {session.skill && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                  🎯 {session.skill}
-                </span>
-              )}
             </div>
           )}
 
           {/* Edit Form */}
           {showEditForm && (
             <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-4">セッション編集</h3>
-
-              {/* Task Name */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  タスク名
-                </label>
-                <input
-                  type="text"
-                  value={draftState.draft.taskName || ''}
-                  onChange={(e) => draftActions.updateTaskName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="タスク名を入力..."
-                />
-              </div>
+              <h3 className="text-lg font-medium mb-4">プロジェクト編集</h3>
 
               {/* Project */}
               <div className="mb-4">
@@ -172,20 +218,6 @@ export const TimerDisplay: React.FC = () => {
                   onChange={(e) => draftActions.setProject(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="プロジェクト名を入力..."
-                />
-              </div>
-
-              {/* Skill */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  スキル
-                </label>
-                <input
-                  type="text"
-                  value={draftState.draft.skill || ''}
-                  onChange={(e) => draftActions.setSkill(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="スキルを入力..."
                 />
               </div>
 

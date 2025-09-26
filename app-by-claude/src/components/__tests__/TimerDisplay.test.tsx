@@ -266,17 +266,16 @@ describe('TimerDisplay Component', () => {
     it('should show edit button', () => {
       render(<TimerDisplay />)
 
-      const editButton = screen.getByRole('button', { name: '編集' })
+      const editButton = screen.getByRole('button', { name: '詳細編集' })
       expect(editButton).toBeInTheDocument()
     })
 
-    it('should display session tags, project, and skill', () => {
+    it('should display session tags and project', () => {
       render(<TimerDisplay />)
 
       expect(screen.getByText('programming')).toBeInTheDocument()
       expect(screen.getByText('learning')).toBeInTheDocument()
       expect(screen.getByText('📁 Web Development')).toBeInTheDocument()
-      expect(screen.getByText('🎯 JavaScript')).toBeInTheDocument()
     })
 
     it('should save draft changes when save button is clicked', () => {
@@ -285,10 +284,8 @@ describe('TimerDisplay Component', () => {
         ...mockDraftReducerData,
         state: {
           draft: {
-            taskName: 'Updated Task',
             tags: ['new-tag'],
             project: 'New Project',
-            skill: 'New Skill',
           },
           hasChanges: true,
         },
@@ -297,7 +294,7 @@ describe('TimerDisplay Component', () => {
       render(<TimerDisplay />)
 
       // Open edit form
-      const editButton = screen.getByRole('button', { name: '編集' })
+      const editButton = screen.getByRole('button', { name: '詳細編集' })
       fireEvent.click(editButton)
 
       // Save changes
@@ -305,10 +302,8 @@ describe('TimerDisplay Component', () => {
       fireEvent.click(saveButton)
 
       expect(mockUpdateSession).toHaveBeenCalledWith({
-        taskName: 'Updated Task',
         tags: ['new-tag'],
         project: 'New Project',
-        skill: 'New Skill',
       })
 
       expect(mockDraftActions.clearDraft).toHaveBeenCalled()
@@ -318,7 +313,7 @@ describe('TimerDisplay Component', () => {
       render(<TimerDisplay />)
 
       // Open edit form
-      const editButton = screen.getByRole('button', { name: '編集' })
+      const editButton = screen.getByRole('button', { name: '詳細編集' })
       fireEvent.click(editButton)
 
       const saveButton = screen.getByText('保存')
@@ -338,11 +333,66 @@ describe('TimerDisplay Component', () => {
       render(<TimerDisplay />)
 
       // Open edit form
-      const editButton = screen.getByRole('button', { name: '編集' })
+      const editButton = screen.getByRole('button', { name: '詳細編集' })
       fireEvent.click(editButton)
 
       const saveButton = screen.getByText('保存')
       expect(saveButton).toBeEnabled()
+    })
+  })
+
+  describe('Inline Task Name Editing', () => {
+    it('should allow clicking task name to edit inline', () => {
+      render(<TimerDisplay />)
+
+      const taskHeading = screen.getByRole('heading', { name: 'Learn React' })
+      fireEvent.click(taskHeading)
+
+      // Should show input field
+      const input = screen.getByDisplayValue('Learn React')
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveFocus()
+    })
+
+    it('should save task name on Enter key', () => {
+      render(<TimerDisplay />)
+
+      const taskHeading = screen.getByRole('heading', { name: 'Learn React' })
+      fireEvent.click(taskHeading)
+
+      const input = screen.getByDisplayValue('Learn React')
+      fireEvent.change(input, { target: { value: 'Updated Task' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+
+      expect(mockUpdateSession).toHaveBeenCalledWith({ taskName: 'Updated Task' })
+    })
+
+    it('should cancel task name edit on Escape key', () => {
+      render(<TimerDisplay />)
+
+      const taskHeading = screen.getByRole('heading', { name: 'Learn React' })
+      fireEvent.click(taskHeading)
+
+      const input = screen.getByDisplayValue('Learn React')
+      fireEvent.change(input, { target: { value: 'Updated Task' } })
+      fireEvent.keyDown(input, { key: 'Escape' })
+
+      // Should return to display mode without saving
+      expect(mockUpdateSession).not.toHaveBeenCalled()
+      expect(screen.getByText('Learn React')).toBeInTheDocument()
+    })
+
+    it('should save task name on blur', () => {
+      render(<TimerDisplay />)
+
+      const taskHeading = screen.getByRole('heading', { name: 'Learn React' })
+      fireEvent.click(taskHeading)
+
+      const input = screen.getByDisplayValue('Learn React')
+      fireEvent.change(input, { target: { value: 'Updated Task' } })
+      fireEvent.blur(input)
+
+      expect(mockUpdateSession).toHaveBeenCalledWith({ taskName: 'Updated Task' })
     })
   })
 })
