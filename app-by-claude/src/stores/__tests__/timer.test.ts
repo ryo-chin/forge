@@ -190,4 +190,91 @@ describe('Timer Store', () => {
       expect(newState.elapsedTime).toBe(0) // No update when paused
     })
   })
+
+  describe('adjustStartTime', () => {
+    beforeEach(() => {
+      useTimerStore.setState({
+        currentSession: null,
+        sessions: [],
+        status: 'completed',
+        elapsedTime: 0,
+      })
+    })
+
+    it('should adjust start time for current session', () => {
+      const { startSession, adjustStartTime } = useTimerStore.getState()
+
+      // Start a session
+      const originalTime = new Date('2025-01-01T10:00:00Z')
+      startSession({ taskName: 'Test Task', startTime: originalTime })
+
+      // Adjust start time
+      const newStartTime = new Date('2025-01-01T09:30:00Z')
+      adjustStartTime(newStartTime)
+
+      const { currentSession } = useTimerStore.getState()
+      expect(currentSession?.startTime).toEqual(newStartTime)
+    })
+
+    it('should ignore adjustment when no current session', () => {
+      const { adjustStartTime } = useTimerStore.getState()
+      const newStartTime = new Date('2025-01-01T08:00:00Z')
+
+      adjustStartTime(newStartTime)
+
+      const { currentSession } = useTimerStore.getState()
+      expect(currentSession).toBeNull()
+    })
+
+    it('should prevent setting start time in the future', () => {
+      const { startSession, adjustStartTime } = useTimerStore.getState()
+
+      // Start a session with a past time
+      const pastTime = new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
+      startSession({ taskName: 'Test Task', startTime: pastTime })
+
+      // Try to adjust to future time
+      const futureTime = new Date(Date.now() + 30 * 60 * 1000) // 30 minutes from now
+      adjustStartTime(futureTime)
+
+      const { currentSession } = useTimerStore.getState()
+      expect(currentSession?.startTime).not.toEqual(futureTime)
+      expect(currentSession?.startTime.getTime()).toBeLessThanOrEqual(Date.now())
+    })
+
+    it('should reject extreme adjustments over 12 hours', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const { startSession, adjustStartTime } = useTimerStore.getState()
+
+      // Start a session
+      const originalTime = new Date('2025-01-01T10:00:00Z')
+      startSession({ taskName: 'Test Task', startTime: originalTime })
+
+      // Try to adjust by more than 12 hours
+      const extremeTime = new Date(originalTime.getTime() + 13 * 60 * 60 * 1000) // 13 hours later
+      adjustStartTime(extremeTime)
+
+      const { currentSession } = useTimerStore.getState()
+      expect(currentSession?.startTime).toEqual(originalTime) // Should remain unchanged
+      expect(consoleSpy).toHaveBeenCalledWith('Start time adjustment rejected: exceeds 12-hour limit')
+
+      consoleSpy.mockRestore()
+    })
+
+    it('should allow reasonable adjustments within limits', () => {
+      const { startSession, adjustStartTime } = useTimerStore.getState()
+
+      // Start a session
+      const originalTime = new Date('2025-01-01T10:00:00Z')
+      startSession({ taskName: 'Test Task', startTime: originalTime })
+
+      // Adjust by 2 hours (within 12-hour limit)
+      const adjustedTime = new Date(originalTime.getTime() - 2 * 60 * 60 * 1000) // 2 hours earlier
+      adjustStartTime(adjustedTime)
+
+      const { currentSession } = useTimerStore.getState()
+      expect(currentSession?.startTime).toEqual(adjustedTime)
+    })
+  })
 })

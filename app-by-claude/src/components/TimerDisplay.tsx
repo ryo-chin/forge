@@ -15,7 +15,8 @@ export const TimerDisplay: React.FC = () => {
     pause,
     resume,
     stop,
-    updateSession
+    updateSession,
+    adjustWorkTime
   } = useRunningSession()
 
   // Initialize draft with current session data
@@ -205,7 +206,7 @@ export const TimerDisplay: React.FC = () => {
           {/* Edit Form */}
           {showEditForm && (
             <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-4">プロジェクト編集</h3>
+              <h3 className="text-lg font-medium mb-4">詳細編集</h3>
 
               {/* Project */}
               <div className="mb-4">
@@ -218,6 +219,22 @@ export const TimerDisplay: React.FC = () => {
                   onChange={(e) => draftActions.setProject(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="プロジェクト名を入力..."
+                />
+              </div>
+
+              {/* Start Time */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  開始時刻
+                </label>
+                <input
+                  type="datetime-local"
+                  value={session.startTime.toISOString().slice(0, 16)}
+                  onChange={(e) => {
+                    const newStartTime = new Date(e.target.value)
+                    updateSession({ startTime: newStartTime })
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -250,11 +267,44 @@ export const TimerDisplay: React.FC = () => {
           <div className="text-6xl md:text-7xl font-mono font-light text-gray-900 mb-2">
             {formattedTime}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 mb-4">
             開始: {session.startTime.toLocaleTimeString('ja-JP', {
               hour: '2-digit',
               minute: '2-digit'
             })}
+          </div>
+
+          {/* Work Time Adjustment */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-xs text-gray-400">作業時間調整:</span>
+            <button
+              onClick={() => adjustWorkTime(-5)}
+              className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+              title="5分減らす"
+            >
+              -5分
+            </button>
+            <button
+              onClick={() => adjustWorkTime(-1)}
+              className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+              title="1分減らす"
+            >
+              -1分
+            </button>
+            <button
+              onClick={() => adjustWorkTime(1)}
+              className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+              title="1分増やす"
+            >
+              +1分
+            </button>
+            <button
+              onClick={() => adjustWorkTime(5)}
+              className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+              title="5分増やす"
+            >
+              +5分
+            </button>
           </div>
         </div>
 

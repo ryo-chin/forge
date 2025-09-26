@@ -43,7 +43,7 @@ describe('TimerDisplay Component', () => {
     resume: mockResume,
     stop: mockStop,
     updateSession: mockUpdateSession,
-    adjustStartTime: vi.fn(),
+    adjustWorkTime: vi.fn(),
   }
 
   const mockDraftActions = {
@@ -394,5 +394,50 @@ describe('TimerDisplay Component', () => {
 
       expect(mockUpdateSession).toHaveBeenCalledWith({ taskName: 'Updated Task' })
     })
+  })
+
+  describe('Work Time Adjustment', () => {
+    it('should show work time adjustment buttons', () => {
+      render(<TimerDisplay />)
+
+      expect(screen.getByText('作業時間調整:')).toBeInTheDocument()
+      expect(screen.getByTitle('5分減らす')).toBeInTheDocument()
+      expect(screen.getByTitle('1分減らす')).toBeInTheDocument()
+      expect(screen.getByTitle('1分増やす')).toBeInTheDocument()
+      expect(screen.getByTitle('5分増やす')).toBeInTheDocument()
+    })
+
+    it('should adjust work time by -5 minutes', () => {
+      const mockAdjustWorkTime = vi.fn()
+      mockUseRunningSession.mockReturnValue({
+        ...mockRunningSessionData,
+        adjustWorkTime: mockAdjustWorkTime,
+      })
+
+      render(<TimerDisplay />)
+
+      const button = screen.getByTitle('5分減らす')
+      fireEvent.click(button)
+
+      // Should be called with -5 minutes
+      expect(mockAdjustWorkTime).toHaveBeenCalledWith(-5)
+    })
+
+    it('should adjust work time by +1 minute', () => {
+      const mockAdjustWorkTime = vi.fn()
+      mockUseRunningSession.mockReturnValue({
+        ...mockRunningSessionData,
+        adjustWorkTime: mockAdjustWorkTime,
+      })
+
+      render(<TimerDisplay />)
+
+      const button = screen.getByTitle('1分増やす')
+      fireEvent.click(button)
+
+      // Should be called with +1 minutes
+      expect(mockAdjustWorkTime).toHaveBeenCalledWith(1)
+    })
+
   })
 })

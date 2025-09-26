@@ -15,8 +15,8 @@ export interface RunningSessionActions {
   pause: () => void
   resume: () => void
   stop: () => void
-  updateSession: (updates: Partial<Pick<Session, 'taskName' | 'tags' | 'project' | 'skill'>>) => void
-  adjustStartTime: (newStartTime: Date) => void
+  updateSession: (updates: Partial<Pick<Session, 'taskName' | 'tags' | 'project' | 'skill' | 'startTime'>>) => void
+  adjustWorkTime: (minutes: number) => void
 }
 
 /**
@@ -75,6 +75,12 @@ export function useRunningSession(): RunningSessionData & RunningSessionActions 
     resume: resumeSession,
     stop: endSession,
     updateSession: updateCurrentSession,
-    adjustStartTime,
+    adjustWorkTime: (minutes: number) => {
+      if (currentSession) {
+        const adjustmentMs = minutes * 60 * 1000
+        const newStartTime = new Date(currentSession.startTime.getTime() - adjustmentMs)
+        adjustStartTime(newStartTime)
+      }
+    },
   }
 }

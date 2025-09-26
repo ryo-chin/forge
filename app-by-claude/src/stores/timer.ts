@@ -113,7 +113,21 @@ export const useTimerStore = create<TimerState & TimerActions>((set, get) => ({
     const { currentSession } = get()
     if (!currentSession) return
 
-    const updatedSession = { ...currentSession, startTime: newStartTime }
+    // Guard: Prevent setting start time in the future
+    const now = new Date()
+    const adjustedTime = newStartTime > now ? now : newStartTime
+
+    // Guard: Limit extreme adjustments (more than 12 hours)
+    const originalTime = currentSession.startTime
+    const maxAdjustment = 12 * 60 * 60 * 1000 // 12 hours in milliseconds
+    const timeDiff = Math.abs(adjustedTime.getTime() - originalTime.getTime())
+
+    if (timeDiff > maxAdjustment) {
+      console.warn('Start time adjustment rejected: exceeds 12-hour limit')
+      return
+    }
+
+    const updatedSession = { ...currentSession, startTime: adjustedTime }
 
     set((state) => ({
       currentSession: updatedSession,

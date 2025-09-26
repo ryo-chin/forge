@@ -23,7 +23,6 @@ describe('useRunningSession', () => {
   const mockEndSession = vi.fn()
   const mockUpdateCurrentSession = vi.fn()
   const mockUpdateElapsedTime = vi.fn()
-  const mockAdjustStartTime = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -38,7 +37,7 @@ describe('useRunningSession', () => {
       endSession: mockEndSession,
       updateCurrentSession: mockUpdateCurrentSession,
       updateElapsedTime: mockUpdateElapsedTime,
-      adjustStartTime: mockAdjustStartTime,
+      adjustWorkTime: vi.fn(),
       sessions: [],
       startSession: vi.fn(),
       deleteSession: vi.fn(),
@@ -77,7 +76,7 @@ describe('useRunningSession', () => {
         endSession: vi.fn(),
         updateCurrentSession: vi.fn(),
         updateElapsedTime: mockUpdateElapsedTime,
-        adjustStartTime: vi.fn(),
+        adjustWorkTime: vi.fn(),
         sessions: [],
         startSession: vi.fn(),
         deleteSession: vi.fn(),
@@ -111,7 +110,7 @@ describe('useRunningSession', () => {
         endSession: vi.fn(),
         updateCurrentSession: vi.fn(),
         updateElapsedTime: mockUpdateElapsedTime,
-        adjustStartTime: vi.fn(),
+        adjustWorkTime: vi.fn(),
         sessions: [],
         startSession: vi.fn(),
         deleteSession: vi.fn(),
@@ -135,7 +134,7 @@ describe('useRunningSession', () => {
         endSession: vi.fn(),
         updateCurrentSession: vi.fn(),
         updateElapsedTime: mockUpdateElapsedTime,
-        adjustStartTime: vi.fn(),
+        adjustWorkTime: vi.fn(),
         sessions: [],
         startSession: vi.fn(),
         deleteSession: vi.fn(),
@@ -192,16 +191,6 @@ describe('useRunningSession', () => {
       expect(mockUpdateCurrentSession).toHaveBeenCalledWith(updates)
     })
 
-    it('should call adjustStartTime action', () => {
-      const { result } = renderHook(() => useRunningSession())
-      const newStartTime = new Date('2025-01-01T09:00:00Z')
-
-      act(() => {
-        result.current.adjustStartTime(newStartTime)
-      })
-
-      expect(mockAdjustStartTime).toHaveBeenCalledWith(newStartTime)
-    })
   })
 
   describe('Time Formatting', () => {
@@ -225,7 +214,7 @@ describe('useRunningSession', () => {
           endSession: vi.fn(),
           updateCurrentSession: vi.fn(),
           updateElapsedTime: vi.fn(),
-          adjustStartTime: vi.fn(),
+          adjustWorkTime: vi.fn(),
           sessions: [],
           startSession: vi.fn(),
           deleteSession: vi.fn(),
@@ -270,7 +259,7 @@ describe('useRunningSession', () => {
         endSession: vi.fn(),
         updateCurrentSession: vi.fn(),
         updateElapsedTime: mockUpdateElapsedTime,
-        adjustStartTime: vi.fn(),
+        adjustWorkTime: vi.fn(),
         sessions: [],
         startSession: vi.fn(),
         deleteSession: vi.fn(),
@@ -300,7 +289,7 @@ describe('useRunningSession', () => {
         endSession: vi.fn(),
         updateCurrentSession: vi.fn(),
         updateElapsedTime: mockUpdateElapsedTime,
-        adjustStartTime: vi.fn(),
+        adjustWorkTime: vi.fn(),
         sessions: [],
         startSession: vi.fn(),
         deleteSession: vi.fn(),
