@@ -84,20 +84,14 @@ describe('TimeTrackerRoot', () => {
     fireEvent.change(screen.getByLabelText('タイトル'), {
       target: { value: 'ギター練習 - 集中' },
     });
-    fireEvent.change(screen.getByLabelText('タグ (カンマ区切り)'), {
-      target: { value: 'guitar, scales' },
-    });
     fireEvent.change(screen.getByLabelText('プロジェクト'), {
       target: { value: 'daily-practice' },
-    });
-    fireEvent.change(screen.getByLabelText('メモ'), {
-      target: { value: 'スケールを重点的に練習' },
     });
 
     fireEvent.click(screen.getByRole('button', { name: '停止' }));
 
     expect(screen.getByText('ギター練習 - 集中')).toBeInTheDocument();
     expect(screen.getByText('#daily-practice')).toBeInTheDocument();
-    expect(screen.getByText('#guitar #scales')).toBeInTheDocument();
+    expect(screen.queryByText('#guitar')).not.toBeInTheDocument();
   });
 });

@@ -17,11 +17,7 @@ export function TimeTrackerRoot() {
   const [inputValue, setInputValue] = useState('');
   const [sessions, setSessions] = useState<TimeTrackerSession[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [tagsInput, setTagsInput] = useState('');
   const [projectInput, setProjectInput] = useState('');
-  const [skillInput, setSkillInput] = useState('');
-  const [intensityInput, setIntensityInput] = useState('');
-  const [notesInput, setNotesInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { state, start, stop, updateDraft, adjustDuration } = useRunningSession();
@@ -44,17 +40,9 @@ export function TimeTrackerRoot() {
   useEffect(() => {
     if (state.status === 'running') {
       const draft = state.draft;
-      setTagsInput((draft.tags ?? []).join(', '));
       setProjectInput(draft.project ?? '');
-      setSkillInput(draft.skill ?? '');
-      setIntensityInput(draft.intensity ?? '');
-      setNotesInput(draft.notes ?? '');
     } else {
-      setTagsInput('');
       setProjectInput('');
-      setSkillInput('');
-      setIntensityInput('');
-      setNotesInput('');
       setIsDetailsOpen(false);
     }
     // 起動時と停止時のみ初期値を同期するため、status 以外の依存は意図的に無視する
@@ -125,11 +113,7 @@ export function TimeTrackerRoot() {
     },
     [adjustDuration],
   );
-  const draftTags = tagsInput;
   const draftProject = projectInput;
-  const draftSkill = skillInput;
-  const draftIntensity = intensityInput;
-  const draftNotes = notesInput;
 
   return (
     <main className="time-tracker">
@@ -222,24 +206,6 @@ export function TimeTrackerRoot() {
                 />
               </div>
               <div className="time-tracker__field">
-                <label htmlFor="detail-tags">タグ (カンマ区切り)</label>
-                <input
-                  id="detail-tags"
-                  type="text"
-                  value={draftTags}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setTagsInput(value);
-                    const tags = value
-                      .split(',')
-                      .map((tag) => tag.trim())
-                      .filter(Boolean);
-                    updateDraft({ tags });
-                  }}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="time-tracker__field">
                 <label htmlFor="detail-project">プロジェクト</label>
                 <input
                   id="detail-project"
@@ -251,56 +217,6 @@ export function TimeTrackerRoot() {
                     updateDraft({ project: value || undefined });
                   }}
                   autoComplete="off"
-                />
-              </div>
-              <div className="time-tracker__field">
-                <label htmlFor="detail-skill">スキル / カテゴリ</label>
-                <input
-                  id="detail-skill"
-                  type="text"
-                  value={draftSkill}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setSkillInput(value);
-                    updateDraft({ skill: value || undefined });
-                  }}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="time-tracker__field-group">
-                <div className="time-tracker__field">
-                  <label htmlFor="detail-intensity">強度</label>
-                  <select
-                    id="detail-intensity"
-                    value={draftIntensity}
-                    onChange={(event) => {
-                      const value = event.target.value as
-                        | 'low'
-                        | 'medium'
-                        | 'high'
-                        | '';
-                      setIntensityInput(value);
-                      updateDraft({ intensity: value || undefined });
-                    }}
-                  >
-                    <option value="">--</option>
-                    <option value="low">low</option>
-                    <option value="medium">medium</option>
-                    <option value="high">high</option>
-                  </select>
-                </div>
-              </div>
-              <div className="time-tracker__field">
-                <label htmlFor="detail-notes">メモ</label>
-                <textarea
-                  id="detail-notes"
-                  value={draftNotes}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setNotesInput(value);
-                    updateDraft({ notes: value || undefined });
-                  }}
-                  rows={3}
                 />
               </div>
             </form>
