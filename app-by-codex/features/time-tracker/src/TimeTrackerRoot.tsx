@@ -165,6 +165,14 @@ export function TimeTrackerRoot() {
   const [sessions, setSessions] = useState<TimeTrackerSession[]>(
     () => initialSessionsRef.current ?? [],
   );
+  const [composerProject, setComposerProject] = useState(
+    () =>
+      initialRunningStateRef.current?.status === 'running'
+        ? initialRunningStateRef.current.draft.project ?? ''
+        : '',
+  );
+  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+  const [projectQuery, setProjectQuery] = useState('');
   const [undoState, setUndoState] = useState<
     { session: TimeTrackerSession; index: number } | null
   >(null);
@@ -174,6 +182,10 @@ export function TimeTrackerRoot() {
   const [modalStartInput, setModalStartInput] = useState('');
   const [modalEndInput, setModalEndInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const projectTriggerRef = useRef<HTMLButtonElement>(null);
+  const projectMenuRef = useRef<HTMLDivElement>(null);
+  const projectSearchRef = useRef<HTMLInputElement>(null);
+  const pendingProjectRef = useRef<string | null>(null);
 
   const { state, start, stop, updateDraft, adjustDuration } = useRunningSession({
     initialState: initialRunningStateRef.current ?? undefined,
@@ -181,6 +193,7 @@ export function TimeTrackerRoot() {
   const isRunning = state.status === 'running';
   const elapsedSeconds = state.elapsedSeconds;
   const runningDraftTitle = state.status === 'running' ? state.draft.title : null;
+  const runningProject = state.status === 'running' ? state.draft.project ?? '' : '';
 
   const closeModal = useCallback(() => {
     setModalState(null);
@@ -207,6 +220,41 @@ export function TimeTrackerRoot() {
       closeModal();
     }
   }, [modalState, state.status, closeModal]);
+
+  useEffect(() => {
+    if (!isProjectMenuOpen) return;
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        !projectMenuRef.current?.contains(target) &&
+        !projectTriggerRef.current?.contains(target)
+      ) {
+        setIsProjectMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsProjectMenuOpen(false);
+        projectTriggerRef.current?.focus();
+      }
+    };
+    window.addEventListener('mousedown', handleClick);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isProjectMenuOpen]);
+
+  useEffect(() => {
+    if (!isProjectMenuOpen) return;
+    setProjectQuery(composerProject);
+    const frame = window.requestAnimationFrame(() => {
+      projectSearchRef.current?.focus();
+      projectSearchRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [composerProject, isProjectMenuOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -243,6 +291,19 @@ export function TimeTrackerRoot() {
     }
   }, [state]);
 
+  useEffect(() => {
+    if (state.status === 'running') {
+      if (pendingProjectRef.current !== null) {
+        const value = pendingProjectRef.current.trim();
+        pendingProjectRef.current = null;
+        updateDraft({ project: value || undefined });
+        setComposerProject(value);
+      } else {
+        setComposerProject(runningProject);
+      }
+    }
+  }, [runningProject, state.status, updateDraft]);
+
   const canStart = useMemo(
     () => inputValue.trim().length > 0 && !isRunning,
     [inputValue, isRunning],
@@ -250,12 +311,14 @@ export function TimeTrackerRoot() {
 
   const handleStart = useCallback(() => {
     if (!canStart) return;
+    pendingProjectRef.current = composerProject;
+    setIsProjectMenuOpen(false);
     const started = start(inputValue);
     if (started) {
       setInputValue('');
     }
     setUndoState(null);
-  }, [canStart, inputValue, start]);
+  }, [canStart, composerProject, inputValue, start]);
 
   const handleStop = useCallback(() => {
     const titleForInput = runningDraftTitle;
@@ -265,6 +328,7 @@ export function TimeTrackerRoot() {
       setInputValue(titleForInput);
     }
     setSessions((prev) => [session, ...prev]);
+    setComposerProject(session.project ?? '');
     setUndoState(null);
   }, [runningDraftTitle, stop]);
 
@@ -300,6 +364,7 @@ export function TimeTrackerRoot() {
   const primaryLabel = isRunning ? '停止' : '開始';
   const primaryDisabled = !isRunning && !canStart;
   const timerLabel = formatTimer(elapsedSeconds);
+  const projectButtonLabel = composerProject || 'プロジェクト';
 
   const handleNudge = useCallback(
     (minutes: number) => {
@@ -372,19 +437,20 @@ export function TimeTrackerRoot() {
       const trimmedProject = modalProjectInput.trim();
 
       if (modalState.type === 'running') {
-        if (state.status !== 'running') {
-          closeModal();
-          return;
-        }
-        updateDraft({
-          title: trimmedTitle,
-          project: trimmedProject || undefined,
-        });
-        const parsedStart = parseDateTimeLocal(modalStartInput);
-        if (parsedStart !== null) {
-          const nowMs = Date.now();
-          const clampedStart = Math.min(parsedStart, nowMs);
-          const newDuration = Math.max(
+      if (state.status !== 'running') {
+        closeModal();
+        return;
+      }
+      updateDraft({
+        title: trimmedTitle,
+        project: trimmedProject || undefined,
+      });
+      setComposerProject(trimmedProject);
+      const parsedStart = parseDateTimeLocal(modalStartInput);
+      if (parsedStart !== null) {
+        const nowMs = Date.now();
+        const clampedStart = Math.min(parsedStart, nowMs);
+        const newDuration = Math.max(
             0,
             Math.floor((nowMs - clampedStart) / 1000),
           );
@@ -457,6 +523,69 @@ export function TimeTrackerRoot() {
     return false;
   }, [modalEndInput, modalStartInput, modalState, modalTitleInput]);
 
+  const projectSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    const add = (value?: string | null) => {
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+    };
+    if (composerProject) {
+      add(composerProject);
+    }
+    add(runningProject);
+    sessions.forEach((session) => add(session.project));
+    return Array.from(seen).slice(0, 12);
+  }, [composerProject, runningProject, sessions]);
+
+  const filteredProjectSuggestions = useMemo(() => {
+    const query = projectQuery.trim().toLowerCase();
+    if (!query) {
+      return projectSuggestions;
+    }
+    return projectSuggestions.filter((project) =>
+      project.toLowerCase().includes(query),
+    );
+  }, [projectQuery, projectSuggestions]);
+
+  const trimmedProjectQuery = projectQuery.trim();
+
+  const applyProject = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      setComposerProject(trimmed);
+      setProjectQuery(trimmed);
+      if (state.status === 'running') {
+        updateDraft({ project: trimmed || undefined });
+      }
+      setIsProjectMenuOpen(false);
+      projectTriggerRef.current?.focus();
+    },
+    [state.status, updateDraft],
+  );
+
+  const handleProjectSubmit = useCallback(() => {
+    applyProject(trimmedProjectQuery);
+  }, [applyProject, trimmedProjectQuery]);
+
+  const handleProjectInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (event.metaKey || event.ctrlKey) {
+          handleProjectSubmit();
+          return;
+        }
+        if (filteredProjectSuggestions.length > 0) {
+          applyProject(filteredProjectSuggestions[0]);
+        } else {
+          handleProjectSubmit();
+        }
+      }
+    },
+    [applyProject, filteredProjectSuggestions, handleProjectSubmit],
+  );
+
   return (
     <main className="time-tracker">
       <div className="time-tracker__panel">
@@ -466,6 +595,87 @@ export function TimeTrackerRoot() {
         </header>
 
         <div className="time-tracker__composer">
+          <div className="time-tracker__project-control">
+            <button
+              ref={projectTriggerRef}
+              type="button"
+              className="time-tracker__project-button"
+              onClick={() => setIsProjectMenuOpen((prev) => !prev)}
+              aria-haspopup="dialog"
+              aria-expanded={isProjectMenuOpen}
+              aria-controls="time-tracker-project-menu"
+              title="プロジェクトを選択"
+              aria-label={
+                composerProject
+                  ? `プロジェクト: ${composerProject}`
+                  : 'プロジェクトを選択'
+              }
+            >
+              <span className="time-tracker__project-icon" aria-hidden="true">
+                ＃
+              </span>
+              <span className="time-tracker__project-label">{projectButtonLabel}</span>
+            </button>
+            {isProjectMenuOpen ? (
+              <div
+                id="time-tracker-project-menu"
+                className="time-tracker__project-popover"
+                ref={projectMenuRef}
+                role="dialog"
+                aria-label="プロジェクトを選択"
+              >
+                <label className="time-tracker__sr-only" htmlFor="project-search">
+                  プロジェクトを検索・設定
+                </label>
+                <div className="time-tracker__project-search">
+                  <span className="time-tracker__project-search-icon" aria-hidden="true">
+                    🔍
+                  </span>
+                  <input
+                    id="project-search"
+                    ref={projectSearchRef}
+                    className="time-tracker__project-input"
+                    type="text"
+                    placeholder="プロジェクト、タスク、クライアントを検索"
+                    value={projectQuery}
+                    onChange={(event) => setProjectQuery(event.target.value)}
+                    onKeyDown={handleProjectInputKeyDown}
+                    autoComplete="off"
+                  />
+                </div>
+                {filteredProjectSuggestions.length > 0 ? (
+                  <>
+                    <p className="time-tracker__project-section">最近使ったプロジェクト</p>
+                    <ul className="time-tracker__project-list">
+                      {filteredProjectSuggestions.map((project) => (
+                        <li key={project}>
+                          <button
+                            type="button"
+                            onClick={() => applyProject(project)}
+                            className="time-tracker__project-list-item"
+                          >
+                            #{project}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <div className="time-tracker__project-empty">
+                    <p>一致するプロジェクトがありません</p>
+                    <p className="time-tracker__project-hint">⌘Enter で新しいプロジェクトを作成できます</p>
+                  </div>
+                )}
+                <div className="time-tracker__project-actions">
+                  <button type="button" onClick={handleProjectSubmit}>
+                    {trimmedProjectQuery.length > 0
+                      ? `＋ 「${trimmedProjectQuery}」を作成`
+                      : 'プロジェクトを未設定にする'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
           <input
             ref={inputRef}
             className="time-tracker__input"

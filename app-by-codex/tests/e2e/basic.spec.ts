@@ -34,7 +34,7 @@ test('履歴のモーダル編集でタイトルを更新できる', async ({ pa
 
   await page.getByRole('button', { name: '編集', exact: true }).click();
   await page.getByLabel('タイトル').fill('アップデート済みタイトル');
-  await page.getByLabel('プロジェクト').fill('focus');
+  await page.getByRole('textbox', { name: 'プロジェクト', exact: true }).fill('focus');
   await page.getByRole('button', { name: '保存' }).click();
 
   await expect(page.getByText('アップデート済みタイトル')).toBeVisible();

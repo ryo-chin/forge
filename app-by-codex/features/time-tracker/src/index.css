@@ -10,6 +10,17 @@
     sans-serif;
 }
 
+.time-tracker__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+}
+
 .time-tracker__panel {
   width: 100%;
   max-width: 760px;
@@ -43,6 +54,159 @@
   background: #ffffff;
   padding: 0.75rem 0.75rem 0.75rem 1.5rem;
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+}
+
+.time-tracker__project-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.time-tracker__project-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 9999px;
+  background: #eef1f6;
+  color: #475569;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.time-tracker__project-button:hover {
+  background: #e2e7f0;
+  transform: translateY(-1px);
+}
+
+.time-tracker__project-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.time-tracker__project-icon {
+  font-weight: 600;
+}
+
+.time-tracker__project-popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 10;
+  width: 260px;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+
+.time-tracker__project-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.time-tracker__project-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.time-tracker__project-input {
+  width: 100%;
+  border: 1px solid #d0d7e2;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #f9fafc;
+}
+
+.time-tracker__project-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+.time-tracker__project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.time-tracker__project-section {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  text-align: left;
+}
+
+.time-tracker__project-list-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0.75rem;
+  background: #eef1f6;
+  color: #1f2937;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.time-tracker__project-list-item:hover,
+.time-tracker__project-list-item:focus {
+  background: #e2e7f0;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.time-tracker__project-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  color: #94a3b8;
+  text-align: left;
+}
+
+.time-tracker__project-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #a1aec6;
+}
+
+.time-tracker__project-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.time-tracker__project-actions button {
+  border: none;
+  border-radius: 0.75rem;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.time-tracker__project-actions button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .time-tracker__input {
@@ -159,16 +323,6 @@
 .time-tracker__details-toggle:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.time-tracker__details-form {
-  display: grid;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 1.5rem;
-  background: #ffffff;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-  text-align: left;
 }
 
 .time-tracker__nudges {
@@ -456,10 +610,6 @@
   .time-tracker__hints {
     flex-direction: column;
     gap: 0.4rem;
-  }
-
-  .time-tracker__details-form {
-    padding: 1rem;
   }
 
   .time-tracker__nudges {

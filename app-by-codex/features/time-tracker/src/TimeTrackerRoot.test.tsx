@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { TimeTrackerRoot } from './TimeTrackerRoot';
 
@@ -110,7 +110,8 @@ describe('TimeTrackerRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: '停止' }));
 
     expect(screen.getByText('ギター練習 - 集中')).toBeInTheDocument();
-    expect(screen.getByText('#daily-practice')).toBeInTheDocument();
+    const history = screen.getByRole('region', { name: '最近の記録' });
+    expect(within(history).getByText('#daily-practice')).toBeInTheDocument();
   });
 
   it('履歴モーダルでタイトルと時刻を再編集できる', () => {
@@ -145,6 +146,25 @@ describe('TimeTrackerRoot', () => {
     expect(screen.getByText('基礎トレーニング')).toBeInTheDocument();
     expect(screen.getByText('#updated-project')).toBeInTheDocument();
     expect(screen.getByText('05:00')).toBeInTheDocument();
+  });
+
+  it('プロジェクトメニューで選択した値が開始時に適用される', () => {
+    render(<TimeTrackerRoot />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを選択' }));
+    const projectInput = screen.getByLabelText('プロジェクトを検索・設定');
+    fireEvent.change(projectInput, { target: { value: 'daily-practice' } });
+    fireEvent.click(screen.getByRole('button', { name: '＋ 「daily-practice」を作成' }));
+
+    expect(screen.getByRole('button', { name: 'プロジェクト: daily-practice' })).toBeInTheDocument();
+
+    const taskInput = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(taskInput, { target: { value: 'コード練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+    fireEvent.click(screen.getByRole('button', { name: '停止' }));
+
+    const history = screen.getByRole('region', { name: '最近の記録' });
+    expect(within(history).getByText('#daily-practice')).toBeInTheDocument();
   });
 
   it('履歴の削除はUndoで元に戻せる', () => {
