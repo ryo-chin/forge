@@ -17,6 +17,10 @@ export type RunningSessionAction =
       type: 'UPDATE_DRAFT';
       payload: Partial<Omit<SessionDraft, 'startedAt'>>;
     }
+  | {
+      type: 'ADJUST_DURATION';
+      payload: { deltaSeconds: number; now: number };
+    }
   | { type: 'RESET' };
 
 export const initialRunningSessionState: RunningSessionState = {
@@ -67,6 +71,30 @@ export const runningSessionReducer = (
       return {
         ...state,
         draft: nextDraft,
+      };
+    }
+    case 'ADJUST_DURATION': {
+      if (state.status !== 'running') return state;
+      const { deltaSeconds, now } = action.payload;
+      if (deltaSeconds === 0) {
+        return state;
+      }
+      const baseDuration = Math.max(
+        0,
+        Math.floor((now - state.draft.startedAt) / 1000),
+      );
+      const adjustedDuration = Math.max(0, baseDuration + deltaSeconds);
+      if (adjustedDuration === baseDuration) {
+        return state;
+      }
+      const adjustedStartedAt = now - adjustedDuration * 1000;
+      return {
+        status: 'running',
+        draft: {
+          ...state.draft,
+          startedAt: adjustedStartedAt,
+        },
+        elapsedSeconds: adjustedDuration,
       };
     }
     case 'RESET':

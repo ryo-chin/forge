@@ -171,6 +171,30 @@
   text-align: left;
 }
 
+.time-tracker__nudges {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.time-tracker__nudges button {
+  border: none;
+  border-radius: 9999px;
+  background: #eef1f6;
+  color: #4b5563;
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.time-tracker__nudges button:hover {
+  background: #e2e7f0;
+  transform: translateY(-1px);
+}
+
 .time-tracker__field {
   display: flex;
   flex-direction: column;
@@ -298,5 +322,9 @@
 
   .time-tracker__details-form {
     padding: 1rem;
+  }
+
+  .time-tracker__nudges {
+    flex-wrap: wrap;
   }
 }

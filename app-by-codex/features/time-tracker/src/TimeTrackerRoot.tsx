@@ -24,7 +24,7 @@ export function TimeTrackerRoot() {
   const [notesInput, setNotesInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { state, start, stop, updateDraft } = useRunningSession();
+  const { state, start, stop, updateDraft, adjustDuration } = useRunningSession();
   const isRunning = state.status === 'running';
   const elapsedSeconds = state.elapsedSeconds;
   const runningDraftTitle = state.status === 'running' ? state.draft.title : null;
@@ -117,6 +117,14 @@ export function TimeTrackerRoot() {
   const primaryLabel = isRunning ? '停止' : '開始';
   const primaryDisabled = !isRunning && !canStart;
   const timerLabel = formatTimer(elapsedSeconds);
+
+  const handleNudge = useCallback(
+    (minutes: number) => {
+      const deltaSeconds = minutes * 60;
+      adjustDuration(deltaSeconds);
+    },
+    [adjustDuration],
+  );
   const draftTags = tagsInput;
   const draftProject = projectInput;
   const draftSkill = skillInput;
@@ -174,6 +182,23 @@ export function TimeTrackerRoot() {
         ) : null}
 
         <div className="time-tracker__details">
+          {isRunning ? (
+            <div className="time-tracker__nudges" role="group" aria-label="作業時間の調整">
+              <button type="button" onClick={() => handleNudge(-10)}>
+                -10分
+              </button>
+              <button type="button" onClick={() => handleNudge(-5)}>
+                -5分
+              </button>
+              <button type="button" onClick={() => handleNudge(5)}>
+                +5分
+              </button>
+              <button type="button" onClick={() => handleNudge(10)}>
+                +10分
+              </button>
+            </div>
+          ) : null}
+
           <button
             type="button"
             className="time-tracker__details-toggle"

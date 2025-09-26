@@ -46,6 +46,31 @@ describe('TimeTrackerRoot', () => {
     expect(screen.queryByText('計測中')).not.toBeInTheDocument();
   });
 
+  it('クイックナッジで作業時間を加算できる', () => {
+    render(<TimeTrackerRoot />);
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: 'ギター練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '+5分' }));
+
+    expect(screen.getByText('05:00')).toBeInTheDocument();
+  });
+
+  it('クイックナッジで作業時間を減算できるが0未満にはならない', () => {
+    render(<TimeTrackerRoot />);
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: 'ギター練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '+5分' }));
+    fireEvent.click(screen.getByRole('button', { name: '-5分' }));
+
+    expect(screen.getByText('00:00')).toBeInTheDocument();
+  });
+
   it('詳細編集で入力した内容が停止後の履歴に反映される', () => {
     render(<TimeTrackerRoot />);
 

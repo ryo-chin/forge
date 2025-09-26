@@ -50,6 +50,81 @@ describe('runningSessionReducer', () => {
     const resetState = runningSessionReducer(runningState, { type: 'RESET' });
     expect(resetState).toEqual(initialRunningSessionState);
   });
+
+  it('ADJUST_DURATION で作業時間を加算できる', () => {
+    const runningState = runningSessionReducer(initialRunningSessionState, {
+      type: 'START',
+      payload: { title: 'ギター練習', startedAt: START_TIME },
+    });
+
+    const adjustedState = runningSessionReducer(runningState, {
+      type: 'ADJUST_DURATION',
+      payload: { deltaSeconds: 5 * 60, now: START_TIME + 60_000 },
+    });
+
+    if (adjustedState.status !== 'running') {
+      throw new Error('ランニング状態になりませんでした');
+    }
+
+    expect(adjustedState.elapsedSeconds).toBe(6 * 60);
+    expect(adjustedState.draft.startedAt).toBe(START_TIME - 5 * 60 * 1000);
+  });
+
+  it('ADJUST_DURATION は連続加算に追従する', () => {
+    const runningState = runningSessionReducer(initialRunningSessionState, {
+      type: 'START',
+      payload: { title: 'ギター練習', startedAt: START_TIME },
+    });
+
+    const afterFirstAdjust = runningSessionReducer(runningState, {
+      type: 'ADJUST_DURATION',
+      payload: { deltaSeconds: 5 * 60, now: START_TIME + 60_000 },
+    });
+
+    if (afterFirstAdjust.status !== 'running') {
+      throw new Error('ランニング状態になりませんでした');
+    }
+
+    const afterSecondAdjust = runningSessionReducer(afterFirstAdjust, {
+      type: 'ADJUST_DURATION',
+      payload: { deltaSeconds: 5 * 60, now: START_TIME + 180_000 },
+    });
+
+    if (afterSecondAdjust.status !== 'running') {
+      throw new Error('ランニング状態になりませんでした');
+    }
+
+    expect(afterSecondAdjust.elapsedSeconds).toBe(13 * 60);
+    expect(afterSecondAdjust.draft.startedAt).toBe(START_TIME - 10 * 60 * 1000);
+  });
+
+  it('ADJUST_DURATION で作業時間を減算できるが0未満にはならない', () => {
+    const runningState = runningSessionReducer(initialRunningSessionState, {
+      type: 'START',
+      payload: { title: 'ギター練習', startedAt: START_TIME },
+    });
+
+    const afterIncrease = runningSessionReducer(runningState, {
+      type: 'ADJUST_DURATION',
+      payload: { deltaSeconds: 5 * 60, now: START_TIME + 60_000 },
+    });
+
+    if (afterIncrease.status !== 'running') {
+      throw new Error('ランニング状態になりませんでした');
+    }
+
+    const afterDecrease = runningSessionReducer(afterIncrease, {
+      type: 'ADJUST_DURATION',
+      payload: { deltaSeconds: -10 * 60, now: START_TIME + 180_000 },
+    });
+
+    if (afterDecrease.status !== 'running') {
+      throw new Error('ランニング状態になりませんでした');
+    }
+
+    expect(afterDecrease.elapsedSeconds).toBe(0);
+    expect(afterDecrease.draft.startedAt).toBe(START_TIME + 180_000);
+  });
 });
 
 describe('createSessionFromDraft', () => {

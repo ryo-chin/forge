@@ -18,6 +18,7 @@ export type RunningSessionApi = {
   start: (title: string) => boolean;
   stop: () => TimeTrackerSession | null;
   updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
+  adjustDuration: (deltaSeconds: number) => void;
   reset: () => void;
 };
 
@@ -74,6 +75,18 @@ export const useRunningSession = (
     [state.status],
   );
 
+  const adjustDuration = useCallback(
+    (deltaSeconds: number) => {
+      if (state.status !== 'running') return;
+      if (deltaSeconds === 0) return;
+      dispatch({
+        type: 'ADJUST_DURATION',
+        payload: { deltaSeconds, now: now() },
+      });
+    },
+    [now, state.status],
+  );
+
   const reset = useCallback(() => {
     dispatch({ type: 'RESET' });
   }, []);
@@ -83,6 +96,7 @@ export const useRunningSession = (
     start,
     stop,
     updateDraft,
+    adjustDuration,
     reset,
   };
 };
