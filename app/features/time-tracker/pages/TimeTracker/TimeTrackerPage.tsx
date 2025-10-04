@@ -1,0 +1,462 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import '../../index.css';
+import { useTimeTrackerStorage } from '@features/time-tracker/hooks/data/useTimeTrackerStorage';
+import { formatDateTimeLocal } from '@lib/date';
+import { useRunningSession } from '@features/time-tracker';
+import type { TimeTrackerSession } from '../../domain/types';
+import { Composer } from '@features/time-tracker/components/Composer';
+import { HistoryList } from '@features/time-tracker/components/HistoryList';
+import { EditorModal } from '@features/time-tracker/components/EditorModal';
+import {
+  isModalSaveDisabled,
+  buildUpdatedSession,
+  calculateDurationDelta,
+} from './logic';
+import { localDateTimeToMs } from '@lib/time.ts';
+
+const RUNNING_TIMER_ID = 'time-tracker-running-timer';
+
+type ModalState =
+  | { type: 'running' }
+  | { type: 'history'; sessionId: string }
+  | null;
+
+type UndoState = {
+  session: TimeTrackerSession;
+  index: number;
+} | null;
+
+/** 履歴編集開始時の元データ（キャンセル時に復元） */
+type HistoryEditSnapshot = TimeTrackerSession | null;
+
+export function TimeTrackerPage() {
+  // storage hooks
+  const { initialSessions, initialRunningState, persistSessions } =
+    useTimeTrackerStorage();
+
+  // 記録済みセッション
+  const [sessions, setSessions] = useState<TimeTrackerSession[]>(
+    () => initialSessions,
+  );
+
+  // 「削除→元に戻す」用
+  const [undoState, setUndoState] = useState<UndoState>(null);
+
+  // モーダルの種類
+  const [modalState, setModalState] = useState<ModalState>(null);
+
+  // 履歴編集の元スナップショット（キャンセルで戻す）
+  const [historyEditSnapshot, setHistoryEditSnapshot] =
+    useState<HistoryEditSnapshot>(null);
+
+  // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
+  // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
+  const initialComposerProject =
+    initialRunningState?.status === 'running'
+      ? (initialRunningState.draft.project ?? '')
+      : '';
+  const [composerProject, setComposerProject] = useState(
+    initialComposerProject,
+  );
+
+  // 記録中セッション
+  const { state, start, stop, updateDraft, adjustDuration } = useRunningSession(
+    { initialState: initialRunningState ?? undefined },
+  );
+  const isRunning = state.status === 'running';
+  const elapsedSeconds = state.elapsedSeconds;
+  const runningDraftTitle = isRunning ? state.draft.title : null;
+
+  // ==== モーダルの活性可否（フォームstateを廃し、現在のドメイン値から判定） ====
+  const modalComputed = useMemo(() => {
+    if (!modalState) {
+      return {
+        title: '',
+        project: '',
+        startTime: '',
+        endTime: '',
+        disabled: true,
+      };
+    }
+    if (modalState.type === 'running') {
+      if (!isRunning) {
+        return {
+          title: '',
+          project: '',
+          startTime: '',
+          endTime: '',
+          disabled: true,
+        };
+      }
+      const title = state.draft.title ?? '';
+      const project = state.draft.project ?? '';
+      const startTime = formatDateTimeLocal(state.draft.startedAt);
+      const endTime = ''; // 走行中は未設定
+      return {
+        title,
+        project,
+        startTime,
+        endTime,
+        disabled: isModalSaveDisabled(modalState, title, startTime, endTime),
+      };
+    }
+    // history
+    const target = sessions.find((s) => s.id === modalState.sessionId);
+    if (!target) {
+      return {
+        title: '',
+        project: '',
+        startTime: '',
+        endTime: '',
+        disabled: true,
+      };
+    }
+    const title = target.title ?? '';
+    const project = target.project ?? '';
+    const startTime = formatDateTimeLocal(target.startedAt);
+    const endTime = formatDateTimeLocal(target.endedAt);
+    return {
+      title,
+      project,
+      startTime,
+      endTime,
+      disabled: isModalSaveDisabled(modalState, title, startTime, endTime),
+    };
+  }, [
+    isRunning,
+    modalState,
+    sessions,
+    state.draft?.project,
+    state.draft?.startedAt,
+    state.draft?.title,
+  ]);
+
+  // ==== Composer handlers ====
+  const handleComposerProjectChange = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      setComposerProject(trimmed); // 非走行時は次回開始のためのUI表示
+      if (isRunning) {
+        updateDraft({ project: trimmed || undefined });
+      }
+    },
+    [isRunning, updateDraft],
+  );
+
+  const handleComposerStart = useCallback(
+    (title: string) => {
+      const trimmed = title.trim();
+      if (!trimmed) return false;
+      const started = start(trimmed);
+      if (started) {
+        setUndoState(null);
+      }
+      return started;
+    },
+    [start],
+  );
+
+  const handleComposerStop = useCallback(() => {
+    const previousTitle = runningDraftTitle ?? '';
+    const session = stop();
+    if (!session) {
+      return {
+        nextInputValue: previousTitle,
+        nextProject: composerProject,
+      };
+    }
+    setSessions((prev) => {
+      const next = [session, ...prev];
+      persistSessions(next);
+      return next;
+    });
+    const nextProject = session.project ?? '';
+    setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
+    setUndoState(null);
+    if (modalState?.type === 'running') {
+      setModalState(null);
+    }
+    return {
+      nextInputValue: session.title,
+      nextProject,
+    };
+  }, [composerProject, runningDraftTitle, stop, persistSessions, modalState]);
+
+  const handleComposerAdjustDuration = useCallback(
+    (deltaSeconds: number) => {
+      adjustDuration(deltaSeconds);
+    },
+    [adjustDuration],
+  );
+
+  // ==== モーダル open/close ====
+  const openRunningEditor = useCallback(() => {
+    if (state.status !== 'running') return;
+    setModalState({ type: 'running' });
+  }, [state.status]);
+
+  const handleEditHistory = useCallback(
+    (sessionId: string) => {
+      const target = sessions.find((session) => session.id === sessionId);
+      if (!target) return;
+      // キャンセルで戻せるように元を保存
+      setHistoryEditSnapshot(target);
+      setModalState({ type: 'history', sessionId: target.id });
+    },
+    [sessions],
+  );
+
+  const closeModal = useCallback(() => {
+    // 履歴編集のキャンセル時は元スナップショットに戻す
+    if (modalState?.type === 'history' && historyEditSnapshot) {
+      setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === historyEditSnapshot.id);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = historyEditSnapshot;
+        persistSessions(next);
+        return next;
+      });
+    }
+    setHistoryEditSnapshot(null);
+    setModalState(null);
+  }, [historyEditSnapshot, modalState, persistSessions]);
+
+  // ==== 履歴の削除/Undo ====
+  const handleDeleteHistory = useCallback(
+    (sessionId: string) => {
+      setSessions((prev) => {
+        const index = prev.findIndex((session) => session.id === sessionId);
+        if (index === -1) return prev;
+        const next = [...prev];
+        const [removed] = next.splice(index, 1);
+        setUndoState({ session: removed, index });
+        persistSessions(next);
+        return next;
+      });
+      if (
+        modalState?.type === 'history' &&
+        modalState.sessionId === sessionId
+      ) {
+        setHistoryEditSnapshot(null);
+        setModalState(null);
+      }
+    },
+    [modalState, persistSessions],
+  );
+
+  const handleUndo = useCallback(() => {
+    setUndoState((current) => {
+      if (!current) return null;
+      setSessions((prev) => {
+        const next = [...prev];
+        const insertIndex = Math.min(current.index, next.length);
+        next.splice(insertIndex, 0, current.session);
+        persistSessions(next);
+        return next;
+      });
+      return null;
+    });
+  }, [persistSessions]);
+
+  // ==== モーダル保存 ====
+  const handleModalSave = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!modalState) return;
+
+      if (modalState.type === 'running') {
+        // 走行中は draft を直接編集済みなので保存時は閉じるだけ
+        setModalState(null);
+        return;
+      }
+
+      // history: 既に sessions を直接パッチしているので、buildUpdatedSession で最終整形して保存
+      const target = sessions.find((s) => s.id === modalState.sessionId);
+      if (!target) {
+        setHistoryEditSnapshot(null);
+        setModalState(null);
+        return;
+      }
+
+      const next = buildUpdatedSession(target, {
+        title: target.title,
+        project: target.project ?? '',
+        startTime: formatDateTimeLocal(target.startedAt),
+        endTime: formatDateTimeLocal(target.endedAt),
+      });
+      if (!next) return;
+
+      setSessions((prev) => {
+        const replaced = prev.map((s) => (s.id === next.id ? next : s));
+        persistSessions(replaced);
+        return replaced;
+      });
+      setHistoryEditSnapshot(null);
+      setModalState(null);
+    },
+    [modalState, sessions, persistSessions],
+  );
+
+  // ==== モーダルの onChange：ドメインを直接パッチ ====
+  const onModalTitleChange = useCallback(
+    (value: string) => {
+      if (!modalState) return;
+      const title = value.trim();
+      if (modalState.type === 'running') {
+        if (isRunning) updateDraft({ title });
+        return;
+      }
+      // history
+      setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], title };
+        // 保存は Save 時にまとめて（ここでは persist しない or しても良い）
+        return next;
+      });
+    },
+    [isRunning, modalState, updateDraft],
+  );
+
+  const onModalProjectChange = useCallback(
+    (value: string) => {
+      if (!modalState) return;
+      const trimmed = value.trim();
+      const project = trimmed ? trimmed : undefined;
+
+      if (modalState.type === 'running') {
+        if (isRunning) updateDraft({ project });
+        return;
+      }
+      // history
+      setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], project };
+        return next;
+      });
+    },
+    [isRunning, modalState, updateDraft],
+  );
+
+  const onModalStartTimeChange = useCallback(
+    (value: string) => {
+      if (!modalState) return;
+      if (modalState.type === 'running') {
+        if (!isRunning) return;
+        // 入力された開始時刻が現在のelapsedとの差分だけズレるように調整
+        const deltaSeconds = calculateDurationDelta(elapsedSeconds, value);
+        if (deltaSeconds !== 0) {
+          adjustDuration(deltaSeconds);
+        }
+        return;
+      }
+      // history
+      const ms = localDateTimeToMs(value);
+      setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], startedAt: ms };
+        return next;
+      });
+    },
+    [adjustDuration, elapsedSeconds, isRunning, modalState],
+  );
+
+  const onModalEndTimeChange = useCallback(
+    (value: string) => {
+      if (!modalState || modalState.type !== 'history') return;
+      const ms = localDateTimeToMs(value);
+      setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], endedAt: ms };
+        return next;
+      });
+    },
+    [modalState],
+  );
+
+  // ==== プロジェクトの同期（走行中だけdraftへ反映） ====
+  useEffect(() => {
+    if (!isRunning) return;
+    const project = composerProject.trim();
+    updateDraft({ project: project || undefined });
+  }, [isRunning, composerProject, updateDraft]);
+
+  // ==== モーダルのフォーカス復元 ====
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (modalState) {
+      const previousFocus = document.activeElement as HTMLElement | null;
+      return () => {
+        if (previousFocus && typeof previousFocus.focus === 'function') {
+          previousFocus.focus();
+        }
+      };
+    }
+  }, [modalState]);
+
+  return (
+    <main className="time-tracker">
+      <div className="time-tracker__panel">
+        <header className="time-tracker__header">
+          <h1>Time Tracker</h1>
+          <p>何をやりますか？</p>
+        </header>
+
+        <Composer
+          sessions={sessions}
+          project={composerProject}
+          onProjectChange={handleComposerProjectChange}
+          isRunning={isRunning}
+          runningDraftTitle={runningDraftTitle}
+          elapsedSeconds={elapsedSeconds}
+          onStart={handleComposerStart}
+          onStop={handleComposerStop}
+          onAdjustDuration={handleComposerAdjustDuration}
+          timerId={RUNNING_TIMER_ID}
+          onOpenRunningEditor={openRunningEditor}
+          isRunningEditorOpen={modalState?.type === 'running'}
+        />
+
+        <HistoryList
+          sessions={sessions}
+          onEdit={handleEditHistory}
+          onDelete={handleDeleteHistory}
+        />
+
+        {undoState ? (
+          <div className="time-tracker__undo" role="status" aria-live="polite">
+            <span>記録を削除しました。</span>
+            <button type="button" onClick={handleUndo}>
+              元に戻す
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {modalState ? (
+        <EditorModal
+          mode={modalState.type}
+          title={modalComputed.title}
+          project={modalComputed.project}
+          startTime={modalComputed.startTime}
+          endTime={modalComputed.endTime}
+          saveDisabled={modalComputed.disabled}
+          onTitleChange={onModalTitleChange}
+          onProjectChange={onModalProjectChange}
+          onStartTimeChange={onModalStartTimeChange}
+          onEndTimeChange={onModalEndTimeChange}
+          onSave={handleModalSave}
+          onCancel={closeModal}
+        />
+      ) : null}
+    </main>
+  );
+}

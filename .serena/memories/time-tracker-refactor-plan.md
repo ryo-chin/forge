@@ -1,0 +1,3 @@
+- 共有レイヤー用に `app/infra`, `app/hooks`, `app/hooks/data`, `app/lib`, `app/ui`, `app/features/time-tracker` を新設し、tsconfig と Vite/Vitest のパスエイリアスを更新済み。
+- LocalStorage 連携は `app/infra/localstorage/timeTrackerStorage.ts` に分離し、`useTimeTrackerStorage` フック経由で UI から利用。
+- `sessionParsers.ts` などドメイン関数を `app/features/time-tracker/src/domain/` に移す作業を開始している。
