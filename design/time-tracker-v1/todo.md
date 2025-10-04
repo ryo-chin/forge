@@ -37,6 +37,26 @@
   - [x] 履歴リストやナッジボタンのARIA属性を見直し、スクリーンリーダーでの説明強化を図る
     - [x] ランニングタイマーを `time-tracker-running-timer` として識別子付与し、ナッジグループに `aria-describedby` と経過時間を明示する個別ラベルを追加しました。app/features/time-tracker/src/TimeTrackerRoot.tsx:151-179, 843-888
     - [x] 履歴項目ごとに視覚非表示テキストで詳細説明を補完し、編集/削除ボタンが対象セッション名を読み上げるよう `aria-label` を拡張しました。app/features/time-tracker/src/TimeTrackerRoot.tsx:906-944
-    - [x] 新しいアクセシブルネームと説明の存在を確認するユニットテストを追加し、`aria-describedby` の結び付きを検証しました。app/features/time-tracker/src/TimeTrackerRoot.test.tsx:67-211
-- [ ] 改めて実装を見直し適切な分割戦略を検討したうえで、適切な粒度にレイヤーとコンポーネントとロジックを分割する
-- [ ] 全テストスイートを実行してリリースチェックリストを更新
+  - [x] 新しいアクセシブルネームと説明の存在を確認するユニットテストを追加し、`aria-describedby` の結び付きを検証しました。app/features/time-tracker/src/TimeTrackerRoot.test.tsx:67-211
+
+## フェーズ8: アーキテクチャ再編とディレクトリ整備
+### 差分整理と優先度付け
+- [x] `app/IMPLEMENTS.md` と現行コードの差分レポートを作成し、移行対象（ディレクトリ・モジュール・依存関係）を一覧化する (design/time-tracker-v1/diff-app-implements.md)
+- [x] 一覧を基にフェーズ8タスクの優先度と依存関係を定義し、必要に応じてサブタスクへブレイクダウンする (design/time-tracker-v1/refactor-plan.md)
+
+### 基盤整備と移行
+- [ ] `app/infra/`, `app/hooks/`, `app/hooks/data/`, `app/lib/`, `app/ui/`, `app/features/time-tracker/` など共通ディレクトリの雛形を作成し、TS/Vite のパス解決を更新する
+- [ ] 既存の API・ローカルストレージ連携を `app/infra/api/` と `app/infra/localstorage/` へ移設し、利用箇所を `hooks/data` 経由に差し替える
+- [ ] 共有カスタムフックとユーティリティを `app/hooks/` および `app/lib/` に集約し、重複処理の削減とテスト配置を整備する
+- [ ] 再利用可能な UI コンポーネントを `app/ui/` 配下へ抽出し、スタイルトークンやストーリーの参照先を更新する
+- [ ] `app/features/time-tracker/` 配下をコンポーネント単位のディレクトリに再編し、`Composer`・`HistoryList`・`EditorModal` のような UI を切り出す
+- [ ] 各コンポーネントごとに `*.hooks.ts` を導入し、ハンドラや状態計算を view model として分離する（例: `Composer.hooks.ts` で start/stop などを集約）
+- [ ] ドメインロジック（セッションパーサーやフォーマッタ等）を `app/features/time-tracker/domain/` に整理し、副作用を持たない関数へ統一する
+- [ ] タイムトラッカー固有のデータ取得フックを `app/features/time-tracker/hooks/data/` に実装し、ローカルストレージや API 呼び出しを `hooks/data` 経由へ集約する
+- [ ] ルーティング/ページエントリを `app/features/time-tracker/pages/` に配置し、子コンポーネントへの props 受け渡しを確認する
+- [ ] 依存関係図に沿って import を見直し、循環や暗黙依存が無いことを CI（lint / tsc）で検証する
+
+## フェーズ9: 最終確認とリリース準備
+- [ ] 主要ユースケースを手動確認しつつ、リファクタで追加した README やドキュメントを更新する
+- [ ] `npm run lint && npm run test:unit && npm run test:e2e && npm run build` を実行して全テストスイートを確認する
+- [ ] リリースチェックリストを最新化し、残タスクとリスクをレビューする
