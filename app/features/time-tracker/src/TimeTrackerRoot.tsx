@@ -6,6 +6,7 @@ import { useRunningSession } from './hooks/useRunningSession';
 import type { TimeTrackerSession } from './types';
 import { Composer } from '@features/time-tracker/components/Composer';
 import { HistoryList } from '@features/time-tracker/components/HistoryList';
+import { EditorModal } from '@features/time-tracker/components/EditorModal';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 
@@ -16,9 +17,6 @@ export function TimeTrackerRoot() {
     persistSessions,
     persistRunningState,
   } = useTimeTrackerStorage();
-  type EditorModalState =
-    | { type: 'running' }
-    | { type: 'history'; sessionId: string };
 
   const [sessions, setSessions] = useState<TimeTrackerSession[]>(
     () => initialSessions,
@@ -27,12 +25,15 @@ export function TimeTrackerRoot() {
     session: TimeTrackerSession;
     index: number;
   } | null>(null);
-  const [modalState, setModalState] = useState<EditorModalState | null>(null);
+  const [modalState, setModalState] = useState<
+    | { type: 'running' }
+    | { type: 'history'; sessionId: string }
+    | null
+  >(null);
   const [modalTitleInput, setModalTitleInput] = useState('');
   const [modalProjectInput, setModalProjectInput] = useState('');
   const [modalStartInput, setModalStartInput] = useState('');
   const [modalEndInput, setModalEndInput] = useState('');
-  const modalContainerRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const { state, start, stop, updateDraft, adjustDuration } = useRunningSession(
@@ -145,32 +146,14 @@ export function TimeTrackerRoot() {
     if (typeof window === 'undefined') return;
     if (modalState) {
       previousFocusRef.current = document.activeElement as HTMLElement | null;
-      const focusTarget =
-        modalContainerRef.current?.querySelector<HTMLElement>(
-          '[data-autofocus="true"], input, button, textarea, select, [tabindex]:not([tabindex="-1"])',
-        ) ?? modalContainerRef.current;
-      focusTarget?.focus();
-      return;
-    }
-    const previous = previousFocusRef.current;
-    if (previous && typeof previous.focus === 'function') {
-      previous.focus();
-    }
-    previousFocusRef.current = null;
-  }, [modalState]);
-
-  useEffect(() => {
-    if (!modalState) return;
-    if (typeof window === 'undefined') return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        closeModal();
+    } else {
+      const previous = previousFocusRef.current;
+      if (previous && typeof previous.focus === 'function') {
+        previous.focus();
       }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeModal, modalState]);
+      previousFocusRef.current = null;
+    }
+  }, [modalState]);
 
   useEffect(() => {
     persistSessions(sessions);
@@ -322,33 +305,6 @@ export function TimeTrackerRoot() {
     ],
   );
 
-  const handleModalKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key !== 'Tab' || !modalContainerRef.current) return;
-      const focusable = Array.from(
-        modalContainerRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
-      if (focusable.length === 0) {
-        event.preventDefault();
-        modalContainerRef.current.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      }
-    },
-    [],
-  );
-
   const modalSaveDisabled = useMemo(() => {
     if (!modalState) return true;
     if (modalTitleInput.trim().length === 0) return true;
@@ -400,77 +356,20 @@ export function TimeTrackerRoot() {
         ) : null}
       </div>
       {modalState ? (
-        <div className="time-tracker__modal-backdrop" role="presentation">
-          <div
-            ref={modalContainerRef}
-            className="time-tracker__modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="session-editor-title"
-            tabIndex={-1}
-            onKeyDown={handleModalKeyDown}
-          >
-            <h2 id="session-editor-title">
-              {modalState.type === 'history'
-                ? '記録を編集'
-                : '計測中の詳細を編集'}
-            </h2>
-            <form
-              className="time-tracker__modal-form"
-              onSubmit={handleModalSave}
-            >
-              <div className="time-tracker__field">
-                <label htmlFor="modal-title">タイトル</label>
-                <input
-                  id="modal-title"
-                  type="text"
-                  value={modalTitleInput}
-                  onChange={(event) => setModalTitleInput(event.target.value)}
-                  autoComplete="off"
-                  data-autofocus="true"
-                />
-              </div>
-              <div className="time-tracker__field">
-                <label htmlFor="modal-project">プロジェクト</label>
-                <input
-                  id="modal-project"
-                  type="text"
-                  value={modalProjectInput}
-                  onChange={(event) => setModalProjectInput(event.target.value)}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="time-tracker__field">
-                <label htmlFor="modal-start">開始時刻</label>
-                <input
-                  id="modal-start"
-                  type="datetime-local"
-                  value={modalStartInput}
-                  onChange={(event) => setModalStartInput(event.target.value)}
-                />
-              </div>
-              {modalState.type === 'history' ? (
-                <div className="time-tracker__field">
-                  <label htmlFor="modal-end">終了時刻</label>
-                  <input
-                    id="modal-end"
-                    type="datetime-local"
-                    value={modalEndInput}
-                    onChange={(event) => setModalEndInput(event.target.value)}
-                  />
-                </div>
-              ) : null}
-              <div className="time-tracker__modal-actions">
-                <button type="button" onClick={closeModal}>
-                  キャンセル
-                </button>
-                <button type="submit" disabled={modalSaveDisabled}>
-                  保存
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditorModal
+          mode={modalState.type}
+          title={modalTitleInput}
+          project={modalProjectInput}
+          startTime={modalStartInput}
+          endTime={modalEndInput}
+          saveDisabled={modalSaveDisabled}
+          onTitleChange={setModalTitleInput}
+          onProjectChange={setModalProjectInput}
+          onStartTimeChange={setModalStartInput}
+          onEndTimeChange={setModalEndInput}
+          onSave={handleModalSave}
+          onCancel={closeModal}
+        />
       ) : null}
     </main>
   );

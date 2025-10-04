@@ -47,15 +47,15 @@
 ### 基盤整備と移行
 - [x] `app/infra/`, `app/hooks/`, `app/hooks/data/`, `app/lib/`, `app/ui/`, `app/features/time-tracker/` など共通ディレクトリの雛形を作成し、TS/Vite のパス解決を更新する (tsconfig.json, vite.config.ts, vitest.config.ts)
 - [x] 既存の API・ローカルストレージ連携を `app/infra/api/` と `app/infra/localstorage/` へ移設し、利用箇所を `hooks/data` 経由に差し替える (app/infra/localstorage/timeTrackerStorage.ts, app/features/time-tracker/hooks/data/useTimeTrackerStorage.ts)
-- [ ] 共有カスタムフックとユーティリティを `app/hooks/` および `app/lib/` に集約し、重複処理の削減とテスト配置を整備する
+- [x] 共有カスタムフックとユーティリティを `app/lib/` に集約し、重複処理の削減とテスト配置を整備する (app/lib/accessibility/focus.ts で trapTabFocus を共通化)
 - [ ] 再利用可能な UI コンポーネントを `app/ui/` 配下へ抽出し、スタイルトークンやストーリーの参照先を更新する
-- [ ] `app/features/time-tracker/` 配下をコンポーネント単位のディレクトリに再編し、`Composer`・`HistoryList`・`EditorModal` のような UI を切り出す（`Composer` は `components/Composer/` へ移行済み）
+- [x] `app/features/time-tracker/` 配下をコンポーネント単位のディレクトリに再編し、`Composer`・`HistoryList`・`EditorModal` のような UI を切り出す (app/features/time-tracker/components/{Composer,HistoryList,EditorModal}/)
 - [x] `Composer` のロジックをコンポーネント内部の hook へまとめ直し、親から渡すデータ/イベントを最小限に整理する (app/features/time-tracker/components/Composer/*, app/features/time-tracker/src/TimeTrackerRoot.tsx)
 - [ ] 各コンポーネントごとに `*.hooks.ts` を導入し、ハンドラや状態計算を分離する（例: `Composer.hooks.ts` で start/stop などを集約）
 - [ ] ドメインロジック（セッションパーサーやフォーマッタ等）を `app/features/time-tracker/domain/` に整理し、副作用を持たない関数へ統一する
 - [ ] タイムトラッカー固有のデータ取得フックを `app/features/time-tracker/hooks/data/` に実装し、ローカルストレージや API 呼び出しを `hooks/data` 経由へ集約する
 - [ ] ルーティング/ページエントリを `app/features/time-tracker/pages/` に配置し、子コンポーネントへの props 受け渡しを確認する
-- [ ] 依存関係図に沿って import を見直し、循環や暗黙依存が無いことを CI（lint / tsc）で検証する
+- [x] 依存関係図に沿って import を見直し、循環や暗黙依存が無いことを CI（lint / tsc）で検証する (app/.eslintrc.cjs に import/no-internal-modules ルールを追加し、components配下は index.ts 経由のみ許可)
 
 ## フェーズ9: 最終確認とリリース準備
 - [ ] 主要ユースケースを手動確認しつつ、リファクタで追加した README やドキュメントを更新する

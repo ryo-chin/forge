@@ -8,11 +8,11 @@ import {
   onEnterKey,
   onEnterOrMetaEnter,
   onEnterPickFirstElseSubmit,
-  trapTabFocus,
   attachGlobalFocusShortcut,
   attachClickAwayAndEsc,
   focusSearchOnOpen,
 } from './logic';
+import { trapTabFocus } from '@lib/accessibility/focus';
 
 type ComposerStopResult = {
   nextInputValue: string;
