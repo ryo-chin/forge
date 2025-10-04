@@ -15,13 +15,20 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@features/*": ["features/*"],
-      "@shared/*": ["shared/*"]
+      "@infra/*": ["infra/*"],
+      "@hooks/*": ["hooks/*"],
+      "@lib/*": ["lib/*"],
+      "@ui/*": ["ui/*"],
+      "@features/*": ["features/*"]
     },
     "types": ["vitest/globals", "vite/client"]
   },
   "include": [
     "src",
+    "infra",
+    "hooks",
+    "lib",
+    "ui",
     "features",
     "vite.config.ts",
     "vitest.config.ts",

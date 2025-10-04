@@ -6,8 +6,11 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@infra': path.resolve(__dirname, 'infra'),
+      '@hooks': path.resolve(__dirname, 'hooks'),
+      '@lib': path.resolve(__dirname, 'lib'),
+      '@ui': path.resolve(__dirname, 'ui'),
       '@features': path.resolve(__dirname, 'features'),
-      '@shared': path.resolve(__dirname, 'shared'),
     },
   },
   test: {
@@ -17,6 +20,10 @@ export default defineConfig({
     css: true,
     include: [
       'features/**/*.test.{ts,tsx}',
+      'infra/**/*.test.{ts,tsx}',
+      'hooks/**/*.test.{ts,tsx}',
+      'lib/**/*.test.{ts,tsx}',
+      'ui/**/*.test.{ts,tsx}',
       'src/**/*.test.{ts,tsx}',
       'tests/unit/**/*.test.{ts,tsx}',
     ],

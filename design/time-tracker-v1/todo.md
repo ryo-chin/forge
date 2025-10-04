@@ -45,11 +45,11 @@
 - [x] 一覧を基にフェーズ8タスクの優先度と依存関係を定義し、必要に応じてサブタスクへブレイクダウンする (design/time-tracker-v1/refactor-plan.md)
 
 ### 基盤整備と移行
-- [ ] `app/infra/`, `app/hooks/`, `app/hooks/data/`, `app/lib/`, `app/ui/`, `app/features/time-tracker/` など共通ディレクトリの雛形を作成し、TS/Vite のパス解決を更新する
-- [ ] 既存の API・ローカルストレージ連携を `app/infra/api/` と `app/infra/localstorage/` へ移設し、利用箇所を `hooks/data` 経由に差し替える
+- [x] `app/infra/`, `app/hooks/`, `app/hooks/data/`, `app/lib/`, `app/ui/`, `app/features/time-tracker/` など共通ディレクトリの雛形を作成し、TS/Vite のパス解決を更新する (tsconfig.json, vite.config.ts, vitest.config.ts)
+- [x] 既存の API・ローカルストレージ連携を `app/infra/api/` と `app/infra/localstorage/` へ移設し、利用箇所を `hooks/data` 経由に差し替える (app/infra/localstorage/timeTrackerStorage.ts, app/features/time-tracker/hooks/data/useTimeTrackerStorage.ts)
 - [ ] 共有カスタムフックとユーティリティを `app/hooks/` および `app/lib/` に集約し、重複処理の削減とテスト配置を整備する
 - [ ] 再利用可能な UI コンポーネントを `app/ui/` 配下へ抽出し、スタイルトークンやストーリーの参照先を更新する
-- [ ] `app/features/time-tracker/` 配下をコンポーネント単位のディレクトリに再編し、`Composer`・`HistoryList`・`EditorModal` のような UI を切り出す
+- [ ] `app/features/time-tracker/` 配下をコンポーネント単位のディレクトリに再編し、`Composer`・`HistoryList`・`EditorModal` のような UI を切り出す（`Composer` は `components/Composer/` へ移行済み）
 - [ ] 各コンポーネントごとに `*.hooks.ts` を導入し、ハンドラや状態計算を view model として分離する（例: `Composer.hooks.ts` で start/stop などを集約）
 - [ ] ドメインロジック（セッションパーサーやフォーマッタ等）を `app/features/time-tracker/domain/` に整理し、副作用を持たない関数へ統一する
 - [ ] タイムトラッカー固有のデータ取得フックを `app/features/time-tracker/hooks/data/` に実装し、ローカルストレージや API 呼び出しを `hooks/data` 経由へ集約する
@@ -60,3 +60,4 @@
 - [ ] 主要ユースケースを手動確認しつつ、リファクタで追加した README やドキュメントを更新する
 - [ ] `npm run lint && npm run test:unit && npm run test:e2e && npm run build` を実行して全テストスイートを確認する
 - [ ] リリースチェックリストを最新化し、残タスクとリスクをレビューする
+- [ ] `serena` の `coding_guidelines` メモリを新しいディレクトリ構成（`app/ui`, `app/hooks` など）に合わせて更新する
