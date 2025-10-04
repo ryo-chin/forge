@@ -46,7 +46,7 @@ export const useRunningSession = (
     }
 
     const intervalId = window.setInterval(() => {
-      dispatch({ type: 'TICK', payload: { now: now() } });
+      dispatch({ type: 'TICK', payload: { nowMs: now() } });
     }, tickIntervalMs);
 
     return () => window.clearInterval(intervalId);
@@ -86,7 +86,7 @@ export const useRunningSession = (
       if (deltaSeconds === 0) return;
       dispatch({
         type: 'ADJUST_DURATION',
-        payload: { deltaSeconds, now: now() },
+        payload: { deltaSeconds, nowMs: now() },
       });
     },
     [now, state.status],

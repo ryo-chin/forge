@@ -8,6 +8,12 @@ export const formatTimer = (seconds: number) => {
   return `${mm}:${ss}`;
 };
 
+/** ローカル日時文字列(YYYY-MM-DDTHH:mm) → epoch(ms) */
+export const localDateTimeToMs = (v: string): number => {
+  // input[type=datetime-local] の文字列はローカルタイムとして解釈される
+  return new Date(v).getTime();
+}
+
 export const formatDurationForAria = (seconds: number) => {
   if (seconds <= 0) return '0秒';
   const hours = Math.floor(seconds / 3600);

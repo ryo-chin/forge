@@ -28,7 +28,7 @@ export function filterSuggestions(candidates: string[], query: string): string[]
 }
 
 /** IME合成中のEnterを検知（Enter判定の内部補助） */
-function isImeComposingEnter(e: React.KeyboardEvent<any>) {
+function isImeComposingEnter(e: React.KeyboardEvent<HTMLElement>) {
   if (e.key !== "Enter") return false;
   const ne = e.nativeEvent as { isComposing?: boolean; keyCode?: number };
   return ne.isComposing === true || ne.keyCode === 229;
@@ -39,7 +39,7 @@ export function onEnterKey(
   run: () => void,
   opts: { preventDefault?: boolean } = { preventDefault: true }
 ) {
-  return (e: React.KeyboardEvent<any>) => {
+  return (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'Enter' || isImeComposingEnter(e)) return;
     if (opts.preventDefault) e.preventDefault();
     run();
@@ -48,10 +48,10 @@ export function onEnterKey(
 
 /** Enter / ⌘(Ctrl)+Enter を切り分けて実行 */
 export function onEnterOrMetaEnter(
-  handlers: { onEnter: (e: React.KeyboardEvent<any>) => void; onMetaEnter?: (e: React.KeyboardEvent<any>) => void },
+  handlers: { onEnter: (e: React.KeyboardEvent<HTMLElement>) => void; onMetaEnter?: (e: React.KeyboardEvent<HTMLElement>) => void },
   opts: { preventDefault?: boolean } = { preventDefault: true }
 ) {
-  return (e: React.KeyboardEvent<any>) => {
+  return (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== "Enter" || isImeComposingEnter(e)) return;
     if (opts.preventDefault) e.preventDefault();
     const useMeta = (e.metaKey || e.ctrlKey) && handlers.onMetaEnter;
@@ -66,7 +66,7 @@ export function onEnterPickFirstElseSubmit<T>(
   submit: () => void,
   opts: { preventDefault?: boolean } = { preventDefault: true }
 ) {
-  return (e: React.KeyboardEvent<any>) => {
+  return (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== "Enter" || isImeComposingEnter(e)) return;
     if (opts.preventDefault) e.preventDefault();
     const list = getCandidates();

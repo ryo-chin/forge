@@ -32,6 +32,8 @@ module.exports = {
         allow: [
           '**/features/**/components/**/index.ts',
           '**/features/**/hooks/**',
+          '**/features/**/domain/**',
+          '**/features/**/pages/**',
           '**/hooks/**',
           '**/lib/**',
           'react-dom/client',

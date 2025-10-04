@@ -45,7 +45,7 @@ type RunningStatePayload<Draft> =
       draft?: null;
     };
 
-export const loadStoredRunningState = <Draft>(
+export const loadStoredRunningState = <Draft extends { startedAt: number }>(
   parseDraft: (value: unknown) => Draft | null,
   now: () => number,
 ): { draft: Draft; elapsedSeconds: number } | null => {
@@ -59,7 +59,7 @@ export const loadStoredRunningState = <Draft>(
     if (!draft) return null;
     const elapsedSeconds = Math.max(
       0,
-      Math.floor((now() - (draft as { startedAt: number }).startedAt) / 1000),
+      Math.floor((now() - draft.startedAt) / 1000),
     );
     return { draft, elapsedSeconds };
   } catch (error) {

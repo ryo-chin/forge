@@ -2,27 +2,17 @@ import type {
   RunningSessionState,
   SessionDraft,
   TimeTrackerSession,
-} from './types.ts';
+} from './types';
 
+// Action
 export type RunningSessionAction =
-  | {
-      type: 'START';
-      payload: { title: string; startedAt: number };
-    }
-  | {
-      type: 'TICK';
-      payload: { now: number };
-    }
-  | {
-      type: 'UPDATE_DRAFT';
-      payload: Partial<Omit<SessionDraft, 'startedAt'>>;
-    }
-  | {
-      type: 'ADJUST_DURATION';
-      payload: { deltaSeconds: number; now: number };
-    }
+  | { type: 'START'; payload: { title: string; startedAt: number } }
+  | { type: 'TICK'; payload: { nowMs: number } }
+  | { type: 'UPDATE_DRAFT'; payload: Partial<Omit<SessionDraft, 'startedAt'>> }
+  | { type: 'ADJUST_DURATION'; payload: { deltaSeconds: number; nowMs: number } }
   | { type: 'RESET' };
 
+// State
 export const initialRunningSessionState: RunningSessionState = {
   status: 'idle',
   draft: null,
@@ -35,107 +25,91 @@ export const runningSessionReducer = (
 ): RunningSessionState => {
   switch (action.type) {
     case 'START': {
-      const { title, startedAt } = action.payload;
+      const title = action.payload.title.trim();
+      if (!title) return state; // 二重防御
       const draft: SessionDraft = {
         title,
-        startedAt,
+        startedAt: action.payload.startedAt,
         tags: [],
       };
-      return {
-        status: 'running',
-        draft,
-        elapsedSeconds: 0,
-      };
+      return { status: 'running', draft, elapsedSeconds: 0 };
     }
+
     case 'TICK': {
       if (state.status !== 'running') return state;
-      const { now } = action.payload;
+      const { nowMs } = action.payload;
       const elapsedSeconds = Math.max(
         0,
-        Math.floor((now - state.draft.startedAt) / 1000),
+        Math.floor((nowMs - state.draft.startedAt) / 1000),
       );
-      if (elapsedSeconds === state.elapsedSeconds) {
-        return state;
-      }
-      return {
-        ...state,
-        elapsedSeconds,
-      };
+      if (elapsedSeconds === state.elapsedSeconds) return state;
+      return { ...state, elapsedSeconds };
     }
+
     case 'UPDATE_DRAFT': {
       if (state.status !== 'running') return state;
-      const nextDraft: SessionDraft = {
-        ...state.draft,
-        ...action.payload,
-      };
-      return {
-        ...state,
-        draft: nextDraft,
-      };
+      const patch = { ...action.payload };
+      if (typeof patch.title === 'string') patch.title = patch.title.trim();
+      if (typeof patch.project === 'string') {
+        const t = patch.project.trim();
+        patch.project = t ? t : undefined;
+      }
+      return { ...state, draft: { ...state.draft, ...patch } };
     }
+
     case 'ADJUST_DURATION': {
       if (state.status !== 'running') return state;
-      const { deltaSeconds, now } = action.payload;
-      if (deltaSeconds === 0) {
-        return state;
-      }
-      const baseDuration = Math.max(
+      const { deltaSeconds, nowMs } = action.payload;
+      if (deltaSeconds === 0) return state;
+
+      const baseSeconds = Math.max(
         0,
-        Math.floor((now - state.draft.startedAt) / 1000),
+        Math.floor((nowMs - state.draft.startedAt) / 1000),
       );
-      const adjustedDuration = Math.max(0, baseDuration + deltaSeconds);
-      if (adjustedDuration === baseDuration) {
-        return state;
-      }
-      const adjustedStartedAt = now - adjustedDuration * 1000;
+      const adjustedSeconds = Math.max(0, baseSeconds + deltaSeconds);
+      if (adjustedSeconds === baseSeconds) return state;
+
+      const adjustedStartedAtMs = nowMs - adjustedSeconds * 1000;
       return {
         status: 'running',
-        draft: {
-          ...state.draft,
-          startedAt: adjustedStartedAt,
-        },
-        elapsedSeconds: adjustedDuration,
+        draft: { ...state.draft, startedAt: adjustedStartedAtMs },
+        elapsedSeconds: adjustedSeconds,
       };
     }
+
     case 'RESET':
       return initialRunningSessionState;
+
     default:
       return state;
   }
 };
 
+// Draft → Session
 export const createSessionFromDraft = (
   draft: SessionDraft,
-  stoppedAt: number,
+  stoppedAtMs: number,
 ): TimeTrackerSession => {
   const durationSeconds = Math.max(
     1,
-    Math.floor((stoppedAt - draft.startedAt) / 1000),
+    Math.floor((stoppedAtMs - draft.startedAt) / 1000),
   );
 
   const session: TimeTrackerSession = {
-    id: `${stoppedAt}`,
-    title: draft.title,
+    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : String(stoppedAtMs),
+    title: draft.title.trim(),
     startedAt: draft.startedAt,
-    endedAt: stoppedAt,
+    endedAt: stoppedAtMs,
     durationSeconds,
   };
 
-  if (Array.isArray(draft.tags) && draft.tags.length > 0) {
-    session.tags = draft.tags;
-  }
-  if (draft.project) {
-    session.project = draft.project;
-  }
-  if (draft.skill) {
-    session.skill = draft.skill;
-  }
-  if (draft.intensity) {
-    session.intensity = draft.intensity;
-  }
-  if (draft.notes) {
-    session.notes = draft.notes;
-  }
+  if (draft.tags?.length) session.tags = draft.tags.slice();
+  if (draft.project) session.project = draft.project;
+  if (draft.skill) session.skill = draft.skill;
+  if (draft.intensity) session.intensity = draft.intensity;
+  if (draft.notes) session.notes = draft.notes;
 
   return session;
 };

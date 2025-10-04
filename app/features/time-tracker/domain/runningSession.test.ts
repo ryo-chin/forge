@@ -35,7 +35,7 @@ describe('runningSessionReducer', () => {
 
     const nextState = runningSessionReducer(runningState, {
       type: 'TICK',
-      payload: { now: START_TIME + 6_500 },
+      payload: { nowMs: START_TIME + 6_500 },
     });
 
     expect(nextState.elapsedSeconds).toBe(6);
@@ -59,7 +59,7 @@ describe('runningSessionReducer', () => {
 
     const adjustedState = runningSessionReducer(runningState, {
       type: 'ADJUST_DURATION',
-      payload: { deltaSeconds: 5 * 60, now: START_TIME + 60_000 },
+      payload: { deltaSeconds: 5 * 60, nowMs: START_TIME + 60_000 },
     });
 
     if (adjustedState.status !== 'running') {
@@ -78,7 +78,7 @@ describe('runningSessionReducer', () => {
 
     const afterFirstAdjust = runningSessionReducer(runningState, {
       type: 'ADJUST_DURATION',
-      payload: { deltaSeconds: 5 * 60, now: START_TIME + 60_000 },
+      payload: { deltaSeconds: 5 * 60, nowMs: START_TIME + 60_000 },
     });
 
     if (afterFirstAdjust.status !== 'running') {
@@ -87,7 +87,7 @@ describe('runningSessionReducer', () => {
 
     const afterSecondAdjust = runningSessionReducer(afterFirstAdjust, {
       type: 'ADJUST_DURATION',
-      payload: { deltaSeconds: 5 * 60, now: START_TIME + 180_000 },
+      payload: { deltaSeconds: 5 * 60, nowMs: START_TIME + 180_000 },
     });
 
     if (afterSecondAdjust.status !== 'running') {
@@ -106,7 +106,7 @@ describe('runningSessionReducer', () => {
 
     const afterIncrease = runningSessionReducer(runningState, {
       type: 'ADJUST_DURATION',
-      payload: { deltaSeconds: 5 * 60, now: START_TIME + 60_000 },
+      payload: { deltaSeconds: 5 * 60, nowMs: START_TIME + 60_000 },
     });
 
     if (afterIncrease.status !== 'running') {
@@ -115,7 +115,7 @@ describe('runningSessionReducer', () => {
 
     const afterDecrease = runningSessionReducer(afterIncrease, {
       type: 'ADJUST_DURATION',
-      payload: { deltaSeconds: -10 * 60, now: START_TIME + 180_000 },
+      payload: { deltaSeconds: -10 * 60, nowMs: START_TIME + 180_000 },
     });
 
     if (afterDecrease.status !== 'running') {
