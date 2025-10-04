@@ -2,23 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './index.css';
 import { useTimeTrackerStorage } from '@features/time-tracker/hooks/data/useTimeTrackerStorage';
 import { formatDateTimeLocal, parseDateTimeLocal } from '@lib/date';
-import { formatDurationForAria, formatTimer } from '@lib/time';
 import { useRunningSession } from './hooks/useRunningSession';
 import type { TimeTrackerSession } from './types';
-import { Composer } from '@features/time-tracker/components/Composer/Composer.tsx';
+import { Composer } from '@features/time-tracker/components/Composer';
+import { HistoryList } from '@features/time-tracker/components/HistoryList';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
-
-const describeHistorySession = (session: TimeTrackerSession) => {
-  const parts = [
-    `タイトル ${session.title}`,
-    `所要時間 ${formatDurationForAria(session.durationSeconds)}`,
-  ];
-  if (session.project) parts.push(`プロジェクト ${session.project}`);
-  if (session.tags?.length) parts.push(`タグ ${session.tags.join('、')}`);
-  if (session.skill) parts.push(`スキル ${session.skill}`);
-  return parts.join('、');
-};
 
 export function TimeTrackerRoot() {
   const {
@@ -396,60 +385,11 @@ export function TimeTrackerRoot() {
           isRunningEditorOpen={modalState?.type === 'running'}
         />
 
-        {sessions.length > 0 ? (
-          <section className="time-tracker__history" aria-label="最近の記録">
-            <h2>最近の記録</h2>
-            <ul>
-              {sessions.map((session) => {
-                const titleId = `history-session-${session.id}-title`;
-                const descriptionId = `history-session-${session.id}-description`;
-                return (
-                  <li
-                    key={session.id}
-                    className="time-tracker__history-item"
-                    aria-labelledby={titleId}
-                    aria-describedby={descriptionId}
-                  >
-                    <span className="time-tracker__sr-only" id={descriptionId}>
-                      {describeHistorySession(session)}
-                    </span>
-                    <div className="time-tracker__history-main">
-                      <strong id={titleId}>{session.title}</strong>
-                      <span>{formatTimer(session.durationSeconds)}</span>
-                    </div>
-                    <div className="time-tracker__history-meta">
-                      {session.project ? <span>#{session.project}</span> : null}
-                      {session.tags?.length ? (
-                        <span>
-                          {session.tags.map((tag) => `#${tag}`).join(' ')}
-                        </span>
-                      ) : null}
-                      {session.skill ? <span>@{session.skill}</span> : null}
-                    </div>
-                    <div className="time-tracker__history-actions">
-                      <button
-                        type="button"
-                        className="time-tracker__history-button"
-                        onClick={() => handleEditHistory(session.id)}
-                        aria-label={`「${session.title}」を編集`}
-                      >
-                        編集
-                      </button>
-                      <button
-                        type="button"
-                        className="time-tracker__history-button time-tracker__history-button--danger"
-                        onClick={() => handleDeleteHistory(session.id)}
-                        aria-label={`「${session.title}」を削除`}
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ) : null}
+        <HistoryList
+          sessions={sessions}
+          onEdit={handleEditHistory}
+          onDelete={handleDeleteHistory}
+        />
         {undoState ? (
           <div className="time-tracker__undo" role="status" aria-live="polite">
             <span>記録を削除しました。</span>

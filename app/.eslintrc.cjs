@@ -17,7 +17,7 @@ module.exports = {
     sourceType: 'module',
     project: './tsconfig.json',
   },
-  plugins: ['@typescript-eslint', 'react-refresh'],
+  plugins: ['@typescript-eslint', 'react-refresh', 'import'],
   settings: {
     react: {
       version: 'detect',
@@ -26,5 +26,18 @@ module.exports = {
   ignorePatterns: ['dist', 'node_modules'],
   rules: {
     'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    'import/no-internal-modules': [
+      'error',
+      {
+        allow: [
+          '**/features/**/components/**/index.ts',
+          '**/features/**/hooks/**',
+          '**/hooks/**',
+          '**/lib/**',
+          'react-dom/client',
+          '@testing-library/jest-dom/vitest',
+        ],
+      },
+    ],
   },
 };
