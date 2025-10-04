@@ -50,7 +50,8 @@
 - [ ] 共有カスタムフックとユーティリティを `app/hooks/` および `app/lib/` に集約し、重複処理の削減とテスト配置を整備する
 - [ ] 再利用可能な UI コンポーネントを `app/ui/` 配下へ抽出し、スタイルトークンやストーリーの参照先を更新する
 - [ ] `app/features/time-tracker/` 配下をコンポーネント単位のディレクトリに再編し、`Composer`・`HistoryList`・`EditorModal` のような UI を切り出す（`Composer` は `components/Composer/` へ移行済み）
-- [ ] 各コンポーネントごとに `*.hooks.ts` を導入し、ハンドラや状態計算を view model として分離する（例: `Composer.hooks.ts` で start/stop などを集約）
+- [x] `Composer` のロジックをコンポーネント内部の hook へまとめ直し、親から渡すデータ/イベントを最小限に整理する (app/features/time-tracker/components/Composer/*, app/features/time-tracker/src/TimeTrackerRoot.tsx)
+- [ ] 各コンポーネントごとに `*.hooks.ts` を導入し、ハンドラや状態計算を分離する（例: `Composer.hooks.ts` で start/stop などを集約）
 - [ ] ドメインロジック（セッションパーサーやフォーマッタ等）を `app/features/time-tracker/domain/` に整理し、副作用を持たない関数へ統一する
 - [ ] タイムトラッカー固有のデータ取得フックを `app/features/time-tracker/hooks/data/` に実装し、ローカルストレージや API 呼び出しを `hooks/data` 経由へ集約する
 - [ ] ルーティング/ページエントリを `app/features/time-tracker/pages/` に配置し、子コンポーネントへの props 受け渡しを確認する
