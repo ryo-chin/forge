@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import '../../index.css';
-import { useTimeTrackerStorage } from '@features/time-tracker/hooks/data/useTimeTrackerStorage';
+import { useSessions } from '@features/time-tracker/hooks/data/useSessions.ts';
+import { useRunningSession } from '@features/time-tracker/hooks/data/useRunningSession.ts';
 import { formatDateTimeLocal } from '@lib/date';
-import { useRunningSession } from '@features/time-tracker';
 import type { TimeTrackerSession } from '../../domain/types';
 import { Composer } from '@features/time-tracker/components/Composer';
 import { HistoryList } from '@features/time-tracker/components/HistoryList';
@@ -30,14 +30,14 @@ type UndoState = {
 type HistoryEditSnapshot = TimeTrackerSession | null;
 
 export function TimeTrackerPage() {
-  // storage hooks
-  const { initialSessions, initialRunningState, persistSessions } =
-    useTimeTrackerStorage();
-
-  // 記録済みセッション
-  const [sessions, setSessions] = useState<TimeTrackerSession[]>(
-    () => initialSessions,
-  );
+  const { sessions, setSessions, persistSessions } = useSessions();
+  const {
+    state,
+    start,
+    stop,
+    updateDraft,
+    adjustDuration,
+  } = useRunningSession();
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
@@ -52,16 +52,9 @@ export function TimeTrackerPage() {
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
   const initialComposerProject =
-    initialRunningState?.status === 'running'
-      ? (initialRunningState.draft.project ?? '')
-      : '';
+    state.status === 'running' ? state.draft.project ?? '' : '';
   const [composerProject, setComposerProject] = useState(
     initialComposerProject,
-  );
-
-  // 記録中セッション
-  const { state, start, stop, updateDraft, adjustDuration } = useRunningSession(
-    { initialState: initialRunningState ?? undefined },
   );
   const isRunning = state.status === 'running';
   const elapsedSeconds = state.elapsedSeconds;
@@ -165,11 +158,8 @@ export function TimeTrackerPage() {
         nextProject: composerProject,
       };
     }
-    setSessions((prev) => {
-      const next = [session, ...prev];
-      persistSessions(next);
-      return next;
-    });
+    const nextSessions = setSessions((prev) => [session, ...prev]);
+    persistSessions(nextSessions);
     const nextProject = session.project ?? '';
     setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
     setUndoState(null);
@@ -180,7 +170,14 @@ export function TimeTrackerPage() {
       nextInputValue: session.title,
       nextProject,
     };
-  }, [composerProject, runningDraftTitle, stop, persistSessions, modalState]);
+  }, [
+    composerProject,
+    runningDraftTitle,
+    stop,
+    persistSessions,
+    setSessions,
+    modalState,
+  ]);
 
   const handleComposerAdjustDuration = useCallback(
     (deltaSeconds: number) => {
@@ -209,31 +206,40 @@ export function TimeTrackerPage() {
   const closeModal = useCallback(() => {
     // 履歴編集のキャンセル時は元スナップショットに戻す
     if (modalState?.type === 'history' && historyEditSnapshot) {
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === historyEditSnapshot.id);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = historyEditSnapshot;
-        persistSessions(next);
-        return next;
-      });
+      const targetIndex = sessions.findIndex(
+        (s) => s.id === historyEditSnapshot.id,
+      );
+      if (targetIndex !== -1) {
+        const nextSessions = setSessions((prev) => {
+          const next = [...prev];
+          next[targetIndex] = historyEditSnapshot;
+          return next;
+        });
+        persistSessions(nextSessions);
+      }
     }
     setHistoryEditSnapshot(null);
     setModalState(null);
-  }, [historyEditSnapshot, modalState, persistSessions]);
+  }, [historyEditSnapshot, modalState, persistSessions, sessions, setSessions]);
 
   // ==== 履歴の削除/Undo ====
   const handleDeleteHistory = useCallback(
     (sessionId: string) => {
-      setSessions((prev) => {
+      let removedSession: TimeTrackerSession | null = null;
+      let removedIndex = -1;
+      const nextSessions = setSessions((prev) => {
         const index = prev.findIndex((session) => session.id === sessionId);
         if (index === -1) return prev;
         const next = [...prev];
         const [removed] = next.splice(index, 1);
-        setUndoState({ session: removed, index });
-        persistSessions(next);
+        removedSession = removed;
+        removedIndex = index;
         return next;
       });
+      if (removedSession) {
+        setUndoState({ session: removedSession, index: removedIndex });
+        persistSessions(nextSessions);
+      }
       if (
         modalState?.type === 'history' &&
         modalState.sessionId === sessionId
@@ -242,22 +248,22 @@ export function TimeTrackerPage() {
         setModalState(null);
       }
     },
-    [modalState, persistSessions],
+    [modalState, persistSessions, setSessions],
   );
 
   const handleUndo = useCallback(() => {
     setUndoState((current) => {
       if (!current) return null;
-      setSessions((prev) => {
+      const nextSessions = setSessions((prev) => {
         const next = [...prev];
         const insertIndex = Math.min(current.index, next.length);
         next.splice(insertIndex, 0, current.session);
-        persistSessions(next);
         return next;
       });
+      persistSessions(nextSessions);
       return null;
     });
-  }, [persistSessions]);
+  }, [persistSessions, setSessions]);
 
   // ==== モーダル保存 ====
   const handleModalSave = useCallback(
@@ -271,31 +277,26 @@ export function TimeTrackerPage() {
         return;
       }
 
-      // history: 既に sessions を直接パッチしているので、buildUpdatedSession で最終整形して保存
-      const target = sessions.find((s) => s.id === modalState.sessionId);
-      if (!target) {
-        setHistoryEditSnapshot(null);
-        setModalState(null);
-        return;
-      }
-
-      const next = buildUpdatedSession(target, {
-        title: target.title,
-        project: target.project ?? '',
-        startTime: formatDateTimeLocal(target.startedAt),
-        endTime: formatDateTimeLocal(target.endedAt),
-      });
-      if (!next) return;
-
-      setSessions((prev) => {
-        const replaced = prev.map((s) => (s.id === next.id ? next : s));
-        persistSessions(replaced);
+      const nextSessions = setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        if (idx === -1) return prev;
+        const target = prev[idx];
+        const next = buildUpdatedSession(target, {
+          title: target.title,
+          project: target.project ?? '',
+          startTime: formatDateTimeLocal(target.startedAt),
+          endTime: formatDateTimeLocal(target.endedAt),
+        });
+        if (!next) return prev;
+        const replaced = [...prev];
+        replaced[idx] = next;
         return replaced;
       });
+      persistSessions(nextSessions);
       setHistoryEditSnapshot(null);
       setModalState(null);
     },
-    [modalState, sessions, persistSessions],
+    [modalState, persistSessions, setSessions],
   );
 
   // ==== モーダルの onChange：ドメインを直接パッチ ====
