@@ -2,7 +2,7 @@ import type {
   RunningSessionState,
   SessionDraft,
   TimeTrackerSession,
-} from '../types';
+} from './types.ts';
 
 export type RunningSessionAction =
   | {

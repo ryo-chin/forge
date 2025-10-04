@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createNudgeLabel, formatTimer } from '@lib/time';
-import type { TimeTrackerSession } from '@features/time-tracker/src/types';
+import type { TimeTrackerSession } from '@features/time-tracker/domain/types.ts';
 
 import {
   buildProjectSuggestions,

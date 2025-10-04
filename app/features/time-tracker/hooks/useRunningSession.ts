@@ -3,8 +3,8 @@ import {
   createSessionFromDraft,
   initialRunningSessionState,
   runningSessionReducer,
-} from '../domain/runningSession';
-import type { RunningSessionState, SessionDraft, TimeTrackerSession } from '../types';
+} from '@features/time-tracker/domain/runningSession.ts';
+import type { RunningSessionState, SessionDraft, TimeTrackerSession } from '../domain/types.ts';
 
 type NowFn = () => number;
 

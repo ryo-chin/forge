@@ -1,4 +1,4 @@
-import type { TimeTrackerSession } from '@features/time-tracker/src/types';
+import type { TimeTrackerSession } from '@features/time-tracker/domain/types.ts';
 import { formatDurationForAria } from '@lib/time';
 
 /* ===========================

@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import './index.css';
-import { useTimeTrackerStorage } from '@features/time-tracker/hooks/data/useTimeTrackerStorage';
-import { formatDateTimeLocal, parseDateTimeLocal } from '@lib/date';
-import { useRunningSession } from './hooks/useRunningSession';
-import type { TimeTrackerSession } from './types';
+import '../../index.css';
+import { useTimeTrackerStorage } from '@features/time-tracker/hooks/data/useTimeTrackerStorage.ts';
+import { formatDateTimeLocal, parseDateTimeLocal } from '@lib/date.ts';
+import { useRunningSession } from '../../hooks/useRunningSession.ts';
+import type { TimeTrackerSession } from '../../domain/types.ts';
 import { Composer } from '@features/time-tracker/components/Composer';
 import { HistoryList } from '@features/time-tracker/components/HistoryList';
 import { EditorModal } from '@features/time-tracker/components/EditorModal';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 
-export function TimeTrackerRoot() {
+export function TimeTrackerPage() {
   const {
     initialSessions,
     initialRunningState,

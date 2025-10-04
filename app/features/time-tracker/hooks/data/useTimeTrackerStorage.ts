@@ -5,11 +5,11 @@ import {
   saveRunningState,
   saveSessions,
 } from '@infra/localstorage/timeTrackerStorage';
-import { parseRunningDraft, parseSession } from '@features/time-tracker/src/domain/sessionParsers';
+import { parseRunningDraft, parseSession } from '@features/time-tracker/domain/sessionParsers';
 import type {
   RunningSessionState,
   TimeTrackerSession,
-} from '@features/time-tracker/src/types';
+} from '@features/time-tracker/domain/types.ts';
 
 type PersistedRunningState = RunningSessionState;
 

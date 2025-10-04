@@ -1,4 +1,4 @@
-import type { SessionDraft, TimeTrackerSession } from '../types';
+import type { SessionDraft, TimeTrackerSession } from './types.ts';
 
 const INTENSITY_VALUES = new Set<SessionDraft['intensity']>([
   'low',

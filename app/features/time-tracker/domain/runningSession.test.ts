@@ -2,7 +2,7 @@ import {
   createSessionFromDraft,
   initialRunningSessionState,
   runningSessionReducer,
-} from './runningSession';
+} from './runningSession.ts';
 
 const START_TIME = 1_700_000_000_000;
 

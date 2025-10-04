@@ -8,19 +8,19 @@
 
 2. **データアクセスレイヤーの分離**
    - LocalStorage / API 呼び出しを `app/infra/localstorage/`, `app/infra/api/` へ移設。
-   - `hooks/data/useTimeTrackerSessions` (仮) を作成し、`TimeTrackerRoot` から永続化処理を切り離す。
+   - `hooks/data/useTimeTrackerSessions` (仮) を作成し、`TimeTrackerPage` から永続化処理を切り離す。
 
 3. **共通ロジックの切り出し**
    - 共有カスタムフックを `app/hooks/` へ、純粋関数を `app/lib/` へ移す。
    - ドメイン関数（セッションパース、フォーマッタ等）を `app/features/time-tracker/domain/` に配置。
 
 4. **UI コンポーネント 分割**
-   - `TimeTrackerRoot` 内の UI を `Composer`, `HistoryList`, `EditorModal` などへ分割。
+   - `TimeTrackerPage` 内の UI を `Composer`, `HistoryList`, `EditorModal` などへ分割。
    - 各コンポーネントのロジックを `*.hooks.ts` として切り出し、 props で橋渡しする構造へ変更。
    - コンポーネント間で受け渡す情報は最小限になるようにロジックのの見直しも検討する。
 
 5. **ページ層とルーティング**
-   - `app/features/time-tracker/pages/TimeTrackerRoot.tsx`（仮）を作成し、データ取得と子コンポーネントの組み合わせを担当。
+   - `app/features/time-tracker/pages/TimeTrackerPage.tsx`（仮）を作成し、データ取得と子コンポーネントの組み合わせを担当。
    - `app/src/main.tsx` 側のルーティング設定を更新。
 
 6. **依存関係検証とテスト**

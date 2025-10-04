@@ -64,8 +64,8 @@ app
         │       ├── useSessionQueries.ts
         │       └── useSessionMutations.ts
         ├── pages
-        │   ├── TimeTrackerRoot.tsx
-        │   └── TimeTrackerRoot.test.tsx
+        │   ├── TimeTrackerPage.tsx
+        │   └── TimeTrackerPage.test.tsx
         └── index.ts
 ```
 - `features/<feature>/components/<ComponentName>/` は UI コンポーネント本体と、必要に応じて同階層の `logic.ts` や `*.hooks.ts` に切り出したロジックで構成する。ページ単位のエントリーポイントは `features/<feature>/pages/` に置き、必要なコンポーネントやデータフックを束ねる。
@@ -78,10 +78,10 @@ app
 
 ### Composer コンポーネント構成
 - 入力値 (`inputValue`)、プロジェクトメニュー開閉 (`isProjectMenuOpen`)、検索クエリ (`projectQuery`) は `Composer.tsx` 内の `useState` で閉じ、進行中は `runningDraftTitle` を優先表示してエディタと同期する。app/features/time-tracker/components/Composer/Composer.tsx:56
-- `handlePrimaryAction` では開始と停止を切り替え、`onStart` の真偽値で開始可否を判定し、`onStop` が返す `nextInputValue` と `nextProject` でフォーム状態を復元する。app/features/time-tracker/components/Composer/Composer.tsx:78, app/features/time-tracker/src/TimeTrackerRoot.tsx:92
+- `handlePrimaryAction` では開始と停止を切り替え、`onStart` の真偽値で開始可否を判定し、`onStop` が返す `nextInputValue` と `nextProject` でフォーム状態を復元する。app/features/time-tracker/components/Composer/Composer.tsx:78, app/features/time-tracker/src/TimeTrackerPage.tsx:92
 - プロジェクト候補は `buildProjectSuggestions` が重複排除と 12 件上限を担い、`filterSuggestions` がクエリに応じた部分一致フィルタを行う。app/features/time-tracker/components/Composer/Composer.tsx:69, app/features/time-tracker/components/Composer/logic.ts:8
 - キーボード操作とフォーカス制御は `logic.ts` の `onEnterKey` / `onEnterOrMetaEnter` / `trapTabFocus` と、純粋関数ブロックと `attach*` ブロックに分けたヘルパーで宣言化し、`useEffect` から登録・解除する。app/features/time-tracker/components/Composer/Composer.tsx:102, app/features/time-tracker/components/Composer/logic.ts:49
-- 親側ではプロジェクト同期を `handleComposerProjectChange` と `pendingComposerProjectRef` で扱い、停止後に履歴へ push したセッションのタイトル/プロジェクトを Composer に戻す。app/features/time-tracker/src/TimeTrackerRoot.tsx:67, app/features/time-tracker/src/TimeTrackerRoot.tsx:92
+- 親側ではプロジェクト同期を `handleComposerProjectChange` と `pendingComposerProjectRef` で扱い、停止後に履歴へ push したセッションのタイトル/プロジェクトを Composer に戻す。app/features/time-tracker/src/TimeTrackerPage.tsx:67, app/features/time-tracker/src/TimeTrackerPage.tsx:92
 
 ### 依存関係グラフ
 ```mermaid

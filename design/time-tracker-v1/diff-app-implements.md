@@ -12,17 +12,17 @@
 
 ## 3. infra 層
 - **ガイドライン**: API クライアントや LocalStorage アクセスなどは `app/infra/<subsystem>/` に集約して `hooks/data` 経由で利用する。
-- **現状**: LocalStorage とのやり取り (`loadStoredSessions`, `loadStoredRunningState`) が `TimeTrackerRoot.tsx` 内に存在。
+- **現状**: LocalStorage とのやり取り (`loadStoredSessions`, `loadStoredRunningState`) が `TimeTrackerPage.tsx` 内に存在。
 - **ギャップ**: プラットフォーム依存コードが UI コンポーネント内に混在。
 
 ## 4. lib 層
 - **ガイドライン**: 純粋関数やフォーマッタは `app/lib/` に配置し、副作用を持たせない。
-- **現状**: セッションパーサー、日付/タイマーのフォーマッタなどが `TimeTrackerRoot.tsx` に内包されている。
+- **現状**: セッションパーサー、日付/タイマーのフォーマッタなどが `TimeTrackerPage.tsx` に内包されている。
 - **ギャップ**: ドメイン/ユーティリティ関数の切り出し未実施。
 
 ## 5. UI コンポーネント
 - **ガイドライン**: 共有 UI は `app/ui/`、機能固有 UI は `app/features/<feature>/components/<Component>/` と `*.hooks.ts` で構成。
-- **現状**: `TimeTrackerRoot.tsx` が画面全体を担い、コンポーネント分割は未実施。共有 UI も存在しない。
+- **現状**: `TimeTrackerPage.tsx` が画面全体を担い、コンポーネント分割は未実施。共有 UI も存在しない。
 - **ギャップ**: `Composer`, `HistoryList`, `EditorModal` などの切り出し、`*.hooks.ts` 化が必要。
 
 ## 6. ドメイン層
@@ -32,7 +32,7 @@
 
 ## 7. ルーティング / ページ層
 - **ガイドライン**: ルートエントリは `app/features/<feature>/pages/` に配置し、子コンポーネントへ props を橋渡しする。
-- **現状**: `TimeTrackerRoot.tsx` が `src/` 直下に存在し、`pages/` ディレクトリは未作成。
+- **現状**: `TimeTrackerPage.tsx` が `src/` 直下に存在し、`pages/` ディレクトリは未作成。
 - **ギャップ**: ページ層の導入と props 伝播設計の見直しが必要。
 
 ## 8. 依存関係の明確化
