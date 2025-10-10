@@ -24,3 +24,109 @@ create table if not exists time_tracker_running_states (
     draft jsonb default null,
     updated_at timestamptz not null default now()
     );
+
+-- RLS 設定
+alter table if exists public.time_tracker_sessions enable row level security;
+alter table if exists public.time_tracker_running_states enable row level security;
+
+do $$
+begin
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_sessions'
+          and policyname = 'time_tracker_sessions_select_own'
+    ) then
+        create policy time_tracker_sessions_select_own
+            on public.time_tracker_sessions
+            for select
+            using (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_sessions'
+          and policyname = 'time_tracker_sessions_insert_own'
+    ) then
+        create policy time_tracker_sessions_insert_own
+            on public.time_tracker_sessions
+            for insert
+            with check (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_sessions'
+          and policyname = 'time_tracker_sessions_update_own'
+    ) then
+        create policy time_tracker_sessions_update_own
+            on public.time_tracker_sessions
+            for update
+            using (auth.uid() = user_id)
+            with check (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_sessions'
+          and policyname = 'time_tracker_sessions_delete_own'
+    ) then
+        create policy time_tracker_sessions_delete_own
+            on public.time_tracker_sessions
+            for delete
+            using (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_running_states'
+          and policyname = 'time_tracker_running_states_select_own'
+    ) then
+        create policy time_tracker_running_states_select_own
+            on public.time_tracker_running_states
+            for select
+            using (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_running_states'
+          and policyname = 'time_tracker_running_states_insert_own'
+    ) then
+        create policy time_tracker_running_states_insert_own
+            on public.time_tracker_running_states
+            for insert
+            with check (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_running_states'
+          and policyname = 'time_tracker_running_states_update_own'
+    ) then
+        create policy time_tracker_running_states_update_own
+            on public.time_tracker_running_states
+            for update
+            using (auth.uid() = user_id)
+            with check (auth.uid() = user_id);
+    end if;
+
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'time_tracker_running_states'
+          and policyname = 'time_tracker_running_states_delete_own'
+    ) then
+        create policy time_tracker_running_states_delete_own
+            on public.time_tracker_running_states
+            for delete
+            using (auth.uid() = user_id);
+    end if;
+end;
+$$;
