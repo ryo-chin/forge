@@ -10,7 +10,8 @@ export type RunningSessionAction =
   | { type: 'TICK'; payload: { nowMs: number } }
   | { type: 'UPDATE_DRAFT'; payload: Partial<Omit<SessionDraft, 'startedAt'>> }
   | { type: 'ADJUST_DURATION'; payload: { deltaSeconds: number; nowMs: number } }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'RESTORE'; payload: RunningSessionState };
 
 // State
 export const initialRunningSessionState: RunningSessionState = {
@@ -79,6 +80,9 @@ export const runningSessionReducer = (
 
     case 'RESET':
       return initialRunningSessionState;
+
+    case 'RESTORE':
+      return action.payload;
 
     default:
       return state;

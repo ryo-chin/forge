@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import '../../index.css';
-import { useSessions } from '@features/time-tracker/hooks/data/useSessions.ts';
+import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { useRunningSession } from '@features/time-tracker/hooks/data/useRunningSession.ts';
 import { formatDateTimeLocal } from '@lib/date';
 import type { TimeTrackerSession } from '../../domain/types';
@@ -13,6 +13,7 @@ import {
   calculateDurationDelta,
 } from './logic';
 import { localDateTimeToMs } from '@lib/time.ts';
+import { useAuth } from '@infra/auth';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 
@@ -30,14 +31,22 @@ type UndoState = {
 type HistoryEditSnapshot = TimeTrackerSession | null;
 
 export function TimeTrackerPage() {
-  const { sessions, setSessions, persistSessions } = useSessions();
+  const { provider: authProvider, status: authStatus, user, signIn } =
+    useAuth();
+
+  const {
+    mode,
+    sessions,
+    setSessions,
+    persistSessions,
+  } = useTimeTrackerSessions({ userId: user?.id ?? null });
   const {
     state,
     start,
     stop,
     updateDraft,
     adjustDuration,
-  } = useRunningSession();
+  } = useRunningSession({ userId: user?.id ?? null });
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
@@ -402,6 +411,39 @@ export function TimeTrackerPage() {
       };
     }
   }, [modalState]);
+
+  if (mode === 'supabase' && authProvider === 'supabase') {
+    if (authStatus === 'loading') {
+      return (
+        <main className="time-tracker">
+          <div className="time-tracker__panel">
+            <h1>Time Tracker</h1>
+            <p>Supabase の認証情報を確認しています...</p>
+          </div>
+        </main>
+      );
+    }
+
+    if (authStatus === 'unauthenticated') {
+      return (
+        <main className="time-tracker">
+          <div className="time-tracker__panel">
+            <header className="time-tracker__header">
+              <h1>Time Tracker</h1>
+              <p>Supabase にログインすると計測を開始できます。</p>
+            </header>
+            <button
+              type="button"
+              className="time-tracker__action"
+              onClick={signIn}
+            >
+              Google でログイン
+            </button>
+          </div>
+        </main>
+      );
+    }
+  }
 
   return (
     <main className="time-tracker">

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   useMutation,
   useQuery,
@@ -16,11 +16,20 @@ type SessionsUpdater =
   | TimeTrackerSession[]
   | ((prev: TimeTrackerSession[]) => TimeTrackerSession[]);
 
-export const useSessions = (now: () => number = defaultNow) => {
+type UseTimeTrackerSessionsOptions = {
+  now?: () => number;
+  userId?: string | null;
+};
+
+export const useTimeTrackerSessions = (
+  options: UseTimeTrackerSessionsOptions = {},
+) => {
+  const { now = defaultNow, userId = null } = options;
   const queryClient = useQueryClient();
+
   const dataSource = useMemo<TimeTrackerDataSource>(
-    () => createTimeTrackerDataSource({ now }),
-    [now],
+    () => createTimeTrackerDataSource({ now, userId }),
+    [now, userId],
   );
 
   const sessionsQuery = useQuery({
@@ -28,7 +37,20 @@ export const useSessions = (now: () => number = defaultNow) => {
     queryFn: dataSource.fetchSessions,
     initialData: dataSource.initialSessions,
     staleTime: Infinity,
+    enabled: dataSource.mode !== 'supabase' || Boolean(userId),
   });
+
+  useEffect(() => {
+    if (dataSource.mode === 'supabase') {
+      if (!userId) {
+        queryClient.setQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY, []);
+      } else {
+        queryClient.invalidateQueries({
+          queryKey: TIME_TRACKER_SESSIONS_QUERY_KEY,
+        });
+      }
+    }
+  }, [dataSource.mode, userId, queryClient]);
 
   const persistSessionsMutation = useMutation({
     mutationFn: async (sessions: TimeTrackerSession[]) => {
@@ -77,6 +99,9 @@ export const useSessions = (now: () => number = defaultNow) => {
 
   const persistSessions = useCallback(
     (sessions?: TimeTrackerSession[]) => {
+      if (dataSource.mode === 'supabase' && !userId) {
+        return;
+      }
       const target =
         sessions ??
         ((queryClient.getQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY) as
@@ -84,7 +109,13 @@ export const useSessions = (now: () => number = defaultNow) => {
           | undefined) ?? dataSource.initialSessions);
       persistSessionsMutation.mutate(target);
     },
-    [dataSource.initialSessions, persistSessionsMutation, queryClient],
+    [
+      dataSource.initialSessions,
+      dataSource.mode,
+      persistSessionsMutation,
+      queryClient,
+      userId,
+    ],
   );
 
   return {

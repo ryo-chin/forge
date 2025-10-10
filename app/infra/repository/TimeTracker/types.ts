@@ -15,4 +15,5 @@ export type TimeTrackerDataSource = {
 
 export type CreateDataSourceOptions = {
   now?: () => number;
+  userId?: string | null;
 };
