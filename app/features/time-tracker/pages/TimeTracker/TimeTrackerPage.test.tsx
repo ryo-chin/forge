@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { TimeTrackerPage } from './TimeTrackerPage.tsx';
 
@@ -8,6 +9,21 @@ const STORAGE_KEY_RUNNING = 'codex-time-tracker/running';
 const formatDateTimeLocal = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const renderTimeTrackerPage = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <TimeTrackerPage />
+    </QueryClientProvider>,
+  );
 };
 
 beforeEach(() => {
@@ -21,7 +37,7 @@ afterEach(() => {
 
 describe('TimeTrackerRoot', () => {
   it('入力内容があると開始ボタンが有効になる', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const actionButton = screen.getByRole('button', { name: '開始' });
     expect(actionButton).toBeDisabled();
@@ -32,7 +48,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('Enter キーで計測が開始され UI が計測中状態になる', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -48,7 +64,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('IME 変換中の Enter では計測が開始されない', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -65,7 +81,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('クイックナッジで作業時間を加算できる', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -83,7 +99,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('クイックナッジで作業時間を減算できるが0未満にはならない', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -96,7 +112,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('詳細編集で入力した内容が停止後の履歴に反映される', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -127,7 +143,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('詳細編集モーダルを開くとタイトル入力にフォーカスする', async () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -146,7 +162,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('モーダルを閉じると開いた時にフォーカスしていた要素へ戻る', async () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -171,7 +187,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('履歴モーダルでタイトルと時刻を再編集できる', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -212,7 +228,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('プロジェクトメニューで選択した値が開始時に適用される', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを選択' }));
     const projectInput = screen.getByLabelText('プロジェクトを検索・設定');
@@ -231,7 +247,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('プロジェクトメニューを閉じるとトリガーボタンへフォーカスが戻る', async () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const trigger = screen.getByRole('button', { name: 'プロジェクトを選択' });
     fireEvent.click(trigger);
@@ -249,7 +265,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('プロジェクトメニュー内でTabキーがダイアログ内を循環する', async () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを選択' }));
 
@@ -275,7 +291,7 @@ describe('TimeTrackerRoot', () => {
   });
 
   it('履歴の削除はUndoで元に戻せる', () => {
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -296,7 +312,7 @@ describe('TimeTrackerRoot', () => {
 
   it('履歴がlocalStorageへ保存される', async () => {
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     const input = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(input, { target: { value: 'ギター練習' } });
@@ -325,7 +341,7 @@ describe('TimeTrackerRoot', () => {
       JSON.stringify([storedSession]),
     );
 
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     expect(screen.getByText('保存済みタスク')).toBeInTheDocument();
     expect(screen.getByText('#archive')).toBeInTheDocument();
@@ -344,7 +360,7 @@ describe('TimeTrackerRoot', () => {
       }),
     );
 
-    render(<TimeTrackerPage />);
+    renderTimeTrackerPage();
 
     expect(screen.getByRole('button', { name: '停止' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('継続中の作業')).toBeInTheDocument();

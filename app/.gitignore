@@ -6,3 +6,4 @@ playwright-report
 playwright/.cache
 .vite
 .DS_Store
+.env
