@@ -114,6 +114,19 @@ export class GoogleSheetsClient {
     });
   }
 
+  async getRange(
+    spreadsheetId: string,
+    range: string,
+  ): Promise<{ values?: (string | number)[][] }> {
+    const encodedRange = encodeURIComponent(range);
+    const url = new URL(
+      `${spreadsheetId}/values/${encodedRange}`,
+      `${SHEETS_BASE_URL}/`,
+    );
+
+    return this.request<{ values?: (string | number)[][] }>(url);
+  }
+
   async getSpreadsheetSheets(spreadsheetId: string): Promise<SheetSummary[]> {
     const url = new URL(`${spreadsheetId}`, `${SHEETS_BASE_URL}/`);
     url.searchParams.set(
