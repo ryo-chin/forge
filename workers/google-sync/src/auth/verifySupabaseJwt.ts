@@ -1,4 +1,4 @@
-import type { Env } from '../index.ts';
+import type { Env } from '../env';
 
 const AUTH_HEADER = 'authorization';
 const BEARER_PREFIX = 'bearer ';

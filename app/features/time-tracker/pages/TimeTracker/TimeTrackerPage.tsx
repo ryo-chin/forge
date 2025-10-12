@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import '../../index.css';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { useRunningSession } from '@features/time-tracker/hooks/data/useRunningSession.ts';
+import { useGoogleSpreadsheetSync } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts';
 import { formatDateTimeLocal } from '@lib/date';
 import type { TimeTrackerSession } from '../../domain/types';
 import { Composer } from '@features/time-tracker/components/Composer';
 import { HistoryList } from '@features/time-tracker/components/HistoryList';
 import { EditorModal } from '@features/time-tracker/components/EditorModal';
+import { SyncStatusBanner } from '@features/time-tracker/components/SyncStatusBanner';
 import {
   isModalSaveDisabled,
   buildUpdatedSession,
@@ -39,12 +41,13 @@ export function TimeTrackerPage() {
     persistSessions,
   } = useTimeTrackerSessions({ userId: user?.id ?? null });
   const {
-    state,
+    state: runningState,
     start,
     stop,
     updateDraft,
     adjustDuration,
   } = useRunningSession({ userId: user?.id ?? null });
+  const { state: syncState, syncSession } = useGoogleSpreadsheetSync();
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
@@ -59,13 +62,13 @@ export function TimeTrackerPage() {
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
   const initialComposerProject =
-    state.status === 'running' ? state.draft.project ?? '' : '';
+    runningState.status === 'running' ? runningState.draft.project ?? '' : '';
   const [composerProject, setComposerProject] = useState(
     initialComposerProject,
   );
-  const isRunning = state.status === 'running';
-  const elapsedSeconds = state.elapsedSeconds;
-  const runningDraftTitle = isRunning ? state.draft.title : null;
+  const isRunning = runningState.status === 'running';
+  const elapsedSeconds = runningState.elapsedSeconds;
+  const runningDraftTitle = isRunning ? runningState.draft.title : null;
 
   // ==== モーダルの活性可否（フォームstateを廃し、現在のドメイン値から判定） ====
   const modalComputed = useMemo(() => {
@@ -88,9 +91,9 @@ export function TimeTrackerPage() {
           disabled: true,
         };
       }
-      const title = state.draft.title ?? '';
-      const project = state.draft.project ?? '';
-      const startTime = formatDateTimeLocal(state.draft.startedAt);
+      const title = runningState.draft.title ?? '';
+      const project = runningState.draft.project ?? '';
+      const startTime = formatDateTimeLocal(runningState.draft.startedAt);
       const endTime = ''; // 走行中は未設定
       return {
         title,
@@ -126,9 +129,9 @@ export function TimeTrackerPage() {
     isRunning,
     modalState,
     sessions,
-    state.draft?.project,
-    state.draft?.startedAt,
-    state.draft?.title,
+    runningState.draft?.project,
+    runningState.draft?.startedAt,
+    runningState.draft?.title,
   ]);
 
   // ==== Composer handlers ====
@@ -167,6 +170,7 @@ export function TimeTrackerPage() {
     }
     const nextSessions = setSessions((prev) => [session, ...prev]);
     persistSessions(nextSessions);
+    void syncSession(session);
     const nextProject = session.project ?? '';
     setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
     setUndoState(null);
@@ -195,9 +199,9 @@ export function TimeTrackerPage() {
 
   // ==== モーダル open/close ====
   const openRunningEditor = useCallback(() => {
-    if (state.status !== 'running') return;
+    if (runningState.status !== 'running') return;
     setModalState({ type: 'running' });
-  }, [state.status]);
+  }, [runningState.status]);
 
   const handleEditHistory = useCallback(
     (sessionId: string) => {
@@ -390,6 +394,18 @@ export function TimeTrackerPage() {
     [modalState],
   );
 
+  const lastSyncedSession = useMemo(() => {
+    if (!syncState.lastSessionId) return null;
+    return (
+      sessions.find((session) => session.id === syncState.lastSessionId) ?? null
+    );
+  }, [sessions, syncState.lastSessionId]);
+
+  const handleRetrySync = useCallback(() => {
+    if (!lastSyncedSession) return;
+    void syncSession(lastSyncedSession);
+  }, [lastSyncedSession, syncSession]);
+
   // ==== プロジェクトの同期（走行中だけdraftへ反映） ====
   useEffect(() => {
     if (!isRunning) return;
@@ -414,9 +430,18 @@ export function TimeTrackerPage() {
     <main className="time-tracker">
       <div className="time-tracker__panel">
         <header className="time-tracker__header">
-          <h1>Time Tracker</h1>
-          <p>何をやりますか？</p>
-        </header>
+         <h1>Time Tracker</h1>
+         <p>何をやりますか？</p>
+       </header>
+
+        <SyncStatusBanner
+          state={syncState}
+          onRetry={
+            syncState.status === 'error' && lastSyncedSession
+              ? handleRetrySync
+              : undefined
+          }
+        />
 
         <Composer
           sessions={sessions}

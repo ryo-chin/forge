@@ -41,16 +41,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T009 [US1] Worker 同期ハンドラーの単体テストを作成 (`workers/google-sync/src/handlers/__tests__/syncSession.test.ts`)
-- [ ] T011 [US1] フロント同期フックの単体テストを作成 (`app/features/time-tracker/hooks/data/__tests__/useGoogleSpreadsheetSync.test.ts`)
-- [ ] T013 [US1] 同期ステータス表示コンポーネントのテストを作成 (`app/features/time-tracker/components/SyncStatusBanner/__tests__/SyncStatusBanner.test.tsx`)
+- [X] T009 [US1] Worker 同期ハンドラーの単体テストを作成 (`workers/google-sync/src/handlers/__tests__/syncSession.test.ts`)
+- [X] T011 [US1] フロント同期フックの単体テストを作成 (`app/features/time-tracker/hooks/data/__tests__/useGoogleSpreadsheetSync.test.tsx`)
+- [X] T013 [US1] 同期ステータス表示コンポーネントのテストを作成 (`app/features/time-tracker/components/SyncStatusBanner/__tests__/SyncStatusBanner.test.tsx`)
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] 同期ハンドラーを実装しルーティングへ登録 (`workers/google-sync/src/handlers/syncSession.ts`, `workers/google-sync/src/index.ts`)
-- [ ] T012 [US1] `useGoogleSpreadsheetSync` フックを実装 (`app/features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts`)
-- [ ] T014 [US1] `SyncStatusBanner` コンポーネントを実装 (`app/features/time-tracker/components/SyncStatusBanner/SyncStatusBanner.tsx`, `app/features/time-tracker/components/SyncStatusBanner/index.ts`)
-- [ ] T015 [US1] `TimeTrackerPage.tsx` に同期フックとバナーを統合し、DB 保存後に Worker へ送信・エラー通知を実装 (`app/features/time-tracker/pages/TimeTrackerPage.tsx`)
+- [X] T010 [US1] 同期ハンドラーを実装しルーティングへ登録 (`workers/google-sync/src/handlers/syncSession.ts`, `workers/google-sync/src/index.ts`)
+- [X] T012 [US1] `useGoogleSpreadsheetSync` フックを実装 (`app/features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts`)
+- [X] T014 [US1] `SyncStatusBanner` コンポーネントを実装 (`app/features/time-tracker/components/SyncStatusBanner/SyncStatusBanner.tsx`, `app/features/time-tracker/components/SyncStatusBanner/index.ts`)
+- [X] T015 [US1] `TimeTrackerPage.tsx` に同期フックとバナーを統合し、DB 保存後に Worker へ送信・エラー通知を実装 (`app/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx`)
 
 **Checkpoint**: 自動同期が完了し、P1 MVP をデモ可能。
 
@@ -109,6 +109,7 @@
 
 - [ ] T031 [Polish] 運用手順とリカバリガイドを作成 (`docs/runbooks/google-spreadsheet-sync.md`)
 - [ ] T032 [Polish] Quickstart と環境設定手順を最終実装に合わせて検証・更新 (`specs/001-app-features-time/quickstart.md`, `app/.env.example`, `workers/google-sync/README.md`)
+- [ ] T033 [Polish] ESLint 設定をリポジトリルートへ集約し、`app` と `workers` を overrides でカバー (`.eslintrc.cjs`, `package.json` の lint スクリプト調整)
 
 ---
 

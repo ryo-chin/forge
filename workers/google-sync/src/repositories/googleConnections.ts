@@ -1,4 +1,4 @@
-import type { Env } from '../index.ts';
+import type { Env } from '../env';
 
 export type ConnectionStatus = 'active' | 'revoked' | 'error';
 
