@@ -31,11 +31,9 @@ type UndoState = {
 type HistoryEditSnapshot = TimeTrackerSession | null;
 
 export function TimeTrackerPage() {
-  const { provider: authProvider, status: authStatus, user, signIn } =
-    useAuth();
+  const { user } = useAuth();
 
   const {
-    mode,
     sessions,
     setSessions,
     persistSessions,
@@ -411,39 +409,6 @@ export function TimeTrackerPage() {
       };
     }
   }, [modalState]);
-
-  if (mode === 'supabase' && authProvider === 'supabase') {
-    if (authStatus === 'loading') {
-      return (
-        <main className="time-tracker">
-          <div className="time-tracker__panel">
-            <h1>Time Tracker</h1>
-            <p>Supabase の認証情報を確認しています...</p>
-          </div>
-        </main>
-      );
-    }
-
-    if (authStatus === 'unauthenticated') {
-      return (
-        <main className="time-tracker">
-          <div className="time-tracker__panel">
-            <header className="time-tracker__header">
-              <h1>Time Tracker</h1>
-              <p>Supabase にログインすると計測を開始できます。</p>
-            </header>
-            <button
-              type="button"
-              className="time-tracker__action"
-              onClick={signIn}
-            >
-              Google でログイン
-            </button>
-          </div>
-        </main>
-      );
-    }
-  }
 
   return (
     <main className="time-tracker">
