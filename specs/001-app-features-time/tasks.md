@@ -67,15 +67,15 @@
 - [X] T016 [US2] 設定取得・更新ハンドラーと一覧 API のテストを作成 (`workers/google-sync/src/handlers/__tests__/settings.test.ts`)
 - [X] T018 [US2] OAuth ハンドラーのテストを作成 (`workers/google-sync/src/handlers/__tests__/oauth.test.ts`)
 - [X] T020 [US2] スプレッドシート選択フックのテストを作成 (`app/features/time-tracker/hooks/data/__tests__/useGoogleSpreadsheetOptions.test.tsx`)
-- [ ] T022 [US2] 設定ダイアログコンポーネントのテストを作成 (`app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/__tests__/GoogleSpreadsheetSettingsDialog.test.tsx`)
+- [X] T022 [US2] 設定ダイアログコンポーネントのテストを作成 (`app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/__tests__/GoogleSpreadsheetSettingsDialog.test.tsx`)
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] 設定取得/更新およびスプレッドシート・シート一覧ハンドラーを実装 (`workers/google-sync/src/handlers/settings.ts`, `workers/google-sync/src/handlers/listSpreadsheets.ts`, `workers/google-sync/src/handlers/listSheets.ts`, `workers/google-sync/src/index.ts`)
-- [ ] T019 [US2] OAuth 開始/コールバックハンドラーを実装 (`workers/google-sync/src/handlers/oauth.ts`, `workers/google-sync/src/index.ts`)
-- [ ] T021 [US2] `useGoogleSpreadsheetOptions` フックを実装し選択状態を永続化 (`app/features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts`)
-- [ ] T023 [US2] `GoogleSpreadsheetSettingsDialog` コンポーネントを実装 (`app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/GoogleSpreadsheetSettingsDialog.tsx`, `app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/index.ts`)
-- [ ] T024 [US2] 設定ダイアログの起動と選択保存フローをページへ統合 (`app/features/time-tracker/pages/TimeTrackerPage.tsx`, `app/infra/google/googleSyncClient.ts`)
+- [X] T017 [US2] 設定取得/更新およびスプレッドシート・シート一覧ハンドラーを実装 (`workers/google-sync/src/handlers/settings.ts`, `workers/google-sync/src/handlers/listSpreadsheets.ts`, `workers/google-sync/src/handlers/listSheets.ts`, `workers/google-sync/src/index.ts`)
+- [X] T019 [US2] OAuth 開始/コールバックハンドラーを実装 (`workers/google-sync/src/handlers/oauth.ts`, `workers/google-sync/src/index.ts`)
+- [X] T021 [US2] `useGoogleSpreadsheetOptions` フックを実装し選択状態を永続化 (`app/features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts`)
+- [X] T023 [US2] `GoogleSpreadsheetSettingsDialog` コンポーネントを実装 (`app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/GoogleSpreadsheetSettingsDialog.tsx`, `app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/index.ts`)
+- [X] T024 [US2] 設定ダイアログの起動と選択保存フローをページへ統合 (`app/features/time-tracker/pages/TimeTrackerPage.tsx`, `app/infra/google/googleSyncClient.ts`)
 
 **Checkpoint**: 同期先の選択が完了し、自動同期と組み合わせて P1 機能が完成。
 

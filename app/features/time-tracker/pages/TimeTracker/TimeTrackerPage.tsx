@@ -3,12 +3,14 @@ import '../../index.css';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { useRunningSession } from '@features/time-tracker/hooks/data/useRunningSession.ts';
 import { useGoogleSpreadsheetSync } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts';
+import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
 import { formatDateTimeLocal } from '@lib/date';
 import type { TimeTrackerSession } from '../../domain/types';
 import { Composer } from '@features/time-tracker/components/Composer';
 import { HistoryList } from '@features/time-tracker/components/HistoryList';
 import { EditorModal } from '@features/time-tracker/components/EditorModal';
 import { SyncStatusBanner } from '@features/time-tracker/components/SyncStatusBanner';
+import { GoogleSpreadsheetSettingsDialog } from '@features/time-tracker/components/GoogleSpreadsheetSettingsDialog';
 import {
   isModalSaveDisabled,
   buildUpdatedSession,
@@ -48,9 +50,20 @@ export function TimeTrackerPage() {
     adjustDuration,
   } = useRunningSession({ userId: user?.id ?? null });
   const { state: syncState, syncSession } = useGoogleSpreadsheetSync();
+  const {
+    settings: googleSettings,
+    updateSelection,
+    isUpdating: isUpdatingGoogleSettings,
+    fetchSpreadsheets,
+    fetchSheets,
+    startOAuth,
+  } = useGoogleSpreadsheetOptions();
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
+
+  // Google スプレッドシート設定ダイアログの開閉状態
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
   // モーダルの種類
   const [modalState, setModalState] = useState<ModalState>(null);
@@ -406,6 +419,43 @@ export function TimeTrackerPage() {
     void syncSession(lastSyncedSession);
   }, [lastSyncedSession, syncSession]);
 
+  // ==== Google スプレッドシート設定 ====
+  const handleOpenSettings = useCallback(() => {
+    setIsSettingsDialogOpen(true);
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setIsSettingsDialogOpen(false);
+  }, []);
+
+  const handleSaveSettings = useCallback(
+    async (selection: {
+      spreadsheetId: string;
+      sheetId: number;
+      sheetTitle: string;
+    }) => {
+      try {
+        await updateSelection(selection);
+        setIsSettingsDialogOpen(false);
+      } catch (error) {
+        console.error('Failed to update Google spreadsheet settings:', error);
+      }
+    },
+    [updateSelection],
+  );
+
+  const handleStartOAuth = useCallback(async () => {
+    try {
+      const currentPath = window.location.pathname;
+      const response = await startOAuth(currentPath);
+      if (response.authorizationUrl) {
+        window.location.href = response.authorizationUrl;
+      }
+    } catch (error) {
+      console.error('Failed to start OAuth:', error);
+    }
+  }, [startOAuth]);
+
   // ==== プロジェクトの同期（走行中だけdraftへ反映） ====
   useEffect(() => {
     if (!isRunning) return;
@@ -432,6 +482,14 @@ export function TimeTrackerPage() {
         <header className="time-tracker__header">
          <h1>Time Tracker</h1>
          <p>何をやりますか？</p>
+         <button
+           type="button"
+           onClick={handleOpenSettings}
+           className="time-tracker__settings-button"
+           aria-label="Google スプレッドシート設定"
+         >
+           ⚙️ 設定
+         </button>
        </header>
 
         <SyncStatusBanner
@@ -490,6 +548,18 @@ export function TimeTrackerPage() {
           onCancel={closeModal}
         />
       ) : null}
+
+      <GoogleSpreadsheetSettingsDialog
+        isOpen={isSettingsDialogOpen}
+        isConnected={googleSettings.data?.connectionStatus === 'active'}
+        currentSpreadsheetId={googleSettings.data?.spreadsheet?.id}
+        currentSheetId={googleSettings.data?.spreadsheet?.sheetId}
+        onClose={handleCloseSettings}
+        onSave={handleSaveSettings}
+        onStartOAuth={handleStartOAuth}
+        onFetchSpreadsheets={fetchSpreadsheets}
+        onFetchSheets={fetchSheets}
+      />
     </main>
   );
 }
