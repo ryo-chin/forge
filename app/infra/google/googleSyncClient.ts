@@ -16,7 +16,7 @@ export type UpdateGoogleSettingsPayload = {
   spreadsheetId: string;
   sheetId: number;
   sheetTitle: string;
-  columnMapping?: ColumnMappingConfig['mappings'];
+  columnMapping?: ColumnMappingConfig['mappings'] | Record<string, string>;
 };
 
 export type OAuthStartResponse = {

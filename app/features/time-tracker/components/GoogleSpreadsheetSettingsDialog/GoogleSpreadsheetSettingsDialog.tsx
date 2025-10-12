@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { focusModalOnOpen, attachEscapeClose } from '../EditorModal/logic';
 import { trapTabFocus } from '@lib/accessibility/focus';
+import { ColumnMappingForm } from '../ColumnMappingForm';
 import type {
   SpreadsheetOption,
   SheetOption,
@@ -11,11 +12,33 @@ export type GoogleSpreadsheetSettingsDialogProps = {
   isConnected: boolean;
   currentSpreadsheetId?: string;
   currentSheetId?: number;
+  currentColumnMapping?: {
+    title: string;
+    startedAt: string;
+    endedAt: string;
+    durationSeconds: string;
+    project?: string;
+    notes?: string;
+    tags?: string;
+    skill?: string;
+    intensity?: string;
+  };
   onClose: () => void;
   onSave: (selection: {
     spreadsheetId: string;
     sheetId: number;
     sheetTitle: string;
+    columnMapping?: {
+      title: string;
+      startedAt: string;
+      endedAt: string;
+      durationSeconds: string;
+      project?: string;
+      notes?: string;
+      tags?: string;
+      skill?: string;
+      intensity?: string;
+    };
   }) => void;
   onStartOAuth: () => void;
   onFetchSpreadsheets: (query?: string) => Promise<{ items: SpreadsheetOption[] }>;
@@ -29,6 +52,7 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
   isConnected,
   currentSpreadsheetId,
   currentSheetId,
+  currentColumnMapping,
   onClose,
   onSave,
   onStartOAuth,
@@ -44,13 +68,17 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
   const [selectedSheetId, setSelectedSheetId] = useState<number | undefined>(
     currentSheetId,
   );
+  const [columnMapping, setColumnMapping] = useState<
+    GoogleSpreadsheetSettingsDialogProps['currentColumnMapping']
+  >(currentColumnMapping);
   const [isLoadingSpreadsheets, setIsLoadingSpreadsheets] = useState(false);
   const [isLoadingSheets, setIsLoadingSheets] = useState(false);
 
   useEffect(() => {
     setSelectedSpreadsheetId(currentSpreadsheetId);
     setSelectedSheetId(currentSheetId);
-  }, [currentSpreadsheetId, currentSheetId]);
+    setColumnMapping(currentColumnMapping);
+  }, [currentSpreadsheetId, currentSheetId, currentColumnMapping]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -128,6 +156,7 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
       spreadsheetId: selectedSpreadsheetId,
       sheetId: selectedSheetId,
       sheetTitle: selectedSheet.title,
+      columnMapping,
     });
   };
 
@@ -197,6 +226,13 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
                 ))}
               </select>
             </div>
+
+            {selectedSpreadsheetId && selectedSheetId !== undefined ? (
+              <ColumnMappingForm
+                currentMapping={columnMapping}
+                onChange={setColumnMapping}
+              />
+            ) : null}
 
             <div className="time-tracker__modal-actions">
               <button type="button" onClick={onClose}>

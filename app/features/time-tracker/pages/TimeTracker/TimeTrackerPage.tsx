@@ -433,6 +433,7 @@ export function TimeTrackerPage() {
       spreadsheetId: string;
       sheetId: number;
       sheetTitle: string;
+      columnMapping?: Record<string, string>;
     }) => {
       try {
         await updateSelection(selection);
@@ -554,6 +555,7 @@ export function TimeTrackerPage() {
         isConnected={googleSettings.data?.connectionStatus === 'active'}
         currentSpreadsheetId={googleSettings.data?.spreadsheet?.id}
         currentSheetId={googleSettings.data?.spreadsheet?.sheetId}
+        currentColumnMapping={googleSettings.data?.columnMapping?.mappings}
         onClose={handleCloseSettings}
         onSave={handleSaveSettings}
         onStartOAuth={handleStartOAuth}
