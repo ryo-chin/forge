@@ -7,3 +7,5 @@ playwright/.cache
 .vite
 .DS_Store
 .env
+.env.development
+.env.production
