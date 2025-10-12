@@ -11,6 +11,7 @@ import {
   handleListSpreadsheets,
   handleListSheets,
 } from './handlers/settings';
+import { handleOptions } from './http/response';
 
 const ROUTES = {
   SYNC: '/integrations/google/sync',
@@ -24,6 +25,11 @@ const ROUTES = {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      return handleOptions(request);
+    }
 
     // OAuth routes
     if (request.method === 'POST' && url.pathname === ROUTES.OAUTH_START) {

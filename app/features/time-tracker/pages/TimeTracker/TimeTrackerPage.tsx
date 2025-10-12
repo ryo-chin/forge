@@ -172,7 +172,7 @@ export function TimeTrackerPage() {
     [start],
   );
 
-  const handleComposerStop = useCallback(() => {
+  const handleComposerStop = useCallback(async () => {
     const previousTitle = runningDraftTitle ?? '';
     const session = stop();
     if (!session) {
@@ -182,7 +182,7 @@ export function TimeTrackerPage() {
       };
     }
     const nextSessions = setSessions((prev) => [session, ...prev]);
-    persistSessions(nextSessions);
+    await persistSessions(nextSessions);
     void syncSession(session);
     const nextProject = session.project ?? '';
     setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
@@ -201,6 +201,7 @@ export function TimeTrackerPage() {
     persistSessions,
     setSessions,
     modalState,
+    syncSession,
   ]);
 
   const handleComposerAdjustDuration = useCallback(
@@ -447,8 +448,8 @@ export function TimeTrackerPage() {
 
   const handleStartOAuth = useCallback(async () => {
     try {
-      const currentPath = window.location.pathname;
-      const response = await startOAuth(currentPath);
+      const currentUrl = window.location.href;
+      const response = await startOAuth(currentUrl);
       if (response.authorizationUrl) {
         window.location.href = response.authorizationUrl;
       }

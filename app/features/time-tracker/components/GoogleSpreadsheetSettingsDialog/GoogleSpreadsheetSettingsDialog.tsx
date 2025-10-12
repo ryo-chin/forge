@@ -143,13 +143,18 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
 
   const handleSheetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    setSelectedSheetId(value ? Number(value) : undefined);
+    if (value === '') {
+      setSelectedSheetId(undefined);
+    } else {
+      const numValue = Number(value);
+      setSelectedSheetId(isNaN(numValue) ? undefined : numValue);
+    }
   };
 
   const handleSave = () => {
     if (!selectedSpreadsheetId || selectedSheetId === undefined) return;
 
-    const selectedSheet = sheets.find((s) => s.id === selectedSheetId);
+    const selectedSheet = sheets.find((s) => s.sheetId === selectedSheetId);
     if (!selectedSheet) return;
 
     onSave({
@@ -214,19 +219,18 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
               <label htmlFor="sheet-select">シート</label>
               <select
                 id="sheet-select"
-                value={selectedSheetId ?? ''}
+                value={selectedSheetId !== undefined ? String(selectedSheetId) : ''}
                 onChange={handleSheetChange}
                 disabled={!selectedSpreadsheetId || isLoadingSheets}
               >
                 <option value="">選択してください</option>
-                {sheets.map((sheet) => (
-                  <option key={sheet.id} value={sheet.id}>
+                {sheets.map((sheet, index) => (
+                  <option key={`${sheet.sheetId}-${index}`} value={sheet.sheetId}>
                     {sheet.title}
                   </option>
                 ))}
               </select>
             </div>
-
             {selectedSpreadsheetId && selectedSheetId !== undefined ? (
               <ColumnMappingForm
                 currentMapping={columnMapping}

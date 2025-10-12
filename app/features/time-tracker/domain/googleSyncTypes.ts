@@ -34,7 +34,7 @@ export type SpreadsheetOption = {
 };
 
 export type SheetOption = {
-  id: number;
+  sheetId: number;
   title: string;
   index: number;
 };

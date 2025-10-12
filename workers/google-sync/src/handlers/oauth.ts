@@ -141,9 +141,10 @@ export const handleOauthStart = async (
   request: Request,
   env: Env,
 ): Promise<Response> => {
+  const origin = request.headers.get('Origin');
   const token = extractBearerToken(request);
   if (!token) {
-    return unauthorized('Bearer token is required');
+    return unauthorized('Bearer token is required', origin);
   }
 
   let payload: { redirectPath?: unknown };
@@ -201,30 +202,11 @@ export const handleOauthCallback = async (
     return badRequest('code and state are required');
   }
 
-  const token = extractBearerToken(request);
-  if (!token) {
-    return unauthorized('Bearer token is required');
-  }
-
-  let auth;
-  try {
-    auth = await verifySupabaseJwt(token, env);
-  } catch (error) {
-    if (error instanceof SupabaseAuthError) {
-      return unauthorized(error.message);
-    }
-    return unauthorized('Invalid token');
-  }
-
   let state: OauthStatePayload;
   try {
     state = decodeState(stateValue);
   } catch (error) {
     return badRequest(error instanceof Error ? error.message : 'Invalid state');
-  }
-
-  if (state.userId !== auth.userId) {
-    return unauthorized('State does not match authenticated user');
   }
 
   try {
@@ -276,7 +258,7 @@ export const handleOauthCallback = async (
 
   let connection;
   try {
-    connection = await getConnectionByUser(env, auth.userId);
+    connection = await getConnectionByUser(env, state.userId);
   } catch (error) {
     if (error instanceof SupabaseRepositoryError) {
       return serverError(error.message, error.status >= 500 ? 502 : error.status);
@@ -292,7 +274,7 @@ export const handleOauthCallback = async (
 
   try {
     await upsertConnection(env, {
-      userId: auth.userId,
+      userId: state.userId,
       googleUserId,
       accessToken,
       refreshToken,
@@ -307,11 +289,10 @@ export const handleOauthCallback = async (
     throw error;
   }
 
-  const redirectLocation = new URL(state.redirectPath, env.GOOGLE_REDIRECT_URI);
   return new Response(null, {
     status: 302,
     headers: {
-      Location: redirectLocation.toString(),
+      Location: state.redirectPath,
     },
   });
 };

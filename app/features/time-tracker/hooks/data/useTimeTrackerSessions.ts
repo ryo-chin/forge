@@ -21,7 +21,7 @@ type UseTimeTrackerSessionsOptions = {
   userId?: string | null;
 };
 
-export const useTimeTrackerSessions = (
+export const export const useTimeTrackerSessions = (
   options: UseTimeTrackerSessionsOptions = {},
 ) => {
   const { now = defaultNow, userId = null } = options;
@@ -98,7 +98,7 @@ export const useTimeTrackerSessions = (
   );
 
   const persistSessions = useCallback(
-    (sessions?: TimeTrackerSession[]) => {
+    async (sessions?: TimeTrackerSession[]) => {
       if (dataSource.mode === 'supabase' && !userId) {
         return;
       }
@@ -107,7 +107,7 @@ export const useTimeTrackerSessions = (
         ((queryClient.getQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY) as
           | TimeTrackerSession[]
           | undefined) ?? dataSource.initialSessions);
-      persistSessionsMutation.mutate(target);
+      await persistSessionsMutation.mutateAsync(target);
     },
     [
       dataSource.initialSessions,

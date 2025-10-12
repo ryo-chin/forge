@@ -6,6 +6,7 @@ node_modules
 /.wrangler/
 .env
 .env.*
+.dev.vars
 *.log
 .DS_Store
 npm-debug.log*
