@@ -1,0 +1,7 @@
+{
+  "name": "forge",
+  "compatibility_date": "2025-10-12",
+  "assets": {
+    "directory": "./dist"
+  }
+}
