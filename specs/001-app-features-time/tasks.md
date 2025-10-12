@@ -64,9 +64,9 @@
 
 ### Tests for User Story 2
 
-- [ ] T016 [US2] 設定取得・更新ハンドラーと一覧 API のテストを作成 (`workers/google-sync/src/handlers/__tests__/settings.test.ts`)
-- [ ] T018 [US2] OAuth ハンドラーのテストを作成 (`workers/google-sync/src/handlers/__tests__/oauth.test.ts`)
-- [ ] T020 [US2] スプレッドシート選択フックのテストを作成 (`app/features/time-tracker/hooks/data/__tests__/useGoogleSpreadsheetOptions.test.ts`)
+- [X] T016 [US2] 設定取得・更新ハンドラーと一覧 API のテストを作成 (`workers/google-sync/src/handlers/__tests__/settings.test.ts`)
+- [X] T018 [US2] OAuth ハンドラーのテストを作成 (`workers/google-sync/src/handlers/__tests__/oauth.test.ts`)
+- [X] T020 [US2] スプレッドシート選択フックのテストを作成 (`app/features/time-tracker/hooks/data/__tests__/useGoogleSpreadsheetOptions.test.tsx`)
 - [ ] T022 [US2] 設定ダイアログコンポーネントのテストを作成 (`app/features/time-tracker/components/GoogleSpreadsheetSettingsDialog/__tests__/GoogleSpreadsheetSettingsDialog.test.tsx`)
 
 ### Implementation for User Story 2
