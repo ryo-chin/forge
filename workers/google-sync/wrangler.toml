@@ -1,0 +1,7 @@
+name = "google-sync-dev"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = []
+
+[observability.logs]
+enabled = true

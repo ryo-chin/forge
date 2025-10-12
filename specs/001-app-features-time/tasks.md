@@ -11,8 +11,8 @@
 
 **Purpose**: 連携機能に必要なベースプロジェクト構成と環境整備
 
-- [ ] T001 [Setup] Cloudflare Worker プロジェクトの雛形を作成 (`workers/google-sync/wrangler.toml`, `workers/google-sync/package.json`, `workers/google-sync/tsconfig.json`, `workers/google-sync/src/index.ts`)
-- [ ] T002 [Setup] Google 連携用エンドポイント設定を環境変数に追加 (`app/.env.example`, `app/infra/config/googleSync.ts`, `app/infra/config/index.ts`)
+- [X] T001 [Setup] Cloudflare Worker プロジェクトの雛形を作成 (`workers/google-sync/wrangler.toml`, `workers/google-sync/package.json`, `workers/google-sync/tsconfig.json`, `workers/google-sync/src/index.ts`)
+- [X] T002 [Setup] Google 連携用エンドポイント設定を環境変数に追加 (`app/.env.example`, `app/infra/config/googleSync.ts`, `app/infra/config/index.ts`)
 
 ---
 
@@ -22,12 +22,12 @@
 
 **⚠️ CRITICAL**: このフェーズ完了前にユーザーストーリーに着手しないこと
 
-- [ ] T003 [Foundation] Supabase 用マイグレーションを追加 (`db/migrations/001_google_spreadsheet_integration.sql`) — 接続情報・カラムマッピング・同期ログのテーブルを定義
-- [ ] T004 [Foundation] Supabase JWT 検証ユーティリティを実装 (`workers/google-sync/src/auth/verifySupabaseJwt.ts`)
-- [ ] T005 [Foundation] Supabase リポジトリ層を実装 (`workers/google-sync/src/repositories/googleConnections.ts`) — 接続・シート選択・ログ保存をカバー
-- [ ] T006 [Foundation] Google Sheets REST クライアントを実装 (`workers/google-sync/src/services/googleSheetsClient.ts`)
-- [ ] T007 [Foundation] 共有型定義を整備 (`workers/google-sync/src/types.ts`, `app/features/time-tracker/domain/googleSyncTypes.ts`)
-- [ ] T008 [Foundation] フロントエンドから Worker を呼び出す HTTP クライアントを追加 (`app/infra/google/googleSyncClient.ts`)
+- [X] T003 [Foundation] Supabase 用マイグレーションを追加 (`db/migrations/001_google_spreadsheet_integration.sql`) — 接続情報・カラムマッピング・同期ログのテーブルを定義
+- [X] T004 [Foundation] Supabase JWT 検証ユーティリティを実装 (`workers/google-sync/src/auth/verifySupabaseJwt.ts`)
+- [X] T005 [Foundation] Supabase リポジトリ層を実装 (`workers/google-sync/src/repositories/googleConnections.ts`) — 接続・シート選択・ログ保存をカバー
+- [X] T006 [Foundation] Google Sheets REST クライアントを実装 (`workers/google-sync/src/services/googleSheetsClient.ts`)
+- [X] T007 [Foundation] 共有型定義を整備 (`workers/google-sync/src/types.ts`, `app/features/time-tracker/domain/googleSyncTypes.ts`)
+- [X] T008 [Foundation] フロントエンドから Worker を呼び出す HTTP クライアントを追加 (`app/infra/google/googleSyncClient.ts`)
 
 **Checkpoint**: Google 連携の共通基盤構築完了。ユーザーストーリー実装に着手可能。
 
