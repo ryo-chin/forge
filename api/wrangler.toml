@@ -1,0 +1,12 @@
+name = "forge-api"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = []
+
+[observability.logs]
+enabled = true
+
+[vars]
+SUPABASE_URL = "https://elcsvuylornzhgtfkqnu.supabase.co"
+GOOGLE_CLIENT_ID = "700773988304-5d5vtest0iu8dhse94dd9f9mvepgvgq4.apps.googleusercontent.com"
+GOOGLE_REDIRECT_URI = "https://forge-api.h031203yama.workers.dev/integrations/google/oauth/callback"

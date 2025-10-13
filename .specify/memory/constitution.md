@@ -1,0 +1,185 @@
+<!--
+Sync Impact Report:
+- Version change: [NEW] → 1.0.0
+- Initial constitution created based on existing project documentation
+- Modified principles: N/A (initial creation)
+- Added sections: All core principles, Architecture Standards, Testing Strategy, Governance
+- Removed sections: N/A (initial creation)
+- Templates requiring updates:
+  ✅ constitution.md created
+  ⚠ plan-template.md (pending - will align constitution check section)
+  ⚠ spec-template.md (pending - will align requirement guidelines)
+  ⚠ tasks-template.md (pending - will align task categorization)
+- Follow-up TODOs: None
+-->
+
+# Forge Constitution
+
+## Core Principles
+
+### I. Feature-First Architecture
+
+すべての機能は `features/<feature-name>/` 配下で完結させる。UIコンポーネント、ドメインロジック、データ取得を独立したモジュールとして実装し、他の機能への依存を最小限に抑える。機能間で共有が必要な場合は、明示的な公開APIを通じて行う。
+
+**理由**: 機能の独立性を保つことで、並行開発、テスト、デプロイが容易になり、コードの保守性が向上する。
+
+### II. レイヤー分離とデータフロー
+
+機能内部は責務ごとに明確にレイヤー分離する:
+- `domain/`: 純粋関数、計算、バリデーション（副作用なし）
+- `components/`: UI とユーザーインタラクション
+- `hooks/data/`: データ取得・更新の副作用を集約
+- `infra/`: プラットフォーム固有の実装（API、ストレージ）
+
+データは `hooks/data/` から取得し、propsで子コンポーネントへ渡す。propsが煩雑な場合のみContext/Providerを使用する。
+
+**理由**: 責務の分離により、テストが容易になり、永続化レイヤーの差し替えが可能になる。
+
+### III. Test-First Development (NON-NEGOTIABLE)
+
+テストは実装の前に書く。TDD サイクル（Red-Green-Refactor）を厳守する:
+1. テストを書く
+2. テストが失敗することを確認
+3. 実装する
+4. テストが成功することを確認
+5. リファクタリング
+
+ユニット/コンポーネントテストは Vitest + Testing Library、E2Eテストは Playwright を使用する。
+
+**理由**: テストファーストにより、設計の問題を早期に発見でき、リファクタリングの安全性が保証される。
+
+### IV. Incremental Delivery & User Story Independence
+
+各ユーザーストーリーは独立して実装・テスト・デプロイ可能でなければならない。優先順位（P1, P2, P3）に従って段階的に価値を提供する。P1だけでMVP（Minimum Viable Product）として機能する。
+
+**理由**: 早期のフィードバック獲得、リスクの最小化、並行開発の実現。
+
+### V. Simplicity & YAGNI
+
+必要になるまで機能を実装しない（You Aren't Gonna Need It）。複雑なパターン（Repository、Presenter/Serviceレイヤーなど）は、明確な必要性が生じるまで導入しない。まずはシンプルな実装から始める。
+
+**理由**: 過度な抽象化は保守コストを増大させる。実際の問題が明確になってから適切な解決策を選択する。
+
+### VI. Type Safety & Explicit Interfaces
+
+TypeScript の型システムを最大限活用する。`any` の使用は禁止（やむを得ない場合は `unknown` を使用し、型ガードで絞り込む）。コンポーネントのpropsは明示的に型定義する。
+
+**理由**: 型安全性により、実行時エラーを大幅に削減し、リファクタリングの安全性を確保する。
+
+### VII. Documentation & Traceability
+
+実装ガイドライン（`IMPLEMENTS.md`）、アーキテクチャ図、ディレクトリ構成例は常に最新に保つ。コードの意図が自明でない場合はコメントで説明する。重要な決定事項はADR（Architecture Decision Record）として記録する。
+
+**理由**: チームメンバーの理解を助け、将来の保守を容易にする。
+
+## Architecture Standards
+
+### Directory Structure
+
+```
+app/
+├── infra/              # プラットフォーム固有実装
+│   ├── api/
+│   ├── localstorage/
+│   └── supabase/
+├── hooks/
+│   └── data/           # 共有データ取得フック
+├── lib/                # 純粋関数・ユーティリティ
+├── ui/                 # 共有UIコンポーネント・デザイントークン
+└── features/
+    └── <feature-name>/
+        ├── components/ # 機能固有UIコンポーネント
+        ├── domain/     # 純粋関数・ビジネスロジック
+        ├── hooks/
+        │   └── data/   # 機能固有データ取得フック
+        └── pages/      # ページエントリーポイント
+```
+
+### Technology Stack
+
+- **Framework**: React 18+ with TypeScript
+- **Build Tool**: Vite
+- **State Management**: TanStack Query (React Query) for server state
+- **Testing**: Vitest (unit/component), Playwright (E2E)
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **Deployment**: Cloudflare Workers/Pages
+
+### Code Organization Rules
+
+- Same file changes MUST be sequential (no parallel edits)
+- Different files CAN be edited in parallel
+- Circular dependencies are PROHIBITED
+- Feature-to-feature dependencies MUST go through explicit public APIs
+- Barrel files (`index.ts`) are optional but recommended for public APIs
+
+## Testing Strategy
+
+### Test Coverage Requirements
+
+- All domain logic MUST have unit tests
+- All UI components MUST have component tests
+- Critical user flows MUST have E2E tests
+- Data fetching hooks SHOULD be tested with mocked responses
+
+### Test Organization
+
+- Tests colocated with implementation (`.test.tsx`, `.test.ts`)
+- Integration tests in `tests/integration/`
+- E2E tests in `tests/e2e/`
+
+### Mocking Strategy
+
+- Mock `hooks/data/` functions to isolate UI/domain tests from network/storage
+- Use MSW (Mock Service Worker) for API mocking in integration tests
+- Avoid mocking implementation details; focus on behavior
+
+## Development Workflow
+
+### Feature Development Flow
+
+1. Create feature specification (`specs/<feature>/spec.md`)
+2. Generate implementation plan (`specs/<feature>/plan.md`)
+3. Generate task list (`specs/<feature>/tasks.md`)
+4. Implement tasks in priority order (P1 → P2 → P3)
+5. Each user story MUST be independently testable
+6. Deploy/demo after each story completion
+
+### Branch Strategy
+
+- Feature branches: `<number>-<feature-name>`
+- Prototype branches: `prototype/<branch-name>` (自己完結型、他への影響なし)
+- Main branch への直接コミット禁止
+
+### Commit Guidelines
+
+- Commit messages in Japanese
+- Follow conventional commits format when applicable
+- Reference issue/story numbers when relevant
+
+## Governance
+
+### Constitution Amendments
+
+- Amendments require documentation of rationale and impact analysis
+- Version increments follow semantic versioning:
+  - **MAJOR**: Backward-incompatible principle changes
+  - **MINOR**: New principles or significant additions
+  - **PATCH**: Clarifications, wording improvements
+- All amendments MUST update dependent templates and documentation
+
+### Compliance
+
+- All PRs MUST comply with core principles
+- Violations of NON-NEGOTIABLE principles are grounds for PR rejection
+- Complexity introduced MUST be justified with clear rationale
+- Use `app/IMPLEMENTS.md` as runtime development guidance
+
+### Review Process
+
+- Code reviews MUST verify:
+  - Test-first approach was followed
+  - Feature independence is maintained
+  - Type safety is preserved
+  - Documentation is updated
+
+**Version**: 1.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12

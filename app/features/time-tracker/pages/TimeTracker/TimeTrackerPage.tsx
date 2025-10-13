@@ -2,11 +2,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import '../../index.css';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { useRunningSession } from '@features/time-tracker/hooks/data/useRunningSession.ts';
+import { useGoogleSpreadsheetSync } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts';
+import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
 import { formatDateTimeLocal } from '@lib/date';
 import type { TimeTrackerSession } from '../../domain/types';
 import { Composer } from '@features/time-tracker/components/Composer';
 import { HistoryList } from '@features/time-tracker/components/HistoryList';
 import { EditorModal } from '@features/time-tracker/components/EditorModal';
+import { SyncStatusBanner } from '@features/time-tracker/components/SyncStatusBanner';
+import { GoogleSpreadsheetSettingsDialog } from '@features/time-tracker/components/GoogleSpreadsheetSettingsDialog';
 import {
   isModalSaveDisabled,
   buildUpdatedSession,
@@ -39,15 +43,26 @@ export function TimeTrackerPage() {
     persistSessions,
   } = useTimeTrackerSessions({ userId: user?.id ?? null });
   const {
-    state,
+    state: runningState,
     start,
     stop,
     updateDraft,
     adjustDuration,
   } = useRunningSession({ userId: user?.id ?? null });
+  const { state: syncState, syncSession } = useGoogleSpreadsheetSync();
+  const {
+    settings: googleSettings,
+    updateSelection,
+    fetchSpreadsheets,
+    fetchSheets,
+    startOAuth,
+  } = useGoogleSpreadsheetOptions();
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
+
+  // Google スプレッドシート設定ダイアログの開閉状態
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
   // モーダルの種類
   const [modalState, setModalState] = useState<ModalState>(null);
@@ -59,13 +74,13 @@ export function TimeTrackerPage() {
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
   const initialComposerProject =
-    state.status === 'running' ? state.draft.project ?? '' : '';
+    runningState.status === 'running' ? runningState.draft.project ?? '' : '';
   const [composerProject, setComposerProject] = useState(
     initialComposerProject,
   );
-  const isRunning = state.status === 'running';
-  const elapsedSeconds = state.elapsedSeconds;
-  const runningDraftTitle = isRunning ? state.draft.title : null;
+  const isRunning = runningState.status === 'running';
+  const elapsedSeconds = runningState.elapsedSeconds;
+  const runningDraftTitle = isRunning ? runningState.draft.title : null;
 
   // ==== モーダルの活性可否（フォームstateを廃し、現在のドメイン値から判定） ====
   const modalComputed = useMemo(() => {
@@ -88,9 +103,9 @@ export function TimeTrackerPage() {
           disabled: true,
         };
       }
-      const title = state.draft.title ?? '';
-      const project = state.draft.project ?? '';
-      const startTime = formatDateTimeLocal(state.draft.startedAt);
+      const title = runningState.draft.title ?? '';
+      const project = runningState.draft.project ?? '';
+      const startTime = formatDateTimeLocal(runningState.draft.startedAt);
       const endTime = ''; // 走行中は未設定
       return {
         title,
@@ -126,9 +141,9 @@ export function TimeTrackerPage() {
     isRunning,
     modalState,
     sessions,
-    state.draft?.project,
-    state.draft?.startedAt,
-    state.draft?.title,
+    runningState.draft?.project,
+    runningState.draft?.startedAt,
+    runningState.draft?.title,
   ]);
 
   // ==== Composer handlers ====
@@ -166,7 +181,13 @@ export function TimeTrackerPage() {
       };
     }
     const nextSessions = setSessions((prev) => [session, ...prev]);
-    persistSessions(nextSessions);
+
+    // 永続化を実行（非同期だがawaitせずPromiseを投げる）
+    void persistSessions(nextSessions).then(() => {
+      // 永続化完了後にGoogle同期を実行
+      void syncSession(session);
+    });
+
     const nextProject = session.project ?? '';
     setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
     setUndoState(null);
@@ -184,6 +205,7 @@ export function TimeTrackerPage() {
     persistSessions,
     setSessions,
     modalState,
+    syncSession,
   ]);
 
   const handleComposerAdjustDuration = useCallback(
@@ -195,9 +217,9 @@ export function TimeTrackerPage() {
 
   // ==== モーダル open/close ====
   const openRunningEditor = useCallback(() => {
-    if (state.status !== 'running') return;
+    if (runningState.status !== 'running') return;
     setModalState({ type: 'running' });
-  }, [state.status]);
+  }, [runningState.status]);
 
   const handleEditHistory = useCallback(
     (sessionId: string) => {
@@ -390,6 +412,59 @@ export function TimeTrackerPage() {
     [modalState],
   );
 
+  const lastSyncedSession = useMemo(() => {
+    if (!syncState.lastSessionId) return null;
+    return (
+      sessions.find((session) => session.id === syncState.lastSessionId) ?? null
+    );
+  }, [sessions, syncState.lastSessionId]);
+
+  const handleRetrySync = useCallback(() => {
+    if (!lastSyncedSession) return;
+    void syncSession(lastSyncedSession);
+  }, [lastSyncedSession, syncSession]);
+
+  // 表示用に先頭5件のみに制限
+  const displaySessions = useMemo(() => sessions.slice(0, 5), [sessions]);
+
+  // ==== Google スプレッドシート設定 ====
+  const handleOpenSettings = useCallback(() => {
+    setIsSettingsDialogOpen(true);
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setIsSettingsDialogOpen(false);
+  }, []);
+
+  const handleSaveSettings = useCallback(
+    async (selection: {
+      spreadsheetId: string;
+      sheetId: number;
+      sheetTitle: string;
+      columnMapping?: Record<string, string>;
+    }) => {
+      try {
+        await updateSelection(selection);
+        setIsSettingsDialogOpen(false);
+      } catch (error) {
+        console.error('Failed to update Google spreadsheet settings:', error);
+      }
+    },
+    [updateSelection],
+  );
+
+  const handleStartOAuth = useCallback(async () => {
+    try {
+      const currentUrl = window.location.href;
+      const response = await startOAuth(currentUrl);
+      if (response.authorizationUrl) {
+        window.location.href = response.authorizationUrl;
+      }
+    } catch (error) {
+      console.error('Failed to start OAuth:', error);
+    }
+  }, [startOAuth]);
+
   // ==== プロジェクトの同期（走行中だけdraftへ反映） ====
   useEffect(() => {
     if (!isRunning) return;
@@ -414,9 +489,26 @@ export function TimeTrackerPage() {
     <main className="time-tracker">
       <div className="time-tracker__panel">
         <header className="time-tracker__header">
-          <h1>Time Tracker</h1>
-          <p>何をやりますか？</p>
-        </header>
+         <h1>Time Tracker</h1>
+         <p>何をやりますか？</p>
+         <button
+           type="button"
+           onClick={handleOpenSettings}
+           className="time-tracker__settings-button"
+           aria-label="Google スプレッドシート設定"
+         >
+           ⚙️ 設定
+         </button>
+       </header>
+
+        <SyncStatusBanner
+          state={syncState}
+          onRetry={
+            syncState.status === 'error' && lastSyncedSession
+              ? handleRetrySync
+              : undefined
+          }
+        />
 
         <Composer
           sessions={sessions}
@@ -434,7 +526,7 @@ export function TimeTrackerPage() {
         />
 
         <HistoryList
-          sessions={sessions}
+          sessions={displaySessions}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
         />
@@ -465,6 +557,19 @@ export function TimeTrackerPage() {
           onCancel={closeModal}
         />
       ) : null}
+
+      <GoogleSpreadsheetSettingsDialog
+        isOpen={isSettingsDialogOpen}
+        isConnected={googleSettings.data?.connectionStatus === 'active'}
+        currentSpreadsheetId={googleSettings.data?.spreadsheet?.id}
+        currentSheetId={googleSettings.data?.spreadsheet?.sheetId}
+        currentColumnMapping={googleSettings.data?.columnMapping?.mappings}
+        onClose={handleCloseSettings}
+        onSave={handleSaveSettings}
+        onStartOAuth={handleStartOAuth}
+        onFetchSpreadsheets={fetchSpreadsheets}
+        onFetchSheets={fetchSheets}
+      />
     </main>
   );
 }

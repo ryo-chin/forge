@@ -1,0 +1,405 @@
+openapi: 3.0.3
+info:
+  title: Time Tracker Google Spreadsheet Integration API
+  version: 0.1.0
+  description: >
+    Cloudflare Worker endpoints that proxy Google OAuth and Sheets API calls for
+    the Time Tracker feature. All routes require an authenticated Supabase user
+    (JWT) unless otherwise noted.
+servers:
+  - url: https://api.example.com
+    description: Cloudflare Workers production base URL (to be replaced per environment)
+  - url: http://localhost:8787
+    description: Wrangler dev server
+tags:
+  - name: oauth
+    description: Google OAuth handshake
+  - name: settings
+    description: Spreadsheet & column mapping configuration
+  - name: sync
+    description: Session synchronization
+paths:
+  /integrations/google/oauth/start:
+    post:
+      tags: [oauth]
+      summary: Create Google OAuth authorization URL
+      operationId: createGoogleOauthSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirectPath:
+                  type: string
+                  description: |
+                    Frontend-relative path to redirect to after successful authorization.
+              required: [redirectPath]
+      responses:
+        '200':
+          description: Authorization URL issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorizationUrl:
+                    type: string
+                    format: uri
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /integrations/google/oauth/callback:
+    get:
+      tags: [oauth]
+      summary: OAuth redirect handler
+      operationId: handleGoogleOauthCallback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: state
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: error
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirects back to frontend with status query parameter
+          headers:
+            Location:
+              description: Frontend URL with status message (`status=success|error`)
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /integrations/google/oauth/revoke:
+    post:
+      tags: [oauth]
+      summary: Disconnect Google account and purge stored tokens
+      operationId: revokeGoogleOauth
+      responses:
+        '204':
+          description: Revoked successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /integrations/google/spreadsheets:
+    get:
+      tags: [settings]
+      summary: List accessible spreadsheets for current user
+      operationId: listSpreadsheets
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+            description: Case-insensitive substring filter
+      responses:
+        '200':
+          description: Available spreadsheets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Spreadsheet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/ConnectionRequired'
+  /integrations/google/spreadsheets/{spreadsheetId}/sheets:
+    get:
+      tags: [settings]
+      summary: List sheets (tabs) inside a spreadsheet
+      operationId: listSheets
+      parameters:
+        - in: path
+          name: spreadsheetId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sheets inside spreadsheet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sheet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Spreadsheet not found or inaccessible
+  /integrations/google/settings:
+    get:
+      tags: [settings]
+      summary: Retrieve current spreadsheet selection and column mapping
+      operationId: getGoogleSettings
+      responses:
+        '200':
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [settings]
+      summary: Update spreadsheet selection and column mapping
+      operationId: updateGoogleSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGoogleSettingsRequest'
+      responses:
+        '200':
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /integrations/google/sync:
+    post:
+      tags: [sync]
+      summary: Append a session to Google Spreadsheet
+      operationId: syncSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncRequest'
+      responses:
+        '202':
+          description: Sync accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncLog'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/ConnectionRequired'
+  /integrations/google/sync/{sessionId}/retry:
+    post:
+      tags: [sync]
+      summary: Retry failed sync for a given session
+      operationId: retrySync
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Retry enqueued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncLog'
+        '404':
+          description: Sync log not found
+        '409':
+          $ref: '#/components/responses/ConnectionRequired'
+components:
+  schemas:
+    Spreadsheet:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+    Sheet:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        index:
+          type: integer
+    ColumnMapping:
+      type: object
+      description: Maps Time Tracker fields to spreadsheet columns or headers
+      properties:
+        title:
+          type: string
+          example: A
+        startedAt:
+          type: string
+          example: B
+        endedAt:
+          type: string
+          example: C
+        durationSeconds:
+          type: string
+        project:
+          type: string
+        notes:
+          type: string
+        tags:
+          type: string
+        skill:
+          type: string
+        intensity:
+          type: string
+      required:
+        - title
+        - startedAt
+        - endedAt
+        - durationSeconds
+    GoogleSettings:
+      type: object
+      properties:
+        connectionStatus:
+          type: string
+          enum: [active, revoked, error]
+        spreadsheet:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Spreadsheet'
+        sheet:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Sheet'
+        columnMapping:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ColumnMapping'
+        updatedAt:
+          type: string
+          format: date-time
+    UpdateGoogleSettingsRequest:
+      type: object
+      properties:
+        spreadsheetId:
+          type: string
+        sheetId:
+          type: integer
+        sheetTitle:
+          type: string
+        columnMapping:
+          $ref: '#/components/schemas/ColumnMapping'
+      required:
+        - spreadsheetId
+        - sheetId
+        - sheetTitle
+    SessionPayload:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+        project:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        skill:
+          type: string
+          nullable: true
+        intensity:
+          type: string
+          nullable: true
+      required:
+        - id
+        - title
+        - startedAt
+        - endedAt
+        - durationSeconds
+    SyncRequest:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/SessionPayload'
+        source:
+          type: string
+          description: Client identifier (`time-tracker-app`)
+      required:
+        - session
+    SyncLog:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        status:
+          type: string
+          enum: [pending, success, failed]
+        attemptedAt:
+          type: string
+          format: date-time
+        failureReason:
+          type: string
+          nullable: true
+        retryCount:
+          type: integer
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+  responses:
+    Unauthorized:
+      description: Supabase JWT missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Request payload validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ConnectionRequired:
+      description: Google connection or configuration missing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

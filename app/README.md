@@ -18,10 +18,11 @@ npm install
 ## 利用可能なスクリプト
 
 - `npm run dev` — Vite 開発サーバーを起動
-- `npm run lint` — ESLint による静的解析
 - `npm run test:unit` — Vitest でユニットテストを実行
 - `npm run test:e2e` — Playwright でE2Eテストを実行
 - `npm run build` — 型チェックと本番ビルドを実行
+
+**Lint**: プロジェクトルートから `npm run lint` または `npm run lint:app` を実行してください。
 
 ## 環境変数
 
