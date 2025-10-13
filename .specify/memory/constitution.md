@@ -1,15 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: [NEW] → 1.0.0
-- Initial constitution created based on existing project documentation
-- Modified principles: N/A (initial creation)
-- Added sections: All core principles, Architecture Standards, Testing Strategy, Governance
-- Removed sections: N/A (initial creation)
+- Version change: 1.0.0 → 1.0.1
+- Modified principles: I. Feature-First Architecture (path clarified)
+- Added sections: None
+- Removed sections: None
 - Templates requiring updates:
-  ✅ constitution.md created
-  ⚠ plan-template.md (pending - will align constitution check section)
-  ⚠ spec-template.md (pending - will align requirement guidelines)
-  ⚠ tasks-template.md (pending - will align task categorization)
+  ✅ .specify/templates/plan-template.md（ディレクトリ構成の更新）
+  ✅ .specify/templates/tasks-template.md（パスガイドラインの更新）
+  ⚠ spec-template.md（変更なし、継続利用可）
 - Follow-up TODOs: None
 -->
 
@@ -19,7 +17,7 @@ Sync Impact Report:
 
 ### I. Feature-First Architecture
 
-すべての機能は `features/<feature-name>/` 配下で完結させる。UIコンポーネント、ドメインロジック、データ取得を独立したモジュールとして実装し、他の機能への依存を最小限に抑える。機能間で共有が必要な場合は、明示的な公開APIを通じて行う。
+すべての機能は `app/src/features/<feature-name>/` 配下で完結させる。UIコンポーネント、ドメインロジック、データ取得を独立したモジュールとして実装し、他の機能への依存を最小限に抑える。機能間で共有が必要な場合は、明示的な公開APIを通じて行う。
 
 **理由**: 機能の独立性を保つことで、並行開発、テスト、デプロイが容易になり、コードの保守性が向上する。
 
@@ -78,21 +76,23 @@ TypeScript の型システムを最大限活用する。`any` の使用は禁止
 
 ```
 app/
-├── infra/              # プラットフォーム固有実装
-│   ├── api/
-│   ├── localstorage/
-│   └── supabase/
-├── hooks/
-│   └── data/           # 共有データ取得フック
-├── lib/                # 純粋関数・ユーティリティ
-├── ui/                 # 共有UIコンポーネント・デザイントークン
-└── features/
-    └── <feature-name>/
-        ├── components/ # 機能固有UIコンポーネント
-        ├── domain/     # 純粋関数・ビジネスロジック
-        ├── hooks/
-        │   └── data/   # 機能固有データ取得フック
-        └── pages/      # ページエントリーポイント
+├── src/
+│   ├── features/
+│   │   └── <feature-name>/
+│   │       ├── components/  # 機能固有UIコンポーネント
+│   │       ├── domain/      # 純粋関数・ビジネスロジック
+│   │       ├── hooks/
+│   │       │   └── data/    # 機能固有データ取得フック
+│   │       └── pages/       # ページエントリーポイント
+│   ├── infra/               # プラットフォーム固有実装
+│   ├── hooks/               # 共有hooks
+│   ├── lib/                 # 純粋関数・ユーティリティ
+│   ├── ui/                  # 共有UIコンポーネント・トークン
+│   └── index.tsx            # アプリエントリーポイント
+├── tests/
+│   └── e2e/                 # Playwright シナリオ
+├── IMPLEMENTS.md
+└── package.json
 ```
 
 ### Technology Stack
@@ -123,9 +123,9 @@ app/
 
 ### Test Organization
 
-- Tests colocated with implementation (`.test.tsx`, `.test.ts`)
-- Integration tests in `tests/integration/`
-- E2E tests in `tests/e2e/`
+- 単体・コンポーネントテストは実装ファイルと同階層に `.test.ts[x]` を配置
+- 機能横断の統合テストは `app/tests` 配下に配置（必要に応じてサブディレクトリを作成）
+- E2E テストは `app/tests/e2e/`
 
 ### Mocking Strategy
 
@@ -182,4 +182,4 @@ app/
   - Type safety is preserved
   - Documentation is updated
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12
+**Version**: 1.0.1 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-13
