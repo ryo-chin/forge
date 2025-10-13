@@ -15,21 +15,21 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@infra/*": ["infra/*"],
-      "@hooks/*": ["hooks/*"],
-      "@lib/*": ["lib/*"],
-      "@ui/*": ["ui/*"],
-      "@features/*": ["features/*"]
+      "@infra/*": ["src/infra/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@lib/*": ["src/lib/*"],
+      "@ui/*": ["src/ui/*"],
+      "@features/*": ["src/features/*"]
     },
     "types": ["vitest/globals", "vite/client"]
   },
   "include": [
     "src",
-    "infra",
-    "hooks",
-    "lib",
-    "ui",
-    "features",
+    "src/infra",
+    "src/hooks",
+    "src/lib",
+    "src/ui",
+    "src/features",
     "vite.config.ts",
     "vitest.config.ts",
     "vitest.setup.ts",

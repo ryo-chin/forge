@@ -2,11 +2,11 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
-import { TimeTrackerPage } from '@features/time-tracker';
-import { AuthProvider } from '@infra/auth';
-import { AuthStatusBar, AuthLoading, LoginPage } from './components';
-import { useAuth } from '@infra/auth';
-import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
+import { TimeTrackerPage } from './features/time-tracker';
+import { AuthProvider } from './infra/auth';
+import { AuthStatusBar, AuthLoading, LoginPage } from '@features/logiin';
+import { useAuth } from './infra/auth';
+import { useTimeTrackerSessions } from './features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 
 const queryClient = new QueryClient();
 
