@@ -20,53 +20,54 @@
 ### ディレクトリ構成例
 ```
 app
-├── infra
-│   ├── api
-│   │   ├── httpClient.ts
-│   │   └── sessionApi.ts
-│   └── localstorage
-│       └── sessionStorage.ts
-├── hooks
-│   ├── data
-│   │   └── useCurrentUser.ts
-│   ├── useIntersectionObserver.ts
-│   └── useEventListener.ts
-├── lib
-│   ├── formatDuration.ts
-│   └── date.ts
-├── ui
-│   ├── components
-│   │   ├── Button
-│   │   │   ├── Button.tsx
-│   │   │   └── Button.stories.tsx
-│   │   └── Modal
-│   │       ├── Modal.tsx
-│   │       └── Modal.hooks.ts
-│   └── tokens
-│       ├── colors.ts
-│       └── spacing.ts
-└── features
-    └── time-tracker
-        ├── components
-        │   ├── RunningTimer
-        │   │   ├── RunningTimer.tsx
-        │   │   ├── RunningTimer.hooks.ts
-        │   │   └── RunningTimer.test.tsx
-        │   └── HistoryList
-        │       ├── HistoryList.tsx
-        │       ├── HistoryList.hooks.ts
-        │       └── HistoryList.test.tsx
-        ├── domain
-        │   ├── session.ts
-        │   └── sessionReducer.ts
-        ├── hooks
-        │   └── data
-        │       ├── useSessionQueries.ts
-        │       └── useSessionMutations.ts
-        ├── pages
-        │   ├── TimeTrackerPage.tsx
-        │   └── TimeTrackerPage.test.tsx
-        └── index.ts
+└── src
+    ├── infra
+    │   ├── api
+    │   │   ├── httpClient.ts
+    │   │   └── sessionApi.ts
+    │   └── localstorage
+    │       └── sessionStorage.ts
+    ├── hooks
+    │   ├── data
+    │   │   └── useCurrentUser.ts
+    │   ├── useIntersectionObserver.ts
+    │   └── useEventListener.ts
+    ├── lib
+    │   ├── formatDuration.ts
+    │   └── date.ts
+    ├── ui
+    │   ├── components
+    │   │   ├── Button
+    │   │   │   ├── Button.tsx
+    │   │   │   └── Button.stories.tsx
+    │   │   └── Modal
+    │   │       ├── Modal.tsx
+    │   │       └── Modal.hooks.ts
+    │   └── tokens
+    │       ├── colors.ts
+    │       └── spacing.ts
+    └── features
+        └── time-tracker
+            ├── components
+            │   ├── RunningTimer
+            │   │   ├── RunningTimer.tsx
+            │   │   ├── RunningTimer.hooks.ts
+            │   │   └── RunningTimer.test.tsx
+            │   └── HistoryList
+            │       ├── HistoryList.tsx
+            │       ├── HistoryList.hooks.ts
+            │       └── HistoryList.test.tsx
+            ├── domain
+            │   ├── session.ts
+            │   └── sessionReducer.ts
+            ├── hooks
+            │   └── data
+            │       ├── useSessionQueries.ts
+            │       └── useSessionMutations.ts
+            ├── pages
+            │   ├── TimeTrackerPage.tsx
+            │   └── TimeTrackerPage.test.tsx
+            └── index.ts
 ```
 - `features/<feature>/components/<ComponentName>/` は UI コンポーネント本体と、必要に応じて同階層の `logic.ts` や `*.hooks.ts` に切り出したロジックで構成する。ページ単位のエントリーポイントは `features/<feature>/pages/` に置き、必要なコンポーネントやデータフックを束ねる。
 - `features/<feature>/hooks/data/` は機能専用のクエリやミューテーションを集約し、`domain/` や `components/` からの副作用を排除する。
