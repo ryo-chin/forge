@@ -1,0 +1,12 @@
+{
+  "name": "forge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Time Tracker with Google Spreadsheet integration",
+  "scripts": {
+    "lint": "npm run lint --prefix app && npm run lint --prefix workers/google-sync",
+    "lint:fix": "npm run lint:fix --prefix app && npm run lint:fix --prefix workers/google-sync",
+    "lint:app": "npm run lint --prefix app",
+    "lint:worker": "npm run lint --prefix workers/google-sync"
+  }
+}

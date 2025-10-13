@@ -5,9 +5,10 @@ Time TrackerのセッションをGoogle Spreadsheetsへ同期するためのClou
 ## 機能
 
 - **OAuth 2.0 認証**: Googleアカウントとの安全な連携
+- **トークン自動リフレッシュ**: アクセストークンの期限切れ5分前に自動更新
 - **スプレッドシート操作**: Google Sheets APIを使用した読み書き
 - **セッション同期**: Time Trackerのセッションをスプレッドシートへ自動追記
-- **カラムマッピング**: フィールドとスプレッドシート列の柔軟なマッピング
+- **カラムマッピング**: フィールドとスプレッドシート列の柔軟なマッピング（列記号・ヘッダー名対応）
 - **エラーハンドリング**: 同期失敗時のログ記録とリトライ機能
 
 ## エンドポイント
@@ -25,7 +26,6 @@ Time TrackerのセッションをGoogle Spreadsheetsへ同期するためのClou
 
 ### 同期
 - `POST /integrations/google/sync` - セッションをスプレッドシートへ同期
-- `POST /integrations/google/sync/{sessionId}/retry` - 失敗した同期をリトライ
 
 ## ローカル開発
 
