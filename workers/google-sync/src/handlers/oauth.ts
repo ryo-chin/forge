@@ -7,6 +7,7 @@ import {
 import {
   getConnectionByUser,
   upsertConnection,
+  updateAccessToken,
   SupabaseRepositoryError,
 } from '../repositories/googleConnections';
 import {
@@ -135,6 +136,84 @@ const parseTokenResponse = async (response: Response) => {
     id_token?: string;
     token_type?: string;
   };
+};
+
+
+/**
+ * リフレッシュトークンを使って新しいアクセストークンを取得
+ */
+export const refreshAccessToken = async (
+  env: Env,
+  refreshToken: string,
+): Promise<{
+  accessToken: string;
+  expiresAt: string;
+}> => {
+  ensureEnv(env);
+
+  const body = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    client_secret: env.GOOGLE_CLIENT_SECRET,
+    refresh_token: refreshToken,
+    grant_type: 'refresh_token',
+  });
+
+  const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  });
+
+  const tokenPayload = await parseTokenResponse(tokenResponse);
+  const accessToken = tokenPayload.access_token;
+  if (!accessToken) {
+    throw new Error('Missing access_token from refresh response');
+  }
+
+  const expiresAt = new Date(
+    Date.now() + (typeof tokenPayload.expires_in === 'number' ? tokenPayload.expires_in * 1000 : 3600000),
+  ).toISOString();
+
+  return { accessToken, expiresAt };
+};
+
+
+/**
+ * アクセストークンが期限切れかチェックし、必要ならリフレッシュ
+ * 更新した場合はDBも更新する
+ */
+export const ensureValidAccessToken = async (
+  env: Env,
+  connection: {
+    id: string;
+    access_token: string;
+    refresh_token: string;
+    access_token_expires_at: string;
+  },
+): Promise<string> => {
+  const expiresAt = new Date(connection.access_token_expires_at);
+  const now = new Date();
+
+  // 有効期限の5分前にリフレッシュ（余裕を持たせる）
+  const bufferMs = 5 * 60 * 1000;
+  const needsRefresh = expiresAt.getTime() - now.getTime() < bufferMs;
+
+  if (!needsRefresh) {
+    return connection.access_token;
+  }
+
+  // トークンをリフレッシュ
+  const { accessToken, expiresAt: newExpiresAt } = await refreshAccessToken(
+    env,
+    connection.refresh_token,
+  );
+
+  // DBを更新
+  await updateAccessToken(env, connection.id, accessToken, newExpiresAt);
+
+  return accessToken;
 };
 
 export const handleOauthStart = async (

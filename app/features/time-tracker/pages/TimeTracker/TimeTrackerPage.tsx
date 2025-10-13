@@ -53,7 +53,6 @@ export function TimeTrackerPage() {
   const {
     settings: googleSettings,
     updateSelection,
-    isUpdating: isUpdatingGoogleSettings,
     fetchSpreadsheets,
     fetchSheets,
     startOAuth,
@@ -172,7 +171,7 @@ export function TimeTrackerPage() {
     [start],
   );
 
-  const handleComposerStop = useCallback(async () => {
+  const handleComposerStop = useCallback(() => {
     const previousTitle = runningDraftTitle ?? '';
     const session = stop();
     if (!session) {
@@ -182,8 +181,13 @@ export function TimeTrackerPage() {
       };
     }
     const nextSessions = setSessions((prev) => [session, ...prev]);
-    await persistSessions(nextSessions);
-    void syncSession(session);
+
+    // 永続化を実行（非同期だがawaitせずPromiseを投げる）
+    void persistSessions(nextSessions).then(() => {
+      // 永続化完了後にGoogle同期を実行
+      void syncSession(session);
+    });
+
     const nextProject = session.project ?? '';
     setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
     setUndoState(null);
@@ -420,6 +424,9 @@ export function TimeTrackerPage() {
     void syncSession(lastSyncedSession);
   }, [lastSyncedSession, syncSession]);
 
+  // 表示用に先頭5件のみに制限
+  const displaySessions = useMemo(() => sessions.slice(0, 5), [sessions]);
+
   // ==== Google スプレッドシート設定 ====
   const handleOpenSettings = useCallback(() => {
     setIsSettingsDialogOpen(true);
@@ -519,7 +526,7 @@ export function TimeTrackerPage() {
         />
 
         <HistoryList
-          sessions={sessions}
+          sessions={displaySessions}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
         />

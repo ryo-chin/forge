@@ -221,6 +221,28 @@ export const upsertConnection = async (
   return rows[0];
 };
 
+
+export const updateAccessToken = async (
+  env: Env,
+  connectionId: string,
+  accessToken: string,
+  expiresAt: string,
+): Promise<void> => {
+  await request(
+    env,
+    'PATCH',
+    'google_spreadsheet_connections',
+    {
+      searchParams: { id: `eq.${connectionId}` },
+      body: {
+        access_token: accessToken,
+        access_token_expires_at: expiresAt,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  );
+};
+
 export const updateConnectionSelection = async (
   env: Env,
   userId: string,

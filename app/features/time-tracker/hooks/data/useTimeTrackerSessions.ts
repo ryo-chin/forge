@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createTimeTrackerDataSource } from '@infra/repository/TimeTracker';
 import type { TimeTrackerSession } from '@features/time-tracker/domain/types.ts';
 import type { TimeTrackerDataSource } from '@infra/repository/TimeTracker';
 
 const defaultNow = () => Date.now();
 
-export const TIME_TRACKER_SESSIONS_QUERY_KEY = ['time-tracker', 'sessions'] as const;
+export const TIME_TRACKER_SESSIONS_QUERY_KEY = [
+  'time-tracker',
+  'sessions',
+] as const;
 
 type SessionsUpdater =
   | TimeTrackerSession[]
@@ -21,7 +20,7 @@ type UseTimeTrackerSessionsOptions = {
   userId?: string | null;
 };
 
-export const export const useTimeTrackerSessions = (
+export const useTimeTrackerSessions = (
   options: UseTimeTrackerSessionsOptions = {},
 ) => {
   const { now = defaultNow, userId = null } = options;
@@ -104,9 +103,10 @@ export const export const useTimeTrackerSessions = (
       }
       const target =
         sessions ??
-        ((queryClient.getQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY) as
+        (queryClient.getQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY) as
           | TimeTrackerSession[]
-          | undefined) ?? dataSource.initialSessions);
+          | undefined) ??
+        dataSource.initialSessions;
       await persistSessionsMutation.mutateAsync(target);
     },
     [

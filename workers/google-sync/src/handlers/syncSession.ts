@@ -28,6 +28,7 @@ import {
   conflict,
   serverError,
 } from '../http/response';
+import { ensureValidAccessToken } from './oauth';
 
 const formatDateTime = (input: string): string => {
   const date = new Date(input);
@@ -282,7 +283,18 @@ export const handleSyncSession = async (
     throw error;
   }
 
-  const client = GoogleSheetsClient.fromAccessToken(connection.access_token);
+  // トークンが期限切れの場合はリフレッシュ
+  let accessToken: string;
+  try {
+    accessToken = await ensureValidAccessToken(env, connection);
+  } catch (error) {
+    return serverError(
+      error instanceof Error ? error.message : 'Failed to refresh access token',
+      401,
+    );
+  }
+
+  const client = GoogleSheetsClient.fromAccessToken(accessToken);
 
   try {
     // ヘッダー名を使用したマッピングの場合、ヘッダー行を読み取る

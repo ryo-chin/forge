@@ -22,6 +22,7 @@ import {
   conflict,
   serverError,
 } from '../http/response';
+import { ensureValidAccessToken } from './oauth';
 
 type ConnectionRow = Awaited<ReturnType<typeof getConnectionByUser>>;
 
@@ -310,7 +311,18 @@ export const handleListSpreadsheets = async (
     return error ?? conflict('connection_missing', 'Google spreadsheet connection not found');
   }
 
-  const client = GoogleSheetsClient.fromAccessToken(connection.access_token);
+  // トークンが期限切れの場合はリフレッシュ
+  let accessToken: string;
+  try {
+    accessToken = await ensureValidAccessToken(env, connection);
+  } catch (err) {
+    return serverError(
+      err instanceof Error ? err.message : 'Failed to refresh access token',
+      401,
+    );
+  }
+
+  const client = GoogleSheetsClient.fromAccessToken(accessToken);
   const query = new URL(request.url).searchParams.get('q') ?? undefined;
 
   try {
@@ -365,7 +377,18 @@ export const handleListSheets = async (
     return error ?? conflict('connection_missing', 'Google spreadsheet connection not found');
   }
 
-  const client = GoogleSheetsClient.fromAccessToken(connection.access_token);
+  // トークンが期限切れの場合はリフレッシュ
+  let accessToken: string;
+  try {
+    accessToken = await ensureValidAccessToken(env, connection);
+  } catch (err) {
+    return serverError(
+      err instanceof Error ? err.message : 'Failed to refresh access token',
+      401,
+    );
+  }
+
+  const client = GoogleSheetsClient.fromAccessToken(accessToken);
 
   try {
     const sheets = await client.getSpreadsheetSheets(spreadsheetId);
