@@ -76,18 +76,18 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...your-anon-key...
 
 # Google連携を有効化（WorkerのURLを設定）
-VITE_GOOGLE_SYNC_API_BASE_URL=http://localhost:8787
+VITE_API_BASE_URL=http://localhost:8787
 ```
 
-### 4.2. Worker（workers/google-sync）の設定
+### 4.2. Worker（api）の設定
 
 ```bash
-cd workers/google-sync
+cd api
 npm install
 cp .dev.vars.example .dev.vars
 ```
 
-`workers/google-sync/.dev.vars` を編集：
+`api/.dev.vars` を編集：
 
 ```bash
 # Supabase設定
@@ -111,9 +111,9 @@ GOOGLE_REDIRECT_URI=http://localhost:8787/integrations/google/oauth/callback
 | `VITE_TIME_DATA_SOURCE` | データソース（`local` または `supabase`） | `supabase` |
 | `VITE_SUPABASE_URL` | Supabase プロジェクト URL | `https://xxx.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Supabase Anon Key（公開OK） | `eyJ...` |
-| `VITE_GOOGLE_SYNC_API_BASE_URL` | Worker の URL（空にすると無効） | `http://localhost:8787` |
+| `VITE_API_BASE_URL` | Worker の URL（空にすると無効） | `http://localhost:8787` |
 
-### Worker（workers/google-sync/.dev.vars）
+### Worker（api/.dev.vars）
 
 | 変数名 | 説明 | 例 |
 |--------|------|-----|
@@ -128,7 +128,7 @@ GOOGLE_REDIRECT_URI=http://localhost:8787/integrations/google/oauth/callback
 ### ターミナル1: Worker の起動
 
 ```bash
-cd workers/google-sync
+cd api
 npm run dev
 ```
 
@@ -191,7 +191,7 @@ npm run dev
 ### Worker が起動しない
 
 - `.dev.vars` ファイルが正しく設定されているか確認
-- `workers/google-sync/node_modules` を削除して `npm install` を再実行
+- `api/node_modules` を削除して `npm install` を再実行
 
 ### Google認証後にリダイレクトされない
 
@@ -215,7 +215,7 @@ npm run dev
 ### 9.1. Worker のデプロイ
 
 ```bash
-cd workers/google-sync
+cd api
 wrangler deploy
 ```
 
@@ -234,7 +234,7 @@ wrangler secret put GOOGLE_REDIRECT_URI
 本番環境の `app/.env` で Worker の本番URLを設定：
 
 ```bash
-VITE_GOOGLE_SYNC_API_BASE_URL=https://your-worker.workers.dev
+VITE_API_BASE_URL=https://your-worker.workers.dev
 ```
 
 ### 9.4. Google OAuth の本番リダイレクトURI追加

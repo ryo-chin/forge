@@ -1,4 +1,4 @@
-const BASE_URL_KEY = 'VITE_GOOGLE_SYNC_API_BASE_URL';
+const BASE_URL_KEY = 'VITE_API_BASE_URL';
 
 export const getGoogleSyncApiBaseUrl = (): string => {
   const raw = import.meta.env[BASE_URL_KEY];

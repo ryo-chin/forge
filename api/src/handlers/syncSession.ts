@@ -32,8 +32,14 @@ import { ensureValidAccessToken } from './oauth';
 
 const formatDateTime = (input: string): string => {
   const date = new Date(input);
+
+  // JST（UTC+9）に変換
+  const jstOffset = 9 * 60; // 9時間 = 540分
+  const utcTime = date.getTime();
+  const jstTime = new Date(utcTime + jstOffset * 60 * 1000);
+
   const pad = (value: number) => value.toString().padStart(2, '0');
-  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return `${jstTime.getUTCFullYear()}/${pad(jstTime.getUTCMonth() + 1)}/${pad(jstTime.getUTCDate())} ${pad(jstTime.getUTCHours())}:${pad(jstTime.getUTCMinutes())}:${pad(jstTime.getUTCSeconds())}`;
 };
 
 const normalizeSessionPayload = (session: SyncSessionPayload) => ({
