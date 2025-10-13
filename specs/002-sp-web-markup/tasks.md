@@ -26,9 +26,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: 既存フロントエンド環境の再確認とモバイル検証の基盤整備
 
-- [ ] T001 [P] Install dependencies for frontend (`npm install`) 並びに Playwright モバイルプロジェクトの確認
-- [ ] T002 [P] `app/src/features/time-tracker/index.css` の現状スタイルをレビューしモバイル対応に必要な共通トークンを洗い出す
-- [ ] T003 [P] Playwright の `Mobile Chrome` プロジェクト設定を quickstart に従い実行確認
+- [X] T001 [P] Install dependencies for frontend (`npm install`) 並びに Playwright モバイルプロジェクトの確認
+- [X] T002 [P] `app/src/features/time-tracker/index.css` の現状スタイルをレビューしモバイル対応に必要な共通トークンを洗い出す
+- [X] T003 [P] Playwright の `Mobile Chrome` プロジェクト設定を quickstart に従い実行確認
 
 ---
 
@@ -36,9 +36,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: すべてのユーザーストーリーに共通する基盤の整備
 
-- [ ] T004 定義済み `HamburgerMenuState`/`ResponsiveLayoutState` を扱うための UI state hook ひな形を `app/src/features/time-tracker/pages/TimeTracker/hooks.ts` に用意
-- [ ] T005 `app/src/features/time-tracker/index.css` にモバイル用ブレークポイント変数・共通ユーティリティクラス（タップ領域 44px、safe-area padding）を追加
-- [ ] T006 TimeTrackerPage の layout コンテナへ viewport クラスを付与する仕組みを `app/src/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx` に導入（まだスタイル適用は最小限）
+- [X] T004 定義済み `HamburgerMenuState`/`ResponsiveLayoutState` を扱うための UI state hook ひな形を `app/src/features/time-tracker/pages/TimeTracker/hooks.ts` に用意
+- [X] T005 `app/src/features/time-tracker/index.css` にモバイル用ブレークポイント変数・共通ユーティリティクラス（タップ領域 44px、safe-area padding）を追加
+- [X] T006 TimeTrackerPage の layout コンテナへ viewport クラスを付与する仕組みを `app/src/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx` に導入（まだスタイル適用は最小限）
 
 **Checkpoint**: Responsive state と共通スタイルの基盤が整い、ユーザーストーリー実装が開始できる状態
 
@@ -52,10 +52,10 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P][US1] `TimeTrackerPage` のメインレイアウトを縦積みに変更（`app/src/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx`）
-- [ ] T008 [P][US1] コンポーザーとタイマーブロックの CSS をモバイル向けに再構成（`app/src/features/time-tracker/index.css`）
-- [ ] T009 [US1] タイマー操作ボタンのタップ領域/フォントサイズ調整（`app/src/features/time-tracker/components/Composer/Composer.tsx` と CSS）
-- [ ] T010 [US1] 開始/停止後のフォーカスリセットやスクロール防止確認のテストシナリオを Playwright に追加（`app/tests/e2e/time-tracker-mobile.spec.ts`）
+- [X] T007 [P][US1] `TimeTrackerPage` のメインレイアウトを縦積みに変更（`app/src/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx`）
+- [X] T008 [P][US1] コンポーザーとタイマーブロックの CSS をモバイル向けに再構成（`app/src/features/time-tracker/index.css`）
+- [X] T009 [US1] タイマー操作ボタンのタップ領域/フォントサイズ調整（`app/src/features/time-tracker/components/Composer/Composer.tsx` と CSS）
+- [X] T010 [US1] 開始/停止後のフォーカスリセットやスクロール防止確認のテストシナリオを Playwright に追加（`app/tests/e2e/time-tracker-mobile.spec.ts`）
 
 **Checkpoint**: タイマー操作がモバイルで MVP として成立
 
@@ -69,11 +69,11 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P][US2] ハンバーガーアイコンコンポーネントを `TimeTrackerPage` ヘッダーへ追加（`app/src/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx`）
-- [ ] T012 [P][US2] メニュー展開用オーバーレイとアニメーション CSS を追加（`app/src/features/time-tracker/index.css`）
-- [ ] T013 [US2] `isMenuOpen` state と body overflow 制御ロジックを `TimeTrackerPage.tsx` に実装
-- [ ] T014 [US2] メニュー内リンクをクリックで自動閉幕する処理を `app/src/ui` のナビゲーションコンポーネントに追加
-- [ ] T015 [US2] Playwright でハンバーガー開閉・選択シナリオを追加（`app/tests/e2e/time-tracker-mobile.spec.ts`）
+- [X] T011 [P][US2] ハンバーガーアイコンコンポーネントを `TimeTrackerPage` ヘッダーへ追加（`app/src/features/time-tracker/pages/TimeTracker/TimeTrackerPage.tsx`）
+- [X] T012 [P][US2] メニュー展開用オーバーレイとアニメーション CSS を追加（`app/src/features/time-tracker/index.css`）
+- [X] T013 [US2] `isMenuOpen` state と body overflow 制御ロジックを `TimeTrackerPage.tsx` に実装
+- [X] T014 [US2] メニュー内リンクをクリックで自動閉幕する処理を `app/src/ui` のナビゲーションコンポーネントに追加
+- [X] T015 [US2] Playwright でハンバーガー開閉・選択シナリオを追加（`app/tests/e2e/time-tracker-mobile.spec.ts`）
 
 **Checkpoint**: メニュー操作がモバイルで独立検証可能
 

@@ -91,11 +91,45 @@ body {
   flex-direction: column;
   background: #f5f7fb;
   overflow-y: auto;
+  position: relative;
 }
 
 .app-shell__main > * {
   flex: 1;
   min-height: 100%;
+}
+
+.app-shell__hamburger {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  left: 1rem;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+  display: none;
+}
+
+.app-shell__hamburger:hover {
+  background: rgba(15, 23, 42, 0.24);
+  transform: translateY(-1px);
+}
+
+.app-shell__hamburger:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+  .app-shell__hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .app-sidebar__auth {
@@ -155,4 +189,10 @@ body {
 .app-sidebar__signout:hover,
 .app-sidebar__signout:focus-visible {
   background: rgba(15, 23, 42, 0.65);
+}
+
+@media (max-width: 768px) {
+  .app-shell__sidebar {
+    display: none;
+  }
 }
