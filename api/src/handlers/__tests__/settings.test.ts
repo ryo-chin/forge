@@ -92,6 +92,16 @@ vi.mock('../../services/googleSheetsClient', async (importOriginal) => {
   };
 });
 
+vi.mock('../oauth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../oauth')>();
+  return {
+    ...actual,
+    ensureValidAccessToken: vi.fn().mockImplementation(
+      async (_env, connection) => connection.access_token,
+    ),
+  };
+});
+
 describe('settings handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -128,7 +138,6 @@ describe('settings handlers', () => {
         status: 'active',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        sheet_title: 'Sheet1',
       });
       mocks.getColumnMappingByConnection.mockResolvedValue({
         id: 'map-1',

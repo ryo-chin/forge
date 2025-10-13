@@ -75,9 +75,7 @@ VITE_TIME_DATA_SOURCE=supabase
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...your-anon-key...
 
-# Google連携を有効化
-VITE_GOOGLE_SYNC_ENABLED=true
-# Worker のローカル開発サーバーURL
+# Google連携を有効化（WorkerのURLを設定）
 VITE_GOOGLE_SYNC_API_BASE_URL=http://localhost:8787
 ```
 
@@ -113,8 +111,7 @@ GOOGLE_REDIRECT_URI=http://localhost:8787/integrations/google/oauth/callback
 | `VITE_TIME_DATA_SOURCE` | データソース（`local` または `supabase`） | `supabase` |
 | `VITE_SUPABASE_URL` | Supabase プロジェクト URL | `https://xxx.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Supabase Anon Key（公開OK） | `eyJ...` |
-| `VITE_GOOGLE_SYNC_ENABLED` | Google連携の有効/無効 | `true` |
-| `VITE_GOOGLE_SYNC_API_BASE_URL` | Worker の URL | `http://localhost:8787` |
+| `VITE_GOOGLE_SYNC_API_BASE_URL` | Worker の URL（空にすると無効） | `http://localhost:8787` |
 
 ### Worker（workers/google-sync/.dev.vars）
 

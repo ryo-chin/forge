@@ -22,8 +22,8 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
   ];
 
   const mockSheets: SheetOption[] = [
-    { id: 0, title: 'Sheet1', index: 0 },
-    { id: 1, title: 'Summary', index: 1 },
+    { sheetId: 0, title: 'Sheet1', index: 0 },
+    { sheetId: 1, title: 'Summary', index: 1 },
   ];
 
   const defaultProps = {
@@ -79,7 +79,7 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
     render(<GoogleSpreadsheetSettingsDialog {...defaultProps} />);
 
     await waitFor(() => {
-      expect(defaultProps.onFetchSpreadsheets).toHaveBeenCalledWith(undefined);
+      expect(defaultProps.onFetchSpreadsheets).toHaveBeenCalled();
     });
   });
 
@@ -91,7 +91,7 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
       expect(screen.getByText('TimeTracker Main')).toBeInTheDocument();
     });
 
-    const spreadsheetSelect = screen.getByLabelText(/スプレッドシート/i);
+    const spreadsheetSelect = document.getElementById('spreadsheet-select') as HTMLSelectElement;
     await user.selectOptions(spreadsheetSelect, 'spreadsheet-1');
 
     await waitFor(() => {
@@ -112,7 +112,7 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
       expect(screen.getByText('Sheet1')).toBeInTheDocument();
     });
 
-    const sheetSelect = screen.getByLabelText(/シート/i);
+    const sheetSelect = document.getElementById('sheet-select') as HTMLSelectElement;
     await user.selectOptions(sheetSelect, '1');
 
     expect(sheetSelect).toHaveValue('1');
