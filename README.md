@@ -21,7 +21,7 @@ cd workers/google-sync && npm run dev  # Worker
 ### サブプロジェクト
 
 - **Frontend**: [app/README.md](/app/README.md)
-- **Google Sync Worker**: [workers/google-sync/README.md](/workers/google-sync/README.md)
+- **Google Sync Worker**: [workers/google-sync/README.md](/api/google-sync/README.md)
 
 ### コード品質
 
