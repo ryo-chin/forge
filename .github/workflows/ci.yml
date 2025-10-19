@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
       - run: npm ci
         working-directory: app
       - run: npm run lint
@@ -30,9 +32,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
       - run: npm ci
         working-directory: app
       - run: npm run test
+        working-directory: app
+
+  app-e2e:
+    name: App - E2E Test
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        working-directory: app
+      - run: npm run test:e2e
         working-directory: app
 
   api-lint:
@@ -43,6 +74,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
       - run: npm ci
         working-directory: api
       - run: npm run lint
@@ -56,6 +89,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
       - run: npm ci
         working-directory: api
       - run: npm run test

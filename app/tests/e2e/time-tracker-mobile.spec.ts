@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('モバイルレイアウト', () => {
-  test.beforeEach(async (_context, testInfo) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    void page;
     if (testInfo.project.name !== 'Mobile Chrome') {
       test.skip();
     }
