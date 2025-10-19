@@ -1,0 +1,62 @@
+# トピックブランチの push 時に lint と test を自動実行
+name: feature branch CI
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
+      - '!**prototype**'
+
+jobs:
+  app-lint:
+    name: App - Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: app
+      - run: npm run lint
+        working-directory: app
+
+  app-test:
+    name: App - Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: app
+      - run: npm run test
+        working-directory: app
+
+  api-lint:
+    name: API - Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: api
+      - run: npm run lint
+        working-directory: api
+
+  api-test:
+    name: API - Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: api
+      - run: npm run test
+        working-directory: api
