@@ -3,7 +3,7 @@ import {
   loadStoredSessions,
   saveRunningState,
   saveSessions,
-} from '../../localstorage/timeTrackerStorage.ts';
+} from '@infra/localstorage';
 import { parseRunningDraft, parseSession } from '../../../features/time-tracker/domain/sessionParsers.ts';
 import type {
   RunningSessionState,

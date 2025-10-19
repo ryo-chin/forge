@@ -7,18 +7,18 @@ import {
   listSheets,
   startOAuth,
   isGoogleSyncClientEnabled,
-} from '../../../../infra/google/googleSyncClient.ts';
+} from '@infra/google';
 import type {
   UpdateGoogleSettingsPayload,
   OAuthStartResponse,
-} from '../../../../infra/google/googleSyncClient.ts';
+} from '@infra/google';
 import type {
   GoogleSyncSettings,
   SheetOption,
   SpreadsheetOption,
 } from '../../domain/googleSyncTypes.ts';
-import { getSupabaseClient } from '../../../../infra/supabase/client.ts';
-import { useAuth } from '../../../../infra/auth';
+import { getSupabaseClient } from '@infra/supabase';
+import { useAuth } from '@infra/auth';
 
 type UpdateSelectionPayload = UpdateGoogleSettingsPayload;
 

@@ -2,7 +2,7 @@ import {
   buildGoogleSyncUrl,
   getGoogleSyncApiBaseUrl,
   isGoogleSyncEnabled,
-} from '../config/googleSync.ts';
+} from '@infra/config';
 import type {
   ColumnMappingConfig,
   GoogleSyncLog,

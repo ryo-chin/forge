@@ -6,4 +6,5 @@ export {
 export {
   getGoogleSyncApiBaseUrl,
   buildGoogleSyncUrl,
+  isGoogleSyncEnabled,
 } from './googleSync.ts';

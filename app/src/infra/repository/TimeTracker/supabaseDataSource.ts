@@ -3,7 +3,7 @@ import type {
   SessionDraft,
   TimeTrackerSession,
 } from '../../../features/time-tracker/domain/types.ts';
-import { getSupabaseClient } from '../../supabase/client.ts';
+import { getSupabaseClient } from '@infra/supabase';
 import type {
   CreateDataSourceOptions,
   TimeTrackerDataSource,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { focusModalOnOpen, attachEscapeClose } from '../EditorModal/logic.ts';
+import { focusModalOnOpen, attachEscapeClose } from '../EditorModal';
 import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
 import { ColumnMappingForm } from '../ColumnMappingForm';
 import type {

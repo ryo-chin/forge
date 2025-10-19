@@ -1,4 +1,4 @@
-import { detectTimeDataSourceMode } from '../../config/timeDataSource.ts';
+import { detectTimeDataSourceMode } from '@infra/config';
 import { createLocalStorageDataSource } from './localStorageDataSource.ts';
 import type {
   CreateDataSourceOptions,
