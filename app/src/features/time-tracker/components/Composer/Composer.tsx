@@ -129,7 +129,7 @@ export const Composer: React.FC<ComposerProps> = ({
           <button
             ref={projectTriggerRef}
             type="button"
-            className="time-tracker__project-button"
+            className="time-tracker__project-button time-tracker__touch-target"
             onClick={() => setIsProjectMenuOpen((v) => !v)}
             aria-haspopup="dialog"
             aria-expanded={isProjectMenuOpen}
@@ -252,7 +252,7 @@ export const Composer: React.FC<ComposerProps> = ({
 
         <button
           type="button"
-          className="time-tracker__action"
+          className="time-tracker__action time-tracker__touch-target"
           onClick={handlePrimaryAction}
           disabled={!canStart && !isRunning}
         >
@@ -292,6 +292,7 @@ export const Composer: React.FC<ComposerProps> = ({
                 key={m}
                 type="button"
                 onClick={() => onAdjustDuration(m * 60)}
+                className="time-tracker__touch-target"
                 aria-label={createNudgeLabel(m)}
               >
                 {m > 0 ? `+${m}分` : `${m}分`}
@@ -302,7 +303,7 @@ export const Composer: React.FC<ComposerProps> = ({
 
         <button
           type="button"
-          className="time-tracker__details-toggle"
+          className="time-tracker__details-toggle time-tracker__touch-target"
           onClick={onOpenRunningEditor}
           disabled={!isRunning}
           aria-expanded={isRunningEditorOpen}

@@ -16,6 +16,7 @@ import {
   buildUpdatedSession,
   calculateDurationDelta,
 } from './logic.ts';
+import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
 import { localDateTimeToMs } from '../../../../lib/time.ts';
 import { useAuth } from '../../../../infra/auth';
 
@@ -36,6 +37,7 @@ type HistoryEditSnapshot = TimeTrackerSession | null;
 
 export function TimeTrackerPage() {
   const { user } = useAuth();
+  const viewport = useResponsiveLayout();
 
   const {
     sessions,
@@ -485,21 +487,32 @@ export function TimeTrackerPage() {
     }
   }, [modalState]);
 
+  const rootClassName = [
+    'time-tracker',
+    viewport === 'mobile' ? 'time-tracker--mobile' : '',
+    'time-tracker__safe-area-top',
+    'time-tracker__safe-area-bottom',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <main className="time-tracker">
+    <main className={rootClassName}>
       <div className="time-tracker__panel">
         <header className="time-tracker__header">
-         <h1>Time Tracker</h1>
-         <p>何をやりますか？</p>
-         <button
-           type="button"
-           onClick={handleOpenSettings}
-           className="time-tracker__settings-button"
-           aria-label="Google スプレッドシート設定"
-         >
-           ⚙️ 設定
-         </button>
-       </header>
+          <div className="time-tracker__header-top">
+            <h1>Time Tracker</h1>
+            <button
+              type="button"
+              onClick={handleOpenSettings}
+              className="time-tracker__settings-button time-tracker__touch-target"
+              aria-label="Google スプレッドシート設定"
+            >
+              ⚙️ 設定
+            </button>
+          </div>
+          <p>何をやりますか？</p>
+        </header>
 
         <SyncStatusBanner
           state={syncState}
