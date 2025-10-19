@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@infra/google/googleSyncClient.ts', () => ({
+vi.mock('@infra/google', () => ({
   fetchSettings: mocks.fetchSettings,
   updateSettings: mocks.updateSettings,
   listSpreadsheets: mocks.listSpreadsheets,
@@ -31,7 +31,7 @@ vi.mock('@infra/google/googleSyncClient.ts', () => ({
 
 const getSessionMock = vi.fn();
 
-vi.mock('@infra/supabase/client.ts', () => ({
+vi.mock('@infra/supabase', () => ({
   getSupabaseClient: () => ({
     auth: {
       getSession: getSessionMock,

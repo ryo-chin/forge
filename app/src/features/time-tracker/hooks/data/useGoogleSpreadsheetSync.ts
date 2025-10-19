@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { useAuth } from '../../../../infra/auth';
+import { useAuth } from '@infra/auth';
 import {
   getGoogleSyncBaseUrl,
   isGoogleSyncClientEnabled,
   syncSession as syncSessionRequest,
-} from '../../../../infra/google/googleSyncClient.ts';
-import { getSupabaseClient } from '../../../../infra/supabase/client.ts';
+} from '@infra/google';
+import { getSupabaseClient } from '@infra/supabase';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 import type { GoogleSyncRequestBody } from '../../domain/googleSyncTypes.ts';
 

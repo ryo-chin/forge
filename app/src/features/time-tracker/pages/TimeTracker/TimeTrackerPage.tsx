@@ -349,7 +349,7 @@ export function TimeTrackerPage() {
         return next;
       });
     },
-    [isRunning, modalState, updateDraft],
+    [isRunning, modalState, setSessions, updateDraft],
   );
 
   const onModalProjectChange = useCallback(
@@ -371,7 +371,7 @@ export function TimeTrackerPage() {
         return next;
       });
     },
-    [isRunning, modalState, updateDraft],
+    [isRunning, modalState, setSessions, updateDraft],
   );
 
   const onModalStartTimeChange = useCallback(
@@ -396,7 +396,7 @@ export function TimeTrackerPage() {
         return next;
       });
     },
-    [adjustDuration, elapsedSeconds, isRunning, modalState],
+    [adjustDuration, elapsedSeconds, isRunning, modalState, setSessions],
   );
 
   const onModalEndTimeChange = useCallback(
@@ -411,7 +411,7 @@ export function TimeTrackerPage() {
         return next;
       });
     },
-    [modalState],
+    [modalState, setSessions],
   );
 
   const lastSyncedSession = useMemo(() => {

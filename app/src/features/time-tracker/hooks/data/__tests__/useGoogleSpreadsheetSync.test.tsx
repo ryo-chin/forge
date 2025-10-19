@@ -18,13 +18,13 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@infra/google/googleSyncClient.ts', () => ({
+vi.mock('@infra/google', () => ({
   syncSession: mocks.syncSessionMock,
   isGoogleSyncClientEnabled: mocks.isEnabledMock,
   getGoogleSyncBaseUrl: mocks.getBaseUrlMock,
 }));
 
-vi.mock('@infra/supabase/client.ts', () => ({
+vi.mock('@infra/supabase', () => ({
   getSupabaseClient: () => ({
     auth: {
       getSession: mocks.getSessionMock,

@@ -12,7 +12,7 @@ import { useResponsiveLayout } from './ui/hooks/useResponsiveLayout';
 
 const queryClient = new QueryClient();
 
-function App() {
+export function App() {
   const {
     provider: authProvider,
     status: authStatus,

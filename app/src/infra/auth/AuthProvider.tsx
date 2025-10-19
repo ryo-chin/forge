@@ -1,6 +1,6 @@
 import React, { useMemo, type ReactNode } from 'react';
-import { useSupabaseAuth } from '../supabase/useSupabaseAuth.ts';
-import { isSupabaseDataSourceEnabled } from '../config/timeDataSource.ts';
+import { useSupabaseAuth } from '@infra/supabase';
+import { isSupabaseDataSourceEnabled } from '@infra/config';
 import {
   AuthContext,
   fallbackAuthContext,
