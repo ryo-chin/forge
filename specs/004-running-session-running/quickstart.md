@@ -85,6 +85,58 @@ CREATE POLICY "Users can update their own running state"
   USING (auth.uid() = user_id);
 ```
 
+### 5. Google Sheetsの列設定（P2実装時）
+
+Google Sheets同期機能（P2）を使用する場合、スプレッドシートに以下の列を追加してください。
+
+#### 必要な列
+
+| 列名 | 説明 | 例 |
+|-----|------|-----|
+| Session ID | セッションの一意識別子（開始時に生成、完了後も同じID） | `a1b2c3d4-...` |
+| Status | セッションのステータス | `Running` / `Completed` |
+| Title | セッションタイトル | `資料作成` |
+| Started At | 開始時刻（ISO 8601形式） | `2025-10-19T10:30:00Z` |
+| Ended At | 終了時刻（Running時は空） | `2025-10-19T12:30:00Z` |
+| Duration (seconds) | 合計時間（秒単位） | `7200` |
+| Project | プロジェクト名 | `新規事業` |
+| Tags | タグ（カンマ区切り） | `重要,緊急` |
+| Skill | スキル | `TypeScript` |
+| Intensity | 強度（1-5） | `4` |
+| Notes | メモ | `資料のドラフト作成` |
+
+#### 列マッピングの設定例
+
+アプリの設定画面で以下のように列を指定します:
+
+```typescript
+const columnMapping = {
+  spreadsheetId: 'your-spreadsheet-id',
+  sheetName: 'Sessions',
+  idColumn: 'A',           // 【新規】Session ID列
+  statusColumn: 'B',       // 【新規】Status列
+  titleColumn: 'C',
+  startedAtColumn: 'D',
+  endedAtColumn: 'E',
+  durationColumn: 'F',
+  projectColumn: 'G',
+  tagsColumn: 'H',
+  skillColumn: 'I',
+  intensityColumn: 'J',
+  notesColumn: 'K',
+};
+```
+
+#### データの流れ
+
+Session IDは以下のように一貫して使用されます:
+
+1. **セッション開始時**: アプリ内で`crypto.randomUUID()`でID生成
+2. **Running中**: 同じIDで行を識別・更新
+3. **セッション完了時**: 同じIDのまま`status`を`Completed`に変更
+
+**重要**: Session IDは開始時に一度だけ生成され、Running状態から完了状態まで変わりません。これにより、セッションのライフサイクル全体を追跡できます。
+
 ---
 
 ## Development Workflow
@@ -197,14 +249,14 @@ npm run test:e2e -- running-session-sync.spec.ts
 #### ステップ1: データモデル拡張
 
 ```bash
-# SessionDraftにtempIdを追加
+# SessionDraftにidを追加
 vim app/src/features/time-tracker/domain/types.ts
 ```
 
 変更内容:
 ```typescript
 export type SessionDraft = {
-  tempId?: string;  // 追加
+  id: string;       // 【追加】開始時に生成する一意識別子（UUID）
   title: string;
   startedAt: number;
   tags?: string[];
@@ -240,7 +292,7 @@ describe('googleSyncClient - Running Session', () => {
     };
 
     const draft = {
-      tempId: 'uuid-123',
+      id: 'uuid-123',
       title: '資料作成',
       startedAt: Date.now(),
     };
@@ -248,8 +300,8 @@ describe('googleSyncClient - Running Session', () => {
     const options = {
       spreadsheetId: 'sheet-id',
       sheetName: 'Sessions',
-      statusColumn: 'A',
-      tempIdColumn: 'B',
+      idColumn: 'A',
+      statusColumn: 'B',
       titleColumn: 'C',
     };
 
@@ -258,7 +310,7 @@ describe('googleSyncClient - Running Session', () => {
     expect(mockAppend).toHaveBeenCalledWith(
       expect.objectContaining({
         resource: {
-          values: [[draft.tempId, 'Running', draft.title, ...]],
+          values: [[draft.id, 'Running', draft.title, ...]],
         },
       })
     );
@@ -280,12 +332,12 @@ export const googleSyncClient = {
 
   // 新規メソッド
   async appendRunningSession(draft: SessionDraft, options: GoogleSpreadsheetOptions) {
-    if (!draft.tempId) {
-      throw new Error('tempId is required for running session');
+    if (!draft.id) {
+      throw new Error('id is required for running session');
     }
 
     const values = [[
-      draft.tempId,
+      draft.id,
       'Running',
       draft.title,
       new Date(draft.startedAt).toISOString(),
@@ -310,7 +362,7 @@ export const googleSyncClient = {
     // 実装（contracts/google-sheets-api.md参照）
   },
 
-  async completeRunningSession(session: TimeTrackerSession, tempId: string, options: GoogleSpreadsheetOptions) {
+  async completeRunningSession(session: TimeTrackerSession, options: GoogleSpreadsheetOptions) {
     // 実装（contracts/google-sheets-api.md参照）
   },
 };
@@ -329,7 +381,7 @@ export const useGoogleSpreadsheetSync = (options: GoogleSpreadsheetOptions) => {
 
   // セッション開始時
   useEffect(() => {
-    if (state.status === 'running' && state.draft?.tempId) {
+    if (state.status === 'running' && state.draft?.id) {
       void googleSyncClient.appendRunningSession(state.draft, options);
     }
   }, [state.status]);
