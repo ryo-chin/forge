@@ -115,4 +115,4 @@ export const createSessionFromDraft = (
   if (draft.notes) session.notes = draft.notes;
 
   return session;
-};;
+};

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@infra/auth';
 import {
@@ -6,8 +6,14 @@ import {
   isGoogleSyncClientEnabled,
   syncSession as syncSessionRequest,
 } from '@infra/google';
+import {
+  appendRunningSession,
+  updateRunningSession,
+  completeRunningSession,
+  type GoogleSheetsOptions,
+} from '@infra/google/googleSheetsRunningSync';
 import { getSupabaseClient } from '@infra/supabase';
-import type { TimeTrackerSession } from '../../domain/types.ts';
+import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 import type { GoogleSyncRequestBody } from '../../domain/googleSyncTypes.ts';
 
 export type SyncStateStatus =
@@ -49,9 +55,25 @@ const toRequestBody = (
   source: 'time-tracker-app',
 });
 
+/**
+ * LocalStorageからGoogle Sheets設定を読み込む
+ */
+const loadGoogleSheetsConfig = (): GoogleSheetsOptions | null => {
+  try {
+    const stored = localStorage.getItem('google-sheets-sync-config');
+    if (!stored) return null;
+    const config = JSON.parse(stored) as GoogleSheetsOptions;
+    if (!config.spreadsheetId || !config.sheetName) return null;
+    return config;
+  } catch {
+    return null;
+  }
+};
+
 export const useGoogleSpreadsheetSync = () => {
   const { status: authStatus } = useAuth();
   const [state, setState] = useState<SyncState>(initialState);
+  const updateDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const canSync = useMemo(() => {
     if (!isGoogleSyncClientEnabled()) {
@@ -132,8 +154,100 @@ export const useGoogleSpreadsheetSync = () => {
     [canSync, mutation],
   );
 
+  /**
+   * Running Session開始時の同期
+   */
+  const syncRunningSessionStart = useCallback(
+    async (draft: SessionDraft) => {
+      if (!canSync) {
+        return null;
+      }
+      const config = loadGoogleSheetsConfig();
+      if (!config) {
+        return null;
+      }
+      try {
+        await appendRunningSession(draft, config);
+        return { success: true };
+      } catch (error) {
+        if (import.meta.env.MODE !== 'test') {
+          // eslint-disable-next-line no-console
+          console.warn('[Google Sheets] Failed to append running session', error);
+        }
+        return null;
+      }
+    },
+    [canSync],
+  );
+
+  /**
+   * Running Session更新時の同期（debounce適用）
+   */
+  const syncRunningSessionUpdate = useCallback(
+    async (draft: SessionDraft) => {
+      if (!canSync) {
+        return null;
+      }
+      const config = loadGoogleSheetsConfig();
+      if (!config) {
+        return null;
+      }
+
+      // 既存のdebounceタイマーをクリア
+      if (updateDebounceTimerRef.current) {
+        clearTimeout(updateDebounceTimerRef.current);
+      }
+
+      // 1秒後に更新を実行
+      return new Promise<{ success: boolean } | null>((resolve) => {
+        updateDebounceTimerRef.current = setTimeout(async () => {
+          try {
+            await updateRunningSession(draft, config);
+            resolve({ success: true });
+          } catch (error) {
+            if (import.meta.env.MODE !== 'test') {
+              // eslint-disable-next-line no-console
+              console.warn('[Google Sheets] Failed to update running session', error);
+            }
+            resolve(null);
+          }
+        }, 1000);
+      });
+    },
+    [canSync],
+  );
+
+  /**
+   * Running Session完了時の同期
+   */
+  const syncRunningSessionComplete = useCallback(
+    async (session: TimeTrackerSession) => {
+      if (!canSync) {
+        return null;
+      }
+      const config = loadGoogleSheetsConfig();
+      if (!config) {
+        return null;
+      }
+      try {
+        await completeRunningSession(session, config);
+        return { success: true };
+      } catch (error) {
+        if (import.meta.env.MODE !== 'test') {
+          // eslint-disable-next-line no-console
+          console.warn('[Google Sheets] Failed to complete running session', error);
+        }
+        return null;
+      }
+    },
+    [canSync],
+  );
+
   return {
     state,
     syncSession,
+    syncRunningSessionStart,
+    syncRunningSessionUpdate,
+    syncRunningSessionComplete,
   };
 };

@@ -9,6 +9,7 @@ import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTra
 import {
   initialRunningSessionState,
   runningSessionReducer,
+  createSessionFromDraft,
 } from '../../domain/runningSession.ts';
 
 type NowFn = () => number;
@@ -35,36 +36,6 @@ const createSignature = (state: RunningSessionState): string => {
   if (state.status !== 'running') return 'idle';
   const draft = state.draft;
   return `running:${draft.title ?? ''}|${draft.project ?? ''}|${draft.startedAt}`;
-};
-
-// Draft → Session
-export const createSessionFromDraft = (
-  draft: SessionDraft,
-  stoppedAtMs: number,
-): TimeTrackerSession => {
-  const durationSeconds = Math.max(
-    1,
-    Math.floor((stoppedAtMs - draft.startedAt) / 1000),
-  );
-
-  const session: TimeTrackerSession = {
-    id:
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : String(stoppedAtMs),
-    title: draft.title.trim(),
-    startedAt: draft.startedAt,
-    endedAt: stoppedAtMs,
-    durationSeconds,
-  };
-
-  if (draft.tags?.length) session.tags = draft.tags.slice();
-  if (draft.project) session.project = draft.project;
-  if (draft.skill) session.skill = draft.skill;
-  if (draft.intensity) session.intensity = draft.intensity;
-  if (draft.notes) session.notes = draft.notes;
-
-  return session;
 };
 
 export const useRunningSession = (
