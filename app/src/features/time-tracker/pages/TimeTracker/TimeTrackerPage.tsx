@@ -81,6 +81,10 @@ export function TimeTrackerPage() {
   const [composerProject, setComposerProject] = useState(
     initialComposerProject,
   );
+  const composerProjectForDisplay =
+    runningState.status === 'running'
+      ? runningState.draft.project ?? ''
+      : composerProject;
   const isRunning = runningState.status === 'running';
   const elapsedSeconds = runningState.elapsedSeconds;
   const runningDraftTitle = isRunning ? runningState.draft.title : null;
@@ -361,7 +365,10 @@ export function TimeTrackerPage() {
       const project = trimmed ? trimmed : undefined;
 
       if (modalState.type === 'running') {
-        if (isRunning) updateDraft({ project });
+        if (isRunning) {
+          updateDraft({ project });
+          setComposerProject(project ?? '');
+        }
         return;
       }
       // history
@@ -469,13 +476,6 @@ export function TimeTrackerPage() {
     }
   }, [startOAuth]);
 
-  // ==== プロジェクトの同期（走行中だけdraftへ反映） ====
-  useEffect(() => {
-    if (!isRunning) return;
-    const project = composerProject.trim();
-    updateDraft({ project: project || undefined });
-  }, [isRunning, composerProject, updateDraft]);
-
   // ==== モーダルのフォーカス復元 ====
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -527,7 +527,7 @@ export function TimeTrackerPage() {
 
         <Composer
           sessions={sessions}
-          project={composerProject}
+          project={composerProjectForDisplay}
           onProjectChange={handleComposerProjectChange}
           isRunning={isRunning}
           runningDraftTitle={runningDraftTitle}

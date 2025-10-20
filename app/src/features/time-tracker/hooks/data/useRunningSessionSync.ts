@@ -10,23 +10,13 @@ type UseRunningSessionSyncOptions = {
   userId: string | null;
 };
 
-type PersistOptions = {
-  force?: boolean;
-  bypassReady?: boolean;
-};
-
-export type UseRunningSessionSyncResult = {
-  persistNow: (options?: PersistOptions) => Promise<void>;
-};
-
 const serializeState = (state: RunningSessionState): string => {
   if (state.status !== 'running') {
     return JSON.stringify({ status: 'idle' });
   }
-  const { draft, elapsedSeconds } = state;
+  const { draft } = state;
   return JSON.stringify({
     status: 'running',
-    elapsedSeconds,
     draft: {
       id: draft.id,
       title: draft.title ?? '',
@@ -41,6 +31,16 @@ const serializeState = (state: RunningSessionState): string => {
 };
 
 const shouldLogWarnings = import.meta.env.MODE !== 'test';
+
+type PersistOptions = {
+  force?: boolean;
+  bypassReady?: boolean;
+  stateOverride?: RunningSessionState;
+};
+
+export type UseRunningSessionSyncResult = {
+  persistNow: (options?: PersistOptions) => Promise<void>;
+};
 
 const persistState = async (
   dataSource: TimeTrackerDataSource,
@@ -151,9 +151,10 @@ export const useRunningSessionSync = ({
         return;
       }
 
+      const targetState = options.stateOverride ?? latestStateRef.current;
       await persistState(
         dataSource,
-        latestStateRef.current,
+        targetState,
         persistSignatureRef,
         options,
       );

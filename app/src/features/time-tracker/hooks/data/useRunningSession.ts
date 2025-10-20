@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   createTimeTrackerDataSource,
   type TimeTrackerDataSource,
@@ -8,10 +8,7 @@ import {
   useRunningSessionState,
   type RunningSessionStateApi,
 } from './useRunningSessionState.ts';
-import {
-  useRunningSessionSync,
-  type UseRunningSessionSyncResult,
-} from './useRunningSessionSync.ts';
+import { useRunningSessionSync } from './useRunningSessionSync.ts';
 
 type NowFn = () => number;
 
@@ -29,7 +26,7 @@ export type RunningSessionApi = {
   updateDraft: RunningSessionStateApi['updateDraft'];
   adjustDuration: RunningSessionStateApi['adjustDuration'];
   reset: RunningSessionStateApi['reset'];
-  persistRunningState: UseRunningSessionSyncResult['persistNow'];
+  persistRunningState: () => Promise<void>;
 };
 
 const defaultNow = () => Date.now();
@@ -69,6 +66,11 @@ export const useRunningSession = (
     userId,
   });
 
+  const persistRunningState = useCallback(
+    () => persistNow({ stateOverride: state }),
+    [persistNow, state],
+  );
+
   return {
     state,
     start,
@@ -76,7 +78,7 @@ export const useRunningSession = (
     updateDraft,
     adjustDuration,
     reset,
-    persistRunningState: persistNow,
+    persistRunningState,
     mode: dataSource.mode,
   };
 };
