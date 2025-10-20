@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SessionDraft } from '../../../features/time-tracker/domain/types';
-import type { ColumnMappingConfig } from '../../../features/time-tracker/domain/googleSyncTypes';
 
 /**
  * Google Sheets Running Session同期のテスト
@@ -153,12 +152,12 @@ describe('Google Sheets Running Session Sync', () => {
       // batchUpdateで更新
       expect(mockBatchUpdate).toHaveBeenCalledTimes(1);
       const updateCall = mockBatchUpdate.mock.calls[0][0];
-      const updates = updateCall.resource.data;
+      const updates = updateCall.resource.data as Array<{ range: string; values: unknown[][] }>;
 
       // 行番号は2（0-indexedで1）+ 1（ヘッダー）= 2行目
-      expect(updates.some((u: any) => u.range.includes('C2'))).toBe(true); // title
-      expect(updates.some((u: any) => u.range.includes('G2'))).toBe(true); // project
-      expect(updates.some((u: any) => u.range.includes('H2'))).toBe(true); // tags
+      expect(updates.some((entry) => entry.range.includes('C2'))).toBe(true); // title
+      expect(updates.some((entry) => entry.range.includes('G2'))).toBe(true); // project
+      expect(updates.some((entry) => entry.range.includes('H2'))).toBe(true); // tags
     });
 
     it('should log warning if session not found', async () => {
@@ -237,16 +236,16 @@ describe('Google Sheets Running Session Sync', () => {
       expect(mockBatchUpdate).toHaveBeenCalledTimes(1);
 
       const updateCall = mockBatchUpdate.mock.calls[0][0];
-      const updates = updateCall.resource.data;
+      const updates = updateCall.resource.data as Array<{ range: string; values: unknown[][] }>;
 
       // status="Completed"に更新
-      const statusUpdate = updates.find((u: any) => u.range.includes('B1'));
+      const statusUpdate = updates.find((entry) => entry.range.includes('B1'));
       expect(statusUpdate).toBeDefined();
-      expect(statusUpdate.values[0][0]).toBe('Completed');
+      expect(statusUpdate!.values[0][0]).toBe('Completed');
 
       // endedAtとdurationSecondsも更新
-      expect(updates.some((u: any) => u.range.includes('E1'))).toBe(true);
-      expect(updates.some((u: any) => u.range.includes('F1'))).toBe(true);
+      expect(updates.some((entry) => entry.range.includes('E1'))).toBe(true);
+      expect(updates.some((entry) => entry.range.includes('F1'))).toBe(true);
     });
   });
 });

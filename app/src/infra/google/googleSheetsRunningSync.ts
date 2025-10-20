@@ -65,7 +65,7 @@ export const appendRunningSession = async (
     throw new Error('id is required for running session');
   }
 
-  const { spreadsheetId, sheetName, mappings } = options;
+  const { spreadsheetId, sheetName } = options;
 
   // 列の順序を構築（実際の列マッピングに基づく）
   const values = [

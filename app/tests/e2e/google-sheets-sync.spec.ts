@@ -1,5 +1,21 @@
 import { test, expect } from '@playwright/test';
 
+type GapiMock = {
+  client: {
+    sheets: {
+      spreadsheets: {
+        values: {
+          append: () => Promise<{ result: { updates: { updatedRows: number } } }>;
+          get: () => Promise<{ result: { values: string[][] } }>;
+          batchUpdate: () => Promise<{ result: { replies: unknown[] } }>;
+        };
+      };
+    };
+  };
+};
+
+type WindowWithGapi = Window & { gapi: GapiMock };
+
 /**
  * Google Sheets同期のE2Eテスト
  *
@@ -22,7 +38,7 @@ test.describe('Google Sheets Sync - Running Session', () => {
       const mockBatchUpdateResponse = { result: { replies: [] } };
 
       // グローバルなgapiオブジェクトをモック
-      (window as any).gapi = {
+      const gapiMock: GapiMock = {
         client: {
           sheets: {
             spreadsheets: {
@@ -35,6 +51,7 @@ test.describe('Google Sheets Sync - Running Session', () => {
           },
         },
       };
+      (window as unknown as WindowWithGapi).gapi = gapiMock;
     });
 
     // LocalStorageにGoogle Sheets設定を追加
@@ -128,7 +145,7 @@ test.describe('Google Sheets Sync - Running Session', () => {
   test('should handle Google Sheets sync errors gracefully', async ({ page }) => {
     // Google Sheets APIエラーをモック
     await page.addInitScript(() => {
-      (window as any).gapi = {
+      const gapiMock: GapiMock = {
         client: {
           sheets: {
             spreadsheets: {
@@ -141,6 +158,7 @@ test.describe('Google Sheets Sync - Running Session', () => {
           },
         },
       };
+      (window as unknown as WindowWithGapi).gapi = gapiMock;
     });
 
     await page.goto('/');
