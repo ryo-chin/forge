@@ -6,7 +6,7 @@ import type {
 
 // Action
 export type RunningSessionAction =
-  | { type: 'START'; payload: { title: string; startedAt: number } }
+  | { type: 'START'; payload: { id: string; title: string; startedAt: number } }
   | { type: 'TICK'; payload: { nowMs: number } }
   | { type: 'UPDATE_DRAFT'; payload: Partial<Omit<SessionDraft, 'startedAt'>> }
   | { type: 'ADJUST_DURATION'; payload: { deltaSeconds: number; nowMs: number } }
@@ -29,6 +29,7 @@ export const runningSessionReducer = (
       const title = action.payload.title.trim();
       if (!title) return state; // 二重防御
       const draft: SessionDraft = {
+        id: action.payload.id,
         title,
         startedAt: action.payload.startedAt,
         tags: [],
@@ -100,9 +101,7 @@ export const createSessionFromDraft = (
   );
 
   const session: TimeTrackerSession = {
-    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : String(stoppedAtMs),
+    id: draft.id,  // Running時と同じIDを使用
     title: draft.title.trim(),
     startedAt: draft.startedAt,
     endedAt: stoppedAtMs,
@@ -116,4 +115,4 @@ export const createSessionFromDraft = (
   if (draft.notes) session.notes = draft.notes;
 
   return session;
-};
+};;

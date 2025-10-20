@@ -25,7 +25,7 @@ interface GoogleSyncClient {
   // 【新規】Running状態同期用メソッド
   appendRunningSession(draft: SessionDraft, options: GoogleSpreadsheetOptions): Promise<void>;
   updateRunningSession(draft: SessionDraft, options: GoogleSpreadsheetOptions): Promise<void>;
-  completeRunningSession(session: TimeTrackerSession, tempId: string, options: GoogleSpreadsheetOptions): Promise<void>;
+  completeRunningSession(session: TimeTrackerSession, options: GoogleSpreadsheetOptions): Promise<void>;
 }
 ```
 
@@ -46,15 +46,15 @@ appendRunningSession(
 ```
 
 **Parameters**:
-- `draft`: Running中のセッション情報（tempId含む）
+- `draft`: Running中のセッション情報（id含む）
 - `options`: スプレッドシートID、シート名、列マッピング
 
 **Behavior**:
-1. `draft.tempId`が未設定の場合はエラー
+1. `draft.id`が未設定の場合はエラー
 2. `spreadsheets.values.append` APIを使用
 3. 以下の値を設定:
+   - id: `draft.id`
    - status: "Running"
-   - tempId: `draft.tempId`
    - title: `draft.title`
    - startedAt: `draft.startedAt`（ISO 8601形式に変換）
    - endedAt: ""（空文字）
@@ -64,7 +64,7 @@ appendRunningSession(
 **Google Sheets API Call**:
 ```javascript
 const values = [[
-  draft.tempId,            // tempId列
+  draft.id,                // id列
   'Running',               // status列
   draft.title,             // title列
   new Date(draft.startedAt).toISOString(),  // startedAt列
@@ -87,7 +87,7 @@ await gapi.client.sheets.spreadsheets.values.append({
 
 **Error Handling**:
 - API呼び出し失敗: エラーログ出力、Promiseをreject
-- `tempId`未設定: エラーをthrow
+- `id`未設定: エラーをthrow
 - ネットワークエラー: エラーログ、ベストエフォート（リトライなし）
 
 ---
@@ -105,35 +105,35 @@ updateRunningSession(
 ```
 
 **Parameters**:
-- `draft`: 更新後のセッション情報（tempId含む）
+- `draft`: 更新後のセッション情報（id含む）
 - `options`: スプレッドシートID、シート名、列マッピング
 
 **Behavior**:
-1. `draft.tempId`でRunning行を検索
-   - tempId列が存在する場合: tempIdで検索
-   - 存在しない場合: status="Running"の最新行を使用
+1. `draft.id`でRunning行を検索
+   - id列でセッションを一意に特定
+   - 見つからない場合: status="Running"の最新行を使用（フォールバック）
 2. 該当行が見つからない場合はエラーログ、処理スキップ
 3. `spreadsheets.values.batchUpdate` APIで以下を更新:
    - title: `draft.title`
    - project, tags, skill, intensity, notes: `draft`から取得
    - durationSeconds: 現在時刻 - startedAt（秒単位）
-   - status, tempId, startedAt, endedAtは更新しない
+   - status, id, startedAt, endedAtは更新しない
 
 **Google Sheets API Call**:
 ```javascript
-// 1. 行検索（tempId列を読み取り）
-const tempIdColumnRange = `${options.sheetName}!${options.tempIdColumn}:${options.tempIdColumn}`;
+// 1. 行検索（id列を読み取り）
+const idColumnRange = `${options.sheetName}!${options.idColumn}:${options.idColumn}`;
 const searchResult = await gapi.client.sheets.spreadsheets.values.get({
   spreadsheetId: options.spreadsheetId,
-  range: tempIdColumnRange,
+  range: idColumnRange,
 });
 
 const rowIndex = searchResult.result.values?.findIndex(
-  row => row[0] === draft.tempId
+  row => row[0] === draft.id
 );
 
 if (rowIndex === -1) {
-  console.warn('[Google Sheets] Running session not found:', draft.tempId);
+  console.warn('[Google Sheets] Running session not found:', draft.id);
   return;
 }
 
@@ -170,18 +170,16 @@ Running中のセッションを完了状態に変更する。
 ```typescript
 completeRunningSession(
   session: TimeTrackerSession,
-  tempId: string,
   options: GoogleSpreadsheetOptions
 ): Promise<void>
 ```
 
 **Parameters**:
-- `session`: 完了したセッション情報（確定IDを含む）
-- `tempId`: Running時に使用していた一時ID
+- `session`: 完了したセッション情報（同じIDを含む）
 - `options`: スプレッドシートID、シート名、列マッピング
 
 **Behavior**:
-1. `tempId`でRunning行を検索
+1. `session.id`でRunning行を検索
 2. 該当行を以下の値で更新:
    - status: "Completed"
    - endedAt: `session.endedAt`（ISO 8601形式）
@@ -191,7 +189,7 @@ completeRunningSession(
 **Google Sheets API Call**:
 ```javascript
 // 行検索（updateRunningSessionと同様）
-const rowIndex = /* tempIdで検索 */;
+const rowIndex = /* session.idで検索 */;
 
 // 更新
 const updates = [
@@ -242,8 +240,8 @@ type GoogleSpreadsheetOptions = {
   tagsColumn?: string;
 
   // 【新規】Running状態用列マッピング
+  idColumn?: string;        // セッションID列（UUIDを格納）
   statusColumn?: string;    // ステータス列（"Running" | "Completed"）
-  tempIdColumn?: string;    // 一時ID列（UUIDを格納）
 
   // その他既存フィールド
   skillColumn?: string;
@@ -262,7 +260,7 @@ type GoogleSpreadsheetOptions = {
 import { googleSyncClient } from '@infra/google';
 
 const draft: SessionDraft = {
-  tempId: crypto.randomUUID(),
+  id: crypto.randomUUID(),
   title: '資料作成',
   startedAt: Date.now(),
   tags: ['重要'],
@@ -272,8 +270,8 @@ const draft: SessionDraft = {
 const options: GoogleSpreadsheetOptions = {
   spreadsheetId: 'abc123',
   sheetName: 'Sessions',
-  statusColumn: 'A',
-  tempIdColumn: 'B',
+  idColumn: 'A',
+  statusColumn: 'B',
   titleColumn: 'C',
   startedAtColumn: 'D',
   endedAtColumn: 'E',
@@ -304,7 +302,7 @@ await googleSyncClient.updateRunningSession(updatedDraft, options);
 
 ```typescript
 const completedSession: TimeTrackerSession = {
-  id: crypto.randomUUID(),
+  id: draft.id,  // Running時と同じIDを使用
   title: '資料作成',
   startedAt: draft.startedAt,
   endedAt: Date.now(),
@@ -315,7 +313,6 @@ const completedSession: TimeTrackerSession = {
 
 await googleSyncClient.completeRunningSession(
   completedSession,
-  draft.tempId!,
   options
 );
 // → status="Completed"に変更、終了情報確定
@@ -355,7 +352,7 @@ Google Sheets API: **100リクエスト/分**
 | ネットワークエラー | エラーログ、処理スキップ | Google Sheets未同期、アプリ内では正常動作 |
 | API制限超過（429） | エラーログ、リトライなし | 一時的に同期失敗、次回リロード時に再試行可能 |
 | スプレッドシートが削除された | エラーログ、処理スキップ | 設定画面で再設定が必要 |
-| tempId列が見つからない | status="Running"で検索、最新行を使用 | 正常動作（フォールバック） |
+| id列が見つからない | status="Running"で検索、最新行を使用 | 正常動作（フォールバック） |
 | Running行が見つからない | ログ出力、処理スキップ | 次回セッション開始時に新しい行を作成 |
 
 ---
@@ -409,7 +406,8 @@ test('should sync running session to Google Sheets', async ({ page }) => {
 ## Summary
 
 - **新規メソッド**: `appendRunningSession`, `updateRunningSession`, `completeRunningSession`
-- **拡張型定義**: `GoogleSpreadsheetOptions`に`statusColumn`, `tempIdColumn`追加
+- **拡張型定義**: `GoogleSpreadsheetOptions`に`idColumn`, `statusColumn`追加
+- **Immutable Design**: セッションIDは開始時に一度だけ生成、完了まで変更なし
 - **API制限対策**: debounce、バッチ更新、自動ポーリングなし
 - **エラーハンドリング**: ベストエフォート、ログ出力のみ
 - **テスト**: ユニット・E2E両方でカバー

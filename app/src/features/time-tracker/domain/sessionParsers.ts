@@ -69,7 +69,11 @@ export const parseRunningDraft = (value: unknown): SessionDraft | null => {
   if (typeof title !== 'string') return null;
   if (typeof startedAt !== 'number' || Number.isNaN(startedAt)) return null;
 
+  // マイグレーション: 既存のdraftにidがない場合は新規生成
+  const id = typeof value.id === 'string' ? value.id : crypto.randomUUID();
+
   return {
+    id,
     title,
     startedAt,
     tags: parseTagsArray(value.tags),

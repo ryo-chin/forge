@@ -184,7 +184,7 @@ export const useRunningSession = (
 
       dispatch({
         type: 'START',
-        payload: { title: trimmed, startedAt: now() },
+        payload: { id: crypto.randomUUID(), title: trimmed, startedAt: now() },
       });
       return true;
     },

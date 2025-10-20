@@ -12,11 +12,11 @@ Running Session同期機能のデータモデル定義。既存のエンティ�
 
 ### SessionDraft (拡張)
 
-Running中のセッション情報。既存の定義に`tempId`を追加。
+Running中のセッション情報。既存の定義に`id`を追加。
 
 ```typescript
 type SessionDraft = {
-  tempId?: string;        // 【新規】Running中のセッションを識別するための一時ID（UUID）
+  id: string;             // 【新規】セッションの一意識別子（UUID、開始時に生成）
   title: string;          // セッションタイトル
   startedAt: number;      // 開始時刻（Unix timestamp, milliseconds）
   tags?: string[];        // タグ
@@ -28,14 +28,14 @@ type SessionDraft = {
 ```
 
 **変更点**:
-- `tempId`: Google SheetsでRunning中のセッションを識別するためのオプショナルフィールド
-- セッション開始時に`crypto.randomUUID()`で生成
-- 停止時には確定ID（`TimeTrackerSession.id`）に置き換わる
+- `id`: セッション開始時に`crypto.randomUUID()`で生成する一意識別子
+- Running状態から完了状態まで同じIDを維持（immutable設計）
+- Google SheetsやSupabaseでセッションを一貫して識別可能
 
 **バリデーション**:
+- `id`: 必須、UUID形式
 - `title`: 必須、非空文字列
 - `startedAt`: 必須、正の整数
-- `tempId`: オプショナル、UUID形式（セットされる場合）
 
 ---
 
@@ -64,7 +64,7 @@ Google Sheetsに同期されるRunning Session情報の構造。
 
 ```typescript
 type GoogleSheetsRunningRow = {
-  tempId: string;              // 一時ID（Running状態の識別用）
+  id: string;                  // セッションID（開始時に生成、完了後も同じID）
   status: 'Running' | 'Completed';  // ステータス
   title: string;               // タイトル
   startedAt: string;           // 開始時刻（ISO 8601形式）
@@ -80,8 +80,8 @@ type GoogleSheetsRunningRow = {
 
 **列マッピング**:
 ユーザーが`ColumnMappingForm`で以下の列を設定:
+- `idColumn`: セッションID列（新規）
 - `statusColumn`: ステータス列（新規）
-- `tempIdColumn`: 一時ID列（新規、オプショナル）
 - `titleColumn`: タイトル列（既存）
 - `startedAtColumn`: 開始時刻列（既存）
 - `endedAtColumn`: 終了時刻列（既存）
@@ -234,9 +234,9 @@ App                         Google Sheets API
 ### Running行の検索
 
 Google Sheetsで該当のRunning行を見つける方法:
-1. `tempId`列を検索（存在する場合）
-2. `status="Running"`でフィルタ
-3. 見つからない場合はエラーログ、ベストエフォート（同期スキップ）
+1. `id`列を検索（セッションIDで一意に特定）
+2. 見つからない場合は`status="Running"`でフィルタして最新行を使用
+3. それでも見つからない場合はエラーログ、ベストエフォート（同期スキップ）
 
 ### データ整合性
 
@@ -248,21 +248,24 @@ Google Sheetsで該当のRunning行を見つける方法:
 
 ## Migration & Backward Compatibility
 
-### SessionDraft への tempId 追加
+### SessionDraft への id 追加
 
 **既存データへの影響**:
-- `tempId`はオプショナルフィールドのため、既存のSessionDraftは引き続き動作
-- Google Sheets連携が無効な場合、`tempId`は生成されない（不要）
+- `id`は必須フィールドのため、既存のSessionDraftに対してはマイグレーションが必要
+- セッション開始時に必ずIDを生成するようにロジックを変更
 
 **マイグレーション**:
-- 不要（オプショナルフィールドのため）
+- 既存のRunning中セッションがある場合、リロード時にIDを生成
+- `useRunningSession`のRESTOREアクションでIDがない場合は新規生成
 
 ### LocalStorage モード
 
-- LocalStorageモードでは`tempId`は不要（Google Sheets同期がないため）
-- Supabaseモードでのみ`tempId`を生成・使用
+- LocalStorageモードでも`id`を生成（完了セッションとの一貫性のため）
+- Supabase/Google Sheetsモードと同じID生成ロジックを使用
 
-**後方互換性**: 100%（既存の動作に影響なし）
+**後方互換性**:
+- Running中セッションのみ影響（リロード時にIDが新規生成される）
+- 完了済みセッションは影響なし（既にIDを持っている）
 
 ---
 
@@ -289,11 +292,11 @@ Google Sheetsで該当のRunning行を見つける方法:
 
 ## Summary
 
-- **SessionDraft**: `tempId`フィールドを追加（オプショナル）
+- **SessionDraft**: `id`フィールドを追加（必須、開始時に生成）
 - **RunningSessionState**: 変更なし
-- **Google Sheets Row**: status, tempId列を追加
+- **Google Sheets Row**: id, status列を追加
 - **Supabase**: 既存テーブルをそのまま使用
-- **バリデーション**: title必須、その他オプショナル
+- **バリデーション**: id, title必須、その他オプショナル
 - **状態遷移**: idle ↔ running, Running → Completed
 - **競合解決**: Last Write Wins
-- **後方互換性**: 100%維持
+- **Immutable Design**: IDは開始時に一度だけ生成、完了まで変更なし
