@@ -50,6 +50,7 @@ export function TimeTrackerPage() {
     stop,
     updateDraft,
     adjustDuration,
+    persistRunningState,
   } = useRunningSession({ userId: user?.id ?? null });
   const { state: syncState, syncSession } = useGoogleSpreadsheetSync();
   const {
@@ -303,7 +304,8 @@ export function TimeTrackerPage() {
       if (!modalState) return;
 
       if (modalState.type === 'running') {
-        // 走行中は draft を直接編集済みなので保存時は閉じるだけ
+        // 走行中はここで即座に永続化をトリガーする
+        void persistRunningState();
         setModalState(null);
         return;
       }

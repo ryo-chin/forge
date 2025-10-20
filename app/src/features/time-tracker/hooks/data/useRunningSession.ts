@@ -8,7 +8,10 @@ import {
   useRunningSessionState,
   type RunningSessionStateApi,
 } from './useRunningSessionState.ts';
-import { useRunningSessionSync } from './useRunningSessionSync.ts';
+import {
+  useRunningSessionSync,
+  type UseRunningSessionSyncResult,
+} from './useRunningSessionSync.ts';
 
 type NowFn = () => number;
 
@@ -26,6 +29,7 @@ export type RunningSessionApi = {
   updateDraft: RunningSessionStateApi['updateDraft'];
   adjustDuration: RunningSessionStateApi['adjustDuration'];
   reset: RunningSessionStateApi['reset'];
+  persistRunningState: UseRunningSessionSyncResult['persistNow'];
 };
 
 const defaultNow = () => Date.now();
@@ -58,7 +62,7 @@ export const useRunningSession = (
     initialState: resolvedInitialState,
   });
 
-  useRunningSessionSync({
+  const { persistNow } = useRunningSessionSync({
     dataSource,
     state,
     hydrate,
@@ -72,6 +76,7 @@ export const useRunningSession = (
     updateDraft,
     adjustDuration,
     reset,
+    persistRunningState: persistNow,
     mode: dataSource.mode,
   };
 };

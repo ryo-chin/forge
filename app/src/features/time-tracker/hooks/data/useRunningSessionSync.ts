@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { initialRunningSessionState } from '../../domain/runningSession.ts';
 import type { RunningSessionState } from '../../domain/types.ts';
 import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
@@ -8,6 +8,15 @@ type UseRunningSessionSyncOptions = {
   state: RunningSessionState;
   hydrate: (nextState: RunningSessionState | null) => void;
   userId: string | null;
+};
+
+type PersistOptions = {
+  force?: boolean;
+  bypassReady?: boolean;
+};
+
+export type UseRunningSessionSyncResult = {
+  persistNow: (options?: PersistOptions) => Promise<void>;
 };
 
 const serializeState = (state: RunningSessionState): string => {
@@ -33,12 +42,40 @@ const serializeState = (state: RunningSessionState): string => {
 
 const shouldLogWarnings = import.meta.env.MODE !== 'test';
 
+const persistState = async (
+  dataSource: TimeTrackerDataSource,
+  state: RunningSessionState,
+  signatureRef: React.MutableRefObject<string>,
+  options: PersistOptions,
+): Promise<void> => {
+  const targetState =
+    state.status === 'running' ? state : initialRunningSessionState;
+  const signature = serializeState(targetState);
+  const { force = false } = options;
+
+  if (!force && signatureRef.current === signature) {
+    return;
+  }
+
+  signatureRef.current = signature;
+
+  try {
+    await dataSource.persistRunningState(targetState);
+  } catch (error) {
+    if (!shouldLogWarnings) {
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.warn('[time-tracker] Failed to persist running state', error);
+  }
+};
+
 export const useRunningSessionSync = ({
   dataSource,
   state,
   hydrate,
   userId,
-}: UseRunningSessionSyncOptions): void => {
+}: UseRunningSessionSyncOptions): UseRunningSessionSyncResult => {
   const isSupabaseMode = dataSource.mode === 'supabase';
   const syncEnabled = isSupabaseMode ? Boolean(userId) : true;
 
@@ -83,18 +120,9 @@ export const useRunningSessionSync = ({
           }
           persistSignatureRef.current = nextSignature;
         } else {
-          // ロード中にローカル更新された場合はローカルを優先し、すぐに永続化する
-          const targetState =
-            currentState.status === 'running'
-              ? currentState
-              : initialRunningSessionState;
-          persistSignatureRef.current = serializeState(targetState);
-          void dataSource.persistRunningState(targetState).catch((error) => {
-            if (!shouldLogWarnings) {
-              return;
-            }
-            // eslint-disable-next-line no-console
-            console.warn('[time-tracker] Failed to persist running state', error);
+          await persistState(dataSource, currentState, persistSignatureRef, {
+            force: true,
+            bypassReady: true,
           });
         }
 
@@ -115,24 +143,35 @@ export const useRunningSessionSync = ({
     };
   }, [syncEnabled, dataSource, hydrate, isSupabaseMode]);
 
+  const persistLatestState = useCallback(
+    async (options: PersistOptions = {}) => {
+      if (!syncEnabled) return;
+
+      if (isSupabaseMode && !options.bypassReady && !readyRef.current) {
+        return;
+      }
+
+      await persistState(
+        dataSource,
+        latestStateRef.current,
+        persistSignatureRef,
+        options,
+      );
+    },
+    [dataSource, isSupabaseMode, syncEnabled],
+  );
+
   useEffect(() => {
     if (!syncEnabled) return;
     if (isSupabaseMode && !readyRef.current) return;
 
-    const targetState =
-      state.status === 'running' ? state : initialRunningSessionState;
-    const signature = serializeState(targetState);
-    if (persistSignatureRef.current === signature) {
-      return;
-    }
-    persistSignatureRef.current = signature;
-
-    void dataSource.persistRunningState(targetState).catch((error: unknown) => {
-      if (!shouldLogWarnings) {
-        return;
-      }
-      // eslint-disable-next-line no-console
-      console.warn('[time-tracker] Failed to persist running state', error);
+    void persistState(dataSource, state, persistSignatureRef, {
+      force: false,
     });
   }, [syncEnabled, state, dataSource, isSupabaseMode]);
+
+  return {
+    persistNow: (options) =>
+      persistLatestState({ force: true, ...options }),
+  };
 };

@@ -128,6 +128,67 @@ describe('useRunningSession - Supabase Sync', () => {
     expect(persistedState.draft?.project).toBe('Test Project');
   });
 
+  it('should allow manual persistence via persistRunningState', async () => {
+    const mockDataSource = createMockDataSource();
+
+    const { createTimeTrackerDataSource } = await import(
+      '../../../../../infra/repository/TimeTracker'
+    );
+    vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
+
+    const { result } = renderHook(() =>
+      useRunningSession({ userId: 'user-1' }),
+    );
+
+    await act(async () => {
+      result.current.start('Manual Persist Session');
+    });
+
+    await waitFor(() => {
+      expect(mockDataSource.persistRunningState).toHaveBeenCalled();
+    });
+
+    vi.mocked(mockDataSource.persistRunningState).mockClear();
+
+    await act(async () => {
+      await result.current.persistRunningState();
+    });
+
+    expect(mockDataSource.persistRunningState).toHaveBeenCalled();
+  });
+
+  it('should persist state when title is updated', async () => {
+    const mockDataSource = createMockDataSource();
+
+    const { createTimeTrackerDataSource } = await import(
+      '../../../../../infra/repository/TimeTracker'
+    );
+    vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
+
+    const { result } = renderHook(() =>
+      useRunningSession({ userId: 'user-1' }),
+    );
+
+    await act(async () => {
+      result.current.start('Original Title');
+    });
+
+    vi.mocked(mockDataSource.persistRunningState).mockClear();
+
+    await act(async () => {
+      result.current.updateDraft({ title: 'Updated Title' });
+    });
+
+    await waitFor(() => {
+      expect(mockDataSource.persistRunningState).toHaveBeenCalled();
+    });
+
+    const persistedState =
+      vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
+    expect(persistedState.status).toBe('running');
+    expect(persistedState.draft?.title).toBe('Updated Title');
+  });
+
   it('should restore state from remote on mount if different', async () => {
     const remoteState: RunningSessionState = {
       status: 'running',
