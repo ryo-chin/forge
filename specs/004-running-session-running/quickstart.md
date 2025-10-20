@@ -6,7 +6,12 @@
 
 ## Overview
 
-このガイドでは、Running Session同期機能の開発環境セットアップと実装の進め方を説明します。
+このガイドでは、Running Session同期機能の開発環境セットアップと実装済み機能の検証方法を説明します。
+
+**実装状況**: ✅ 完了（Phase 1-4）
+- P1: Supabaseデバイス間同期
+- P2: Google Sheets Running同期
+- 全テスト: 91成功、5スキップ
 
 ---
 
@@ -262,21 +267,23 @@ export type SessionDraft = {
   tags?: string[];
   project?: string;
   skill?: string;
-  intensity?: number;
+  intensity?: 'low' | 'medium' | 'high';  // 実装済み: リテラル型
   notes?: string;
 };
 ```
 
-#### ステップ2: Google Sync Clientの拡張（TDD）
+#### ステップ2: Google Sheets Running Syncの実装（TDD）
+
+**実装済みファイル**: `app/src/infra/google/googleSheetsRunningSync.ts`
 
 ```bash
-# テスト作成
-touch app/src/infra/google/__tests__/googleSyncClient.running.test.ts
+# テストファイル（実装済み）
+cat app/src/infra/google/__tests__/googleSheetsRunningSync.test.ts
 ```
 
 テスト例:
 ```typescript
-import { googleSyncClient } from '../googleSyncClient';
+import { appendRunningSession, updateRunningSession, completeRunningSession } from '../googleSheetsRunningSync';
 
 describe('googleSyncClient - Running Session', () => {
   it('should append running session to Google Sheets', async () => {
@@ -305,12 +312,12 @@ describe('googleSyncClient - Running Session', () => {
       titleColumn: 'C',
     };
 
-    await googleSyncClient.appendRunningSession(draft, options);
+    await appendRunningSession(draft, options);
 
     expect(mockAppend).toHaveBeenCalledWith(
       expect.objectContaining({
         resource: {
-          values: [[draft.id, 'Running', draft.title, ...]],
+          values: [[draft.id, 'Running', draft.title, /* ... */]],
         },
       })
     );
@@ -318,20 +325,19 @@ describe('googleSyncClient - Running Session', () => {
 });
 ```
 
-#### ステップ3: 実装（Green）
+#### ステップ3: 実装（✅ 完了）
+
+**実装済みファイル**: `app/src/infra/google/googleSheetsRunningSync.ts`
 
 ```bash
-vim app/src/infra/google/googleSyncClient.ts
+# 実装の確認
+cat app/src/infra/google/googleSheetsRunningSync.ts
 ```
 
-新しいメソッドを追加:
+実装済みメソッド:
 ```typescript
-export const googleSyncClient = {
-  // 既存メソッド
-  appendSessions: ...,
-
-  // 新規メソッド
-  async appendRunningSession(draft: SessionDraft, options: GoogleSpreadsheetOptions) {
+// 新しいモジュールとして分離実装
+export async function appendRunningSession(draft: SessionDraft, options: GoogleSheetsOptions) {
     if (!draft.id) {
       throw new Error('id is required for running session');
     }
@@ -357,57 +363,38 @@ export const googleSyncClient = {
       resource: { values },
     });
   },
-
-  async updateRunningSession(draft: SessionDraft, options: GoogleSpreadsheetOptions) {
-    // 実装（contracts/google-sheets-api.md参照）
-  },
-
-  async completeRunningSession(session: TimeTrackerSession, options: GoogleSpreadsheetOptions) {
-    // 実装（contracts/google-sheets-api.md参照）
-  },
 };
+
+// その他のメソッド（実装済み）
+// - updateRunningSession(draft, options)
+// - completeRunningSession(session, options)
+// 詳細: app/src/infra/google/googleSheetsRunningSync.ts を参照
 ```
 
-#### ステップ4: フックの拡張
+#### ステップ4: フックの拡張（✅ 完了）
+
+**実装済みファイル**: `app/src/features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts`
+
+Running同期メソッドが追加済み:
+- `syncRunningSessionStart(draft)`: セッション開始時
+- `syncRunningSessionUpdate(draft)`: セッション更新時（debounce 1秒）
+- `syncRunningSessionComplete(session)`: セッション完了時
 
 ```bash
-vim app/src/features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts
+# 実装の確認
+grep -A 10 "syncRunningSession" app/src/features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts
 ```
 
-Running状態の同期ロジックを追加:
-```typescript
-export const useGoogleSpreadsheetSync = (options: GoogleSpreadsheetOptions) => {
-  const { state } = useRunningSession();
+#### ステップ5: E2Eテスト（✅ 完了）
 
-  // セッション開始時
-  useEffect(() => {
-    if (state.status === 'running' && state.draft?.id) {
-      void googleSyncClient.appendRunningSession(state.draft, options);
-    }
-  }, [state.status]);
-
-  // セッション編集時（debounce）
-  const debouncedUpdate = useMemo(
-    () => debounce((draft: SessionDraft) => {
-      void googleSyncClient.updateRunningSession(draft, options);
-    }, 1000),
-    [options]
-  );
-
-  useEffect(() => {
-    if (state.status === 'running' && state.draft) {
-      debouncedUpdate(state.draft);
-    }
-  }, [state.draft, debouncedUpdate]);
-
-  // ...
-};
-```
-
-#### ステップ5: E2Eテスト
+**実装済みファイル**:
+- `app/tests/e2e/running-session-sync.spec.ts` （14テスト）
+- `app/tests/e2e/google-sheets-sync.spec.ts` （12テスト）
 
 ```bash
-touch app/tests/e2e/google-sheets-sync.spec.ts
+# E2Eテストの実行
+npm run test:e2e -- running-session-sync
+npm run test:e2e -- google-sheets-sync
 ```
 
 ---
@@ -423,7 +410,7 @@ npm run test
 特定ファイルのみ:
 ```bash
 npm run test -- useRunningSession
-npm run test -- googleSyncClient
+npm run test -- googleSheetsRunningSync
 ```
 
 ### E2Eテスト実行
@@ -502,7 +489,7 @@ SELECT * FROM time_tracker_running_states WHERE user_id = 'your-user-id';
 
 エラーログ確認:
 ```javascript
-// app/src/infra/google/googleSyncClient.ts に以下を追加
+// app/src/infra/google/googleSheetsRunningSync.ts に以下を追加
 console.log('[Google Sheets] Append request:', { draft, options });
 ```
 
@@ -571,10 +558,12 @@ await expect(locator).toBeVisible({ timeout: 10000 });
 
 ## Next Steps
 
-1. `/speckit.tasks` コマンドを実行してタスクリスト生成
-2. P1から順に実装（TDDサイクル）
-3. 各タスク完了後にコミット
-4. すべてのテストがGreenになったらPR作成
+✅ **実装完了**: Phase 1-4の実装とテストがすべて完了しました。
+
+今後の拡張:
+1. UI改善: Column Mapping設定画面への`id`/`status`列追加
+2. リアルタイム更新: Supabase Realtimeによるプッシュ通知の追加
+3. 競合解決: 複数デバイスからの同時編集時のマージ戦略実装
 
 ---
 
