@@ -597,12 +597,38 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-height: min(90vh, 720px);
+  overflow: hidden;
 }
 
 .time-tracker__modal h2 {
   margin: 0;
   font-size: 1.4rem;
   color: #0f172a;
+  flex: 0 0 auto;
+}
+
+.time-tracker__modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 0.25rem;
+}
+
+.time-tracker__modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.time-tracker__modal-content::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 9999px;
+}
+
+.time-tracker__modal-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .time-tracker__modal-form {
@@ -651,6 +677,39 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.column-mapping-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.column-mapping-form h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.column-mapping-form__description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.column-mapping-form__section {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.column-mapping-form__section legend {
+  font-weight: 600;
+  color: #0f172a;
+  padding: 0 0.25rem;
 }
 
 .time-tracker__touch-target {
