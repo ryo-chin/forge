@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useRunningSession } from '../useRunningSession';
 import type { TimeTrackerDataSource } from '../../../../../infra/repository/TimeTracker';
@@ -76,15 +76,16 @@ describe('useRunningSession - Supabase Sync', () => {
     );
 
     // セッション開始
-    result.current.start('New Session');
-
-    await waitFor(() => {
-      expect(mockDataSource.persistRunningState).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      result.current.start('New Session');
     });
 
-    // 最後の呼び出しをチェック（初期idle状態の後、running状態が保存される）
-    const calls = vi.mocked(mockDataSource.persistRunningState).mock.calls;
-    const persistedState = calls[calls.length - 1][0];
+    await waitFor(() => {
+      expect(mockDataSource.persistRunningState).toHaveBeenCalledTimes(1);
+    });
+
+    const persistedState =
+      vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
     expect(persistedState.status).toBe('running');
     expect(persistedState.draft?.title).toBe('New Session');
     expect(persistedState.draft?.id).toBeDefined();
@@ -103,7 +104,9 @@ describe('useRunningSession - Supabase Sync', () => {
     );
 
     // セッション開始
-    result.current.start('Session');
+    await act(async () => {
+      result.current.start('Session');
+    });
 
     await waitFor(() => {
       expect(mockDataSource.persistRunningState).toHaveBeenCalled();
@@ -112,7 +115,9 @@ describe('useRunningSession - Supabase Sync', () => {
     vi.clearAllMocks();
 
     // ドラフト更新
-    result.current.updateDraft({ project: 'Test Project' });
+    await act(async () => {
+      result.current.updateDraft({ project: 'Test Project' });
+    });
 
     await waitFor(() => {
       expect(mockDataSource.persistRunningState).toHaveBeenCalled();
@@ -167,7 +172,9 @@ describe('useRunningSession - Supabase Sync', () => {
 
     const { result } = renderHook(() => useRunningSession({ userId: null }));
 
-    result.current.start('Session');
+    await act(async () => {
+      result.current.start('Session');
+    });
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 

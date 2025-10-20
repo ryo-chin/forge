@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { createTimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
-import type {
-  RunningSessionState,
-  SessionDraft,
-  TimeTrackerSession,
-} from '../../domain/types.ts';
-import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
+import { useMemo } from 'react';
 import {
-  initialRunningSessionState,
-  runningSessionReducer,
-  createSessionFromDraft,
-} from '../../domain/runningSession.ts';
+  createTimeTrackerDataSource,
+  type TimeTrackerDataSource,
+} from '../../../../infra/repository/TimeTracker';
+import type { RunningSessionState } from '../../domain/types.ts';
+import {
+  useRunningSessionState,
+  type RunningSessionStateApi,
+} from './useRunningSessionState.ts';
+import { useRunningSessionSync } from './useRunningSessionSync.ts';
 
 type NowFn = () => number;
 
@@ -23,20 +21,14 @@ export type UseRunningSessionOptions = {
 
 export type RunningSessionApi = {
   state: RunningSessionState;
-  start: (title: string) => boolean;
-  stop: () => TimeTrackerSession | null;
-  updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
-  adjustDuration: (deltaSeconds: number) => void;
-  reset: () => void;
+  start: RunningSessionStateApi['start'];
+  stop: RunningSessionStateApi['stop'];
+  updateDraft: RunningSessionStateApi['updateDraft'];
+  adjustDuration: RunningSessionStateApi['adjustDuration'];
+  reset: RunningSessionStateApi['reset'];
 };
-
 
 const defaultNow = () => Date.now();
-const createSignature = (state: RunningSessionState): string => {
-  if (state.status !== 'running') return 'idle';
-  const draft = state.draft;
-  return `running:${draft.title ?? ''}|${draft.project ?? ''}|${draft.startedAt}`;
-};
 
 export const useRunningSession = (
   options: UseRunningSessionOptions = {},
@@ -49,150 +41,29 @@ export const useRunningSession = (
     [now, userId],
   );
 
-  const initialRunningState = dataSource.initialRunningState;
+  const resolvedInitialState =
+    initialState ?? dataSource.initialRunningState ?? undefined;
 
-  const reducerInitialState = useMemo<RunningSessionState>(() => {
-    if (initialState) return initialState;
-    return initialRunningState ?? initialRunningSessionState;
-  }, [initialState, initialRunningState]);
+  const {
+    state,
+    start,
+    stop,
+    updateDraft,
+    adjustDuration,
+    reset,
+    hydrate,
+  } = useRunningSessionState({
+    now,
+    tickIntervalMs,
+    initialState: resolvedInitialState,
+  });
 
-  const [state, dispatch] = useReducer(
-    runningSessionReducer,
-    reducerInitialState,
-  );
-
-  const signatureRef = useRef<string | null>(null);
-  const latestStateRef = useRef<RunningSessionState>(reducerInitialState);
-
-  useEffect(() => {
-    latestStateRef.current = state;
-  }, [state]);
-
-  const runningStartedAt =
-    state.status === 'running' ? state.draft.startedAt : null;
-
-  useEffect(() => {
-    if (state.status !== 'running') {
-      return;
-    }
-    const intervalMs = Math.max(100, tickIntervalMs ?? 1000);
-    const tick = () => {
-      dispatch({ type: 'TICK', payload: { nowMs: now() } });
-    };
-
-    tick();
-    const timerId = setInterval(tick, intervalMs);
-    return () => {
-      clearInterval(timerId);
-    };
-  }, [state.status, runningStartedAt, tickIntervalMs, now]);
-
-  useEffect(() => {
-    if (dataSource.mode === 'supabase' && !userId) {
-      dispatch({ type: 'RESET' });
-      signatureRef.current = null;
-      return;
-    }
-
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const remoteState = await dataSource.fetchRunningState();
-        if (cancelled || !remoteState) return;
-        const currentSignature = createSignature(latestStateRef.current);
-        const remoteSignature = createSignature(remoteState);
-        signatureRef.current = remoteSignature;
-        if (currentSignature === remoteSignature) {
-          return;
-        }
-        dispatch({ type: 'RESTORE', payload: remoteState });
-      } catch (error) {
-        if (import.meta.env.MODE !== 'test') {
-          // eslint-disable-next-line no-console
-          console.warn('[time-tracker] Failed to load running state', error);
-        }
-      }
-    };
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [dataSource, userId]);
-
-  const persistState = useCallback((stateToPersist: RunningSessionState) => {
-    if (dataSource.mode === 'supabase' && !userId) {
-      return;
-    }
-    void dataSource.persistRunningState(stateToPersist).catch((error) => {
-      if (import.meta.env.MODE !== 'test') {
-        // eslint-disable-next-line no-console
-        console.warn('[time-tracker] Failed to persist running state', error);
-      }
-    });
-  }, [dataSource, userId]);
-
-  useEffect(() => {
-    const signature = createSignature(state);
-    if (signatureRef.current === signature) {
-      return;
-    }
-    signatureRef.current = signature;
-
-    if (state.status === 'running') {
-      persistState(state);
-    } else {
-      persistState({ status: 'idle', draft: null, elapsedSeconds: 0 });
-    }
-  }, [state, persistState]);
-
-  const start = useCallback(
-    (title: string) => {
-      const trimmed = title.trim();
-      if (!trimmed) return false;
-      if (state.status === 'running') return false;
-
-      dispatch({
-        type: 'START',
-        payload: { id: crypto.randomUUID(), title: trimmed, startedAt: now() },
-      });
-      return true;
-    },
-    [now, state.status],
-  );
-
-  const stop = useCallback(() => {
-    if (state.status !== 'running') return null;
-    const stoppedAt = now();
-    const session = createSessionFromDraft(state.draft, stoppedAt);
-    dispatch({ type: 'RESET' });
-    return session;
-  }, [now, state]);
-
-  const updateDraft = useCallback(
-    (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => {
-      if (state.status !== 'running') return;
-      dispatch({ type: 'UPDATE_DRAFT', payload: partial });
-    },
-    [state.status],
-  );
-
-  const adjustDuration = useCallback(
-    (deltaSeconds: number) => {
-      if (state.status !== 'running') return;
-      if (deltaSeconds === 0) return;
-      dispatch({
-        type: 'ADJUST_DURATION',
-        payload: { deltaSeconds, nowMs: now() },
-      });
-    },
-    [now, state.status],
-  );
-
-  const reset = useCallback(() => {
-    dispatch({ type: 'RESET' });
-  }, []);
+  useRunningSessionSync({
+    dataSource,
+    state,
+    hydrate,
+    userId,
+  });
 
   return {
     state,
