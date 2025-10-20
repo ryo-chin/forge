@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { focusModalOnOpen, attachEscapeClose } from '../EditorModal';
 import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
 import { ColumnMappingForm } from '../ColumnMappingForm';
@@ -6,6 +6,10 @@ import type {
   SpreadsheetOption,
   SheetOption,
 } from '../../domain/googleSyncTypes.ts';
+import { GoogleSyncClientError } from '@infra/google';
+
+const REAUTH_MESSAGE =
+  'Google アカウントとの連携が期限切れになりました。再度連携を行ってください。';
 
 export type GoogleSpreadsheetSettingsDialogProps = {
   isOpen: boolean;
@@ -73,6 +77,25 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
   >(currentColumnMapping);
   const [isLoadingSpreadsheets, setIsLoadingSpreadsheets] = useState(false);
   const [isLoadingSheets, setIsLoadingSheets] = useState(false);
+  const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [reconnectMessage, setReconnectMessage] = useState<string | null>(null);
+
+  const handleAuthError = useCallback(
+    (error: unknown): boolean => {
+      if (
+        error instanceof GoogleSyncClientError &&
+        error.status === 401
+      ) {
+        setNeedsReconnect(true);
+        setReconnectMessage(REAUTH_MESSAGE);
+        setSpreadsheets([]);
+        setSheets([]);
+        return true;
+      }
+      return false;
+    },
+    [],
+  );
 
   useEffect(() => {
     setSelectedSpreadsheetId(currentSpreadsheetId);
@@ -91,7 +114,7 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (!isOpen || !isConnected) return;
+    if (!isOpen || !isConnected || needsReconnect) return;
 
     const loadSpreadsheets = async () => {
       setIsLoadingSpreadsheets(true);
@@ -99,17 +122,26 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
         const result = await onFetchSpreadsheets();
         setSpreadsheets(result.items);
       } catch (error) {
-        console.error('Failed to load spreadsheets:', error);
+        const handled = handleAuthError(error);
+        if (!handled) {
+          console.error('Failed to load spreadsheets:', error);
+        }
       } finally {
         setIsLoadingSpreadsheets(false);
       }
     };
 
     loadSpreadsheets();
-  }, [isOpen, isConnected, onFetchSpreadsheets]);
+  }, [
+    handleAuthError,
+    isConnected,
+    isOpen,
+    needsReconnect,
+    onFetchSpreadsheets,
+  ]);
 
   useEffect(() => {
-    if (!selectedSpreadsheetId) {
+    if (!selectedSpreadsheetId || needsReconnect) {
       setSheets([]);
       return;
     }
@@ -120,14 +152,31 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
         const result = await onFetchSheets(selectedSpreadsheetId);
         setSheets(result.items);
       } catch (error) {
-        console.error('Failed to load sheets:', error);
+        const handled = handleAuthError(error);
+        if (!handled) {
+          console.error('Failed to load sheets:', error);
+        }
       } finally {
         setIsLoadingSheets(false);
       }
     };
 
     loadSheets();
-  }, [selectedSpreadsheetId, onFetchSheets]);
+  }, [handleAuthError, needsReconnect, onFetchSheets, selectedSpreadsheetId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setNeedsReconnect(false);
+      setReconnectMessage(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isConnected) {
+      setNeedsReconnect(false);
+      setReconnectMessage(null);
+    }
+  }, [isConnected]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (modalContainerRef.current) {
@@ -171,6 +220,14 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
     return null;
   }
 
+  const showReconnectPrompt = needsReconnect || !isConnected;
+  const oauthButtonLabel = needsReconnect
+    ? 'Google アカウントを再連携'
+    : 'Google アカウントと連携';
+  const promptMessage = needsReconnect
+    ? reconnectMessage ?? REAUTH_MESSAGE
+    : 'Google アカウントと連携して、スプレッドシートへの同期を有効にします。';
+
   return (
     <div className="time-tracker__modal-backdrop" role="presentation">
       <div
@@ -184,15 +241,15 @@ export const GoogleSpreadsheetSettingsDialog: React.FC<
       >
         <h2 id="google-settings-title">Google スプレッドシート設定</h2>
 
-        {!isConnected ? (
+        {showReconnectPrompt ? (
           <div className="time-tracker__modal-content">
-            <p>Google アカウントと連携して、スプレッドシートへの同期を有効にします。</p>
+            <p>{promptMessage}</p>
             <div className="time-tracker__modal-actions">
               <button type="button" onClick={onClose}>
                 キャンセル
               </button>
               <button type="button" onClick={onStartOAuth}>
-                Google アカウントと連携
+                {oauthButtonLabel}
               </button>
             </div>
           </div>

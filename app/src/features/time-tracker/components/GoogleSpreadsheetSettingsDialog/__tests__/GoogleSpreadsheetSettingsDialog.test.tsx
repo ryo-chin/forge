@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GoogleSpreadsheetSettingsDialog } from '../GoogleSpreadsheetSettingsDialog.tsx';
+import { GoogleSyncClientError } from '@infra/google';
 import type {
   SpreadsheetOption,
   SheetOption,
@@ -182,5 +183,27 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
     await user.type(dialog, '{Escape}');
 
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('prompts reauthentication when spreadsheets fetch returns 401', async () => {
+    const fetchError = new GoogleSyncClientError('Unauthorized', 401);
+    render(
+      <GoogleSpreadsheetSettingsDialog
+        {...defaultProps}
+        onFetchSpreadsheets={vi.fn().mockRejectedValue(fetchError)}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Google アカウントとの連携が期限切れになりました。再度連携を行ってください。',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Google アカウントを再連携' }),
+    ).toBeInTheDocument();
   });
 });

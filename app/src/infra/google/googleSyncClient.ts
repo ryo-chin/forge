@@ -25,13 +25,15 @@ export type OAuthStartResponse = {
 
 export type SyncRetryResponse = GoogleSyncLog;
 
-class GoogleSyncClientError extends Error {
+export class GoogleSyncClientError extends Error {
   readonly status: number;
+  readonly detail: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail?: unknown) {
     super(message);
     this.name = 'GoogleSyncClientError';
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -84,6 +86,7 @@ const request = async <T>(
         detail,
       )}`,
       response.status,
+      detail,
     );
   }
 
