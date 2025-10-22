@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 export type ColumnMappingFormProps = {
   currentMapping?: {
+    id?: string;
+    status?: string;
     title: string;
     startedAt: string;
     endedAt: string;
@@ -13,6 +15,8 @@ export type ColumnMappingFormProps = {
     intensity?: string;
   };
   onChange: (mapping: {
+    id?: string;
+    status?: string;
     title: string;
     startedAt: string;
     endedAt: string;
@@ -26,6 +30,8 @@ export type ColumnMappingFormProps = {
 };
 
 const REQUIRED_FIELDS = [
+  { key: 'id', label: 'セッションID' },
+  { key: 'status', label: 'ステータス' },
   { key: 'title', label: 'タイトル' },
   { key: 'startedAt', label: '開始時刻' },
   { key: 'endedAt', label: '終了時刻' },
@@ -45,6 +51,8 @@ export const ColumnMappingForm: React.FC<ColumnMappingFormProps> = ({
   onChange,
 }) => {
   const [mapping, setMapping] = useState<Record<string, string>>({
+    id: currentMapping?.id ?? '',
+    status: currentMapping?.status ?? '',
     title: currentMapping?.title ?? 'A',
     startedAt: currentMapping?.startedAt ?? 'B',
     endedAt: currentMapping?.endedAt ?? 'C',
@@ -59,6 +67,8 @@ export const ColumnMappingForm: React.FC<ColumnMappingFormProps> = ({
   useEffect(() => {
     if (currentMapping) {
       setMapping({
+        id: currentMapping.id ?? '',
+        status: currentMapping.status ?? '',
         title: currentMapping.title,
         startedAt: currentMapping.startedAt,
         endedAt: currentMapping.endedAt,
@@ -78,6 +88,8 @@ export const ColumnMappingForm: React.FC<ColumnMappingFormProps> = ({
 
     // 必須フィールドとオプショナルフィールド（値がある場合のみ）を含めて通知
     const result: Record<string, string> = {
+      id: newMapping.id ?? '',
+      status: newMapping.status ?? '',
       title: newMapping.title,
       startedAt: newMapping.startedAt,
       endedAt: newMapping.endedAt,

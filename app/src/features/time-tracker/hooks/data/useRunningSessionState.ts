@@ -21,7 +21,7 @@ export type UseRunningSessionStateOptions = {
 
 export type RunningSessionStateApi = {
   state: RunningSessionState;
-  start: (title: string) => boolean;
+  start: (title: string, project?: string) => boolean;
   stop: () => TimeTrackerSession | null;
   updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
   adjustDuration: (deltaSeconds: number) => void;
@@ -49,14 +49,14 @@ export const useRunningSessionState = (
   useRunningSessionTimer({ state, dispatch, now, tickIntervalMs });
 
   const start = useCallback(
-    (rawTitle: string) => {
+    (rawTitle: string, project?: string | null) => {
       const title = rawTitle.trim();
       if (!title) return false;
       if (state.status === 'running') return false;
 
       dispatch({
         type: 'START',
-        payload: { id: crypto.randomUUID(), title, startedAt: now() },
+        payload: { title, startedAt: now(), project },
       });
       return true;
     },

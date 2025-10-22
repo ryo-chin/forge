@@ -210,4 +210,26 @@ export class GoogleSheetsClient {
       nextPageToken: payload.nextPageToken,
     };
   }
+
+  async batchUpdateValues(
+    spreadsheetId: string,
+    updates: Array<{
+      range: string;
+      values: (string | number | null)[][];
+    }>,
+    valueInputOption: 'RAW' | 'USER_ENTERED' = 'USER_ENTERED',
+  ): Promise<void> {
+    const url = new URL(
+      `${spreadsheetId}/values:batchUpdate`,
+      `${SHEETS_BASE_URL}/`,
+    );
+
+    await this.request(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        valueInputOption,
+        data: updates,
+      }),
+    });
+  }
 }

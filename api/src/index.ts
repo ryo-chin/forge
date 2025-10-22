@@ -12,6 +12,10 @@ import {
   handleListSheets,
 } from './handlers/settings';
 import { handleOptions } from './http/response';
+import {
+  handleRunningSessionStart,
+  handleRunningSessionUpdate,
+} from './handlers/runningSessions';
 
 const ROUTES = {
   SYNC: '/integrations/google/sync',
@@ -20,6 +24,8 @@ const ROUTES = {
   OAUTH_REVOKE: '/integrations/google/oauth/revoke',
   SETTINGS: '/integrations/google/settings',
   SPREADSHEETS: '/integrations/google/spreadsheets',
+  RUNNING_START: '/integrations/google/running/start',
+  RUNNING_UPDATE: '/integrations/google/running/update',
 } as const;
 
 export default {
@@ -65,6 +71,14 @@ export default {
     // Sync route
     if (request.method === 'POST' && url.pathname === ROUTES.SYNC) {
       return handleSyncSession(request, env);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.RUNNING_START) {
+      return handleRunningSessionStart(request, env);
+    }
+
+    if (request.method === 'PATCH' && url.pathname === ROUTES.RUNNING_UPDATE) {
+      return handleRunningSessionUpdate(request, env);
     }
 
     return new Response('Not Found', { status: 404 });

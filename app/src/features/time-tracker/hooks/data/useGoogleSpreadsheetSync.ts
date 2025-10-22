@@ -5,13 +5,9 @@ import {
   getGoogleSyncBaseUrl,
   isGoogleSyncClientEnabled,
   syncSession as syncSessionRequest,
+  appendRunningSession as appendRunningSessionRequest,
+  updateRunningSession as updateRunningSessionRequest,
 } from '@infra/google';
-import {
-  appendRunningSession,
-  updateRunningSession,
-  completeRunningSession,
-  type GoogleSheetsOptions,
-} from '@infra/google/googleSheetsRunningSync';
 import { getSupabaseClient } from '@infra/supabase';
 import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 import type { GoogleSyncRequestBody } from '../../domain/googleSyncTypes.ts';
@@ -58,15 +54,12 @@ const toRequestBody = (
 /**
  * LocalStorageからGoogle Sheets設定を読み込む
  */
-const loadGoogleSheetsConfig = (): GoogleSheetsOptions | null => {
+const hasGoogleSheetsConfig = (): boolean => {
   try {
     const stored = localStorage.getItem('google-sheets-sync-config');
-    if (!stored) return null;
-    const config = JSON.parse(stored) as GoogleSheetsOptions;
-    if (!config.spreadsheetId || !config.sheetName) return null;
-    return config;
+    return typeof stored === 'string' && stored.length > 0;
   } catch {
-    return null;
+    return false;
   }
 };
 
@@ -74,6 +67,19 @@ export const useGoogleSpreadsheetSync = () => {
   const { status: authStatus } = useAuth();
   const [state, setState] = useState<SyncState>(initialState);
   const updateDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resolveAccessToken = useCallback(async (): Promise<string> => {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      throw error;
+    }
+    const accessToken = data?.session?.access_token;
+    if (!accessToken) {
+      throw new Error('Supabase access token is not available');
+    }
+    return accessToken;
+  }, []);
 
   const canSync = useMemo(() => {
     if (!isGoogleSyncClientEnabled()) {
@@ -87,15 +93,7 @@ export const useGoogleSpreadsheetSync = () => {
 
   const mutation = useMutation({
     mutationFn: async (session: TimeTrackerSession) => {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        throw error;
-      }
-      const accessToken = data?.session?.access_token;
-      if (!accessToken) {
-        throw new Error('Supabase access token is not available');
-      }
+      const accessToken = await resolveAccessToken();
       const response = await syncSessionRequest(
         accessToken,
         toRequestBody(session),
@@ -162,12 +160,21 @@ export const useGoogleSpreadsheetSync = () => {
       if (!canSync) {
         return null;
       }
-      const config = loadGoogleSheetsConfig();
-      if (!config) {
+      if (!hasGoogleSheetsConfig()) {
         return null;
       }
       try {
-        await appendRunningSession(draft, config);
+        const accessToken = await resolveAccessToken();
+        await appendRunningSessionRequest(accessToken, {
+          id: draft.id,
+          title: draft.title,
+          startedAt: new Date(draft.startedAt).toISOString(),
+          project: draft.project ?? null,
+          tags: draft.tags ?? [],
+          skill: draft.skill ?? null,
+          intensity: draft.intensity ?? null,
+          notes: draft.notes ?? null,
+        });
         return { success: true };
       } catch (error) {
         if (import.meta.env.MODE !== 'test') {
@@ -177,32 +184,42 @@ export const useGoogleSpreadsheetSync = () => {
         return null;
       }
     },
-    [canSync],
+    [canSync, resolveAccessToken],
   );
 
   /**
    * Running Session更新時の同期（debounce適用）
    */
   const syncRunningSessionUpdate = useCallback(
-    async (draft: SessionDraft) => {
+    async (draft: SessionDraft, elapsedSeconds: number) => {
       if (!canSync) {
         return null;
       }
-      const config = loadGoogleSheetsConfig();
-      if (!config) {
+      if (!hasGoogleSheetsConfig()) {
         return null;
       }
 
-      // 既存のdebounceタイマーをクリア
       if (updateDebounceTimerRef.current) {
         clearTimeout(updateDebounceTimerRef.current);
       }
 
-      // 1秒後に更新を実行
       return new Promise<{ success: boolean } | null>((resolve) => {
         updateDebounceTimerRef.current = setTimeout(async () => {
           try {
-            await updateRunningSession(draft, config);
+            const accessToken = await resolveAccessToken();
+            await updateRunningSessionRequest(accessToken, {
+              draft: {
+                id: draft.id,
+                title: draft.title,
+                startedAt: new Date(draft.startedAt).toISOString(),
+                project: draft.project ?? null,
+                tags: draft.tags ?? [],
+                skill: draft.skill ?? null,
+                intensity: draft.intensity ?? null,
+                notes: draft.notes ?? null,
+              },
+              elapsedSeconds,
+            });
             resolve({ success: true });
           } catch (error) {
             if (import.meta.env.MODE !== 'test') {
@@ -214,33 +231,7 @@ export const useGoogleSpreadsheetSync = () => {
         }, 1000);
       });
     },
-    [canSync],
-  );
-
-  /**
-   * Running Session完了時の同期
-   */
-  const syncRunningSessionComplete = useCallback(
-    async (session: TimeTrackerSession) => {
-      if (!canSync) {
-        return null;
-      }
-      const config = loadGoogleSheetsConfig();
-      if (!config) {
-        return null;
-      }
-      try {
-        await completeRunningSession(session, config);
-        return { success: true };
-      } catch (error) {
-        if (import.meta.env.MODE !== 'test') {
-          // eslint-disable-next-line no-console
-          console.warn('[Google Sheets] Failed to complete running session', error);
-        }
-        return null;
-      }
-    },
-    [canSync],
+    [canSync, resolveAccessToken],
   );
 
   return {
@@ -248,6 +239,5 @@ export const useGoogleSpreadsheetSync = () => {
     syncSession,
     syncRunningSessionStart,
     syncRunningSessionUpdate,
-    syncRunningSessionComplete,
   };
 };

@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../index.css';
 import { useTimeTrackerSessions } from '../../hooks/data/useTimeTrackerSessions.ts';
 import { useRunningSession } from '../../hooks/data/useRunningSession.ts';
 import { useGoogleSpreadsheetSync } from '../../hooks/data/useGoogleSpreadsheetSync.ts';
 import { useGoogleSpreadsheetOptions } from '../../hooks/data/useGoogleSpreadsheetOptions.ts';
 import { formatDateTimeLocal } from '../../../../lib/date.ts';
-import type { TimeTrackerSession } from '../../domain/types.ts';
+import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 import { Composer } from '../../components/Composer';
 import { HistoryList } from '../../components/HistoryList';
 import { EditorModal } from '../../components/EditorModal';
@@ -21,6 +21,18 @@ import { localDateTimeToMs } from '../../../../lib/time.ts';
 import { useAuth } from '../../../../infra/auth';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
+
+const buildDraftSignature = (draft: SessionDraft): string =>
+  JSON.stringify({
+    id: draft.id,
+    title: draft.title ?? '',
+    startedAt: draft.startedAt,
+    project: draft.project ?? '',
+    tags: Array.isArray(draft.tags) ? [...draft.tags].sort() : [],
+    skill: draft.skill ?? '',
+    intensity: draft.intensity ?? '',
+    notes: draft.notes ?? '',
+  });
 
 type ModalState =
   | { type: 'running' }
@@ -52,7 +64,12 @@ export function TimeTrackerPage() {
     adjustDuration,
     persistRunningState,
   } = useRunningSession({ userId: user?.id ?? null });
-  const { state: syncState, syncSession } = useGoogleSpreadsheetSync();
+  const {
+    state: syncState,
+    syncSession,
+    syncRunningSessionStart,
+    syncRunningSessionUpdate,
+  } = useGoogleSpreadsheetSync();
   const {
     settings: googleSettings,
     updateSelection,
@@ -88,6 +105,10 @@ export function TimeTrackerPage() {
   const isRunning = runningState.status === 'running';
   const elapsedSeconds = runningState.elapsedSeconds;
   const runningDraftTitle = isRunning ? runningState.draft.title : null;
+  const runningDraftSyncRef = useRef<{ id: string | null; signature: string | null }>({
+    id: isRunning ? runningState.draft.id : null,
+    signature: isRunning ? buildDraftSignature(runningState.draft) : null,
+  });
 
   // ==== モーダルの活性可否（フォームstateを廃し、現在のドメイン値から判定） ====
   const modalComputed = useMemo(() => {
@@ -169,13 +190,13 @@ export function TimeTrackerPage() {
     (title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return false;
-      const started = start(trimmed);
+      const started = start(trimmed, composerProject || null);
       if (started) {
         setUndoState(null);
       }
       return started;
     },
-    [start],
+    [composerProject, start],
   );
 
   const handleComposerStop = useCallback(() => {
@@ -221,6 +242,17 @@ export function TimeTrackerPage() {
     },
     [adjustDuration],
   );
+
+  useEffect(() => {
+    if (!isRunning || !runningState.draft) {
+      return;
+    }
+    const trimmed = composerProject.trim();
+    const current = runningState.draft.project ?? '';
+    if (current !== trimmed) {
+      updateDraft({ project: trimmed || undefined });
+    }
+  }, [isRunning, runningState.draft, composerProject, updateDraft]);
 
   // ==== モーダル open/close ====
   const openRunningEditor = useCallback(() => {
@@ -333,7 +365,7 @@ export function TimeTrackerPage() {
       setHistoryEditSnapshot(null);
       setModalState(null);
     },
-    [modalState, persistSessions, setSessions],
+    [modalState, persistRunningState, persistSessions, setSessions],
   );
 
   // ==== モーダルの onChange：ドメインを直接パッチ ====
@@ -475,6 +507,34 @@ export function TimeTrackerPage() {
       console.error('Failed to start OAuth:', error);
     }
   }, [startOAuth]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      runningDraftSyncRef.current = { id: null, signature: null };
+      return;
+    }
+
+    const draft = runningState.draft;
+    const signature = buildDraftSignature(draft);
+    const prev = runningDraftSyncRef.current;
+
+    if (!prev.id || prev.id !== draft.id) {
+      runningDraftSyncRef.current = { id: draft.id, signature };
+      void syncRunningSessionStart(draft);
+      return;
+    }
+
+    if (prev.signature !== signature) {
+      runningDraftSyncRef.current = { id: draft.id, signature };
+      void syncRunningSessionUpdate(draft, runningState.elapsedSeconds);
+    }
+  }, [
+    isRunning,
+    runningState.draft,
+    runningState.elapsedSeconds,
+    syncRunningSessionStart,
+    syncRunningSessionUpdate,
+  ]);
 
   // ==== モーダルのフォーカス復元 ====
   useEffect(() => {

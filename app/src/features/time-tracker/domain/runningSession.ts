@@ -6,7 +6,15 @@ import type {
 
 // Action
 export type RunningSessionAction =
-  | { type: 'START'; payload: { id: string; title: string; startedAt: number } }
+  | {
+      type: 'START';
+      payload: {
+        title: string;
+        startedAt: number;
+        project?: string | null;
+        id?: string | null;
+      };
+    }
   | { type: 'TICK'; payload: { nowMs: number } }
   | { type: 'UPDATE_DRAFT'; payload: Partial<Omit<SessionDraft, 'startedAt'>> }
   | { type: 'ADJUST_DURATION'; payload: { deltaSeconds: number; nowMs: number } }
@@ -28,11 +36,19 @@ export const runningSessionReducer = (
     case 'START': {
       const title = action.payload.title.trim();
       if (!title) return state; // 二重防御
+      const trimmedProject =
+        typeof action.payload.project === 'string'
+          ? action.payload.project.trim()
+          : undefined;
       const draft: SessionDraft = {
-        id: action.payload.id,
+        id:
+          action.payload.id && action.payload.id.trim().length > 0
+            ? action.payload.id
+            : crypto.randomUUID(),
         title,
         startedAt: action.payload.startedAt,
         tags: [],
+        project: trimmedProject ? trimmedProject : undefined,
       };
       return { status: 'running', draft, elapsedSeconds: 0 };
     }

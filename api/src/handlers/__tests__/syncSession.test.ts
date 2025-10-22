@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => {
   const createSyncLog = vi.fn();
   const updateSyncLog = vi.fn();
   const appendRow = vi.fn();
+  const getRange = vi.fn();
+  const batchUpdateValues = vi.fn();
   return {
     verifySupabaseJwt,
     getConnectionByUser,
@@ -15,6 +17,8 @@ const mocks = vi.hoisted(() => {
     createSyncLog,
     updateSyncLog,
     appendRow,
+    getRange,
+    batchUpdateValues,
   };
 });
 
@@ -49,6 +53,8 @@ vi.mock('../../services/googleSheetsClient', async (importOriginal) => {
       ...actual.GoogleSheetsClient,
       fromAccessToken: vi.fn(() => ({
         appendRow: mocks.appendRow,
+        getRange: mocks.getRange,
+        batchUpdateValues: mocks.batchUpdateValues,
       })),
     },
   };
@@ -224,6 +230,107 @@ describe('handleSyncSession', () => {
       env,
       'log-1',
       expect.objectContaining({ status: 'success' }),
+    );
+  });
+
+  it('updates existing running row when session id already exists', async () => {
+    mocks.verifySupabaseJwt.mockResolvedValue({
+      userId: 'user-1',
+      raw: {},
+    });
+    mocks.getConnectionByUser.mockResolvedValue({
+      id: 'conn-1',
+      user_id: 'user-1',
+      google_user_id: 'google-1',
+      spreadsheet_id: 'sheet-spreadsheet',
+      sheet_id: 1,
+      sheet_title: 'TimeTracker',
+      access_token: 'g-access',
+      refresh_token: 'g-refresh',
+      access_token_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.getColumnMappingByConnection.mockResolvedValue({
+      id: 'mapping-1',
+      connection_id: 'conn-1',
+      mappings: {
+        id: 'A',
+        status: 'B',
+        title: 'C',
+        startedAt: 'D',
+        endedAt: 'E',
+        durationSeconds: 'F',
+        project: 'G',
+        notes: 'H',
+        tags: 'I',
+      },
+      required_columns: [],
+      optional_columns: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.createSyncLog.mockResolvedValue({
+      id: 'log-1',
+      connection_id: 'conn-1',
+      session_id: 'session-1',
+      status: 'pending',
+      attempted_at: new Date().toISOString(),
+      failure_reason: null,
+      google_append_request: null,
+      google_append_response: null,
+      retry_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.getRange.mockResolvedValue({
+      values: [['session-1'], ['session-2']],
+    });
+    mocks.batchUpdateValues.mockResolvedValue(undefined);
+    mocks.updateSyncLog.mockResolvedValue({
+      id: 'log-1',
+      connection_id: 'conn-1',
+      session_id: 'session-1',
+      status: 'success',
+      attempted_at: new Date().toISOString(),
+      failure_reason: null,
+      google_append_request: null,
+      google_append_response: null,
+      retry_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    const response = await handleSyncSession(
+      buildRequest(
+        {
+          session: {
+            id: 'session-1',
+            title: 'Focus',
+            startedAt: '2025-10-12T12:00:00.000Z',
+            endedAt: '2025-10-12T13:00:00.000Z',
+            durationSeconds: 3600,
+            project: 'Project Alpha',
+            notes: 'Deep work',
+            tags: ['tag1'],
+          },
+        },
+        'token-123',
+      ),
+      env,
+    );
+
+    expect(response.status).toBe(202);
+    expect(mocks.appendRow).not.toHaveBeenCalled();
+    expect(mocks.batchUpdateValues).toHaveBeenCalledTimes(1);
+    const updatesArg = mocks.batchUpdateValues.mock.calls[0][1];
+    expect(updatesArg).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ range: 'TimeTracker!B1' }),
+        expect.objectContaining({ range: 'TimeTracker!E1' }),
+      ]),
     );
   });
 });
