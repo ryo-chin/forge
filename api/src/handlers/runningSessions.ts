@@ -121,7 +121,9 @@ const resolveConnectionContext = async (
       conflict('connection_inactive', 'Google spreadsheet connection is not active'),
     );
   }
-  if (!connection.spreadsheet_id || !connection.sheet_title) {
+  const spreadsheetId = connection.spreadsheet_id;
+  const sheetTitle = connection.sheet_title;
+  if (!spreadsheetId || !sheetTitle) {
     throw new HttpResponseError(
       conflict(
         'selection_missing',
@@ -163,7 +165,7 @@ const resolveConnectionContext = async (
     );
   }
 
-  return { connection, mappings } as const;
+  return { connection, spreadsheetId, sheetTitle, mappings } as const;
 };
 
 const ensureAuthorized = async (request: Request, env: Env) => {
@@ -201,7 +203,12 @@ export const handleRunningSessionStart = async (
     const body = await parseJson<RunningSessionStartRequest>(request);
     validateDraft(body?.draft);
 
-    const { connection, mappings } = await resolveConnectionContext(
+    const {
+      connection,
+      spreadsheetId,
+      sheetTitle,
+      mappings,
+    } = await resolveConnectionContext(
       env,
       auth.userId,
     );
@@ -213,8 +220,8 @@ export const handleRunningSessionStart = async (
     if (requiresHeaderLookup(mappings)) {
       try {
         const header = await client.getRange(
-          connection.spreadsheet_id,
-          `${connection.sheet_title}!1:1`,
+          spreadsheetId,
+          `${sheetTitle}!1:1`,
         );
         headerRow = header.values?.[0] ?? null;
       } catch (error) {
@@ -233,12 +240,10 @@ export const handleRunningSessionStart = async (
       );
     }
 
-    await client.appendRow(
-      connection.spreadsheet_id,
-      connection.sheet_title,
-      values,
-      { valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS' },
-    );
+    await client.appendRow(spreadsheetId, sheetTitle, values, {
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+    });
 
     return jsonResponse({ status: 'ok' }, 202);
   } catch (responseOrError) {
@@ -325,7 +330,12 @@ export const handleRunningSessionUpdate = async (
       );
     }
 
-    const { connection, mappings } = await resolveConnectionContext(
+    const {
+      connection,
+      spreadsheetId,
+      sheetTitle,
+      mappings,
+    } = await resolveConnectionContext(
       env,
       auth.userId,
     );
@@ -337,8 +347,8 @@ export const handleRunningSessionUpdate = async (
     if (requiresHeaderLookup(mappings)) {
       try {
         const header = await client.getRange(
-          connection.spreadsheet_id,
-          `${connection.sheet_title}!1:1`,
+          spreadsheetId,
+          `${sheetTitle}!1:1`,
         );
         headerRow = header.values?.[0] ?? null;
       } catch (error) {
@@ -358,8 +368,8 @@ export const handleRunningSessionUpdate = async (
 
     const rowNumber = await findRowNumberById(
       client,
-      connection.spreadsheet_id,
-      connection.sheet_title,
+      spreadsheetId,
+      sheetTitle,
       idColumn,
       body.draft.id,
     );
@@ -369,7 +379,7 @@ export const handleRunningSessionUpdate = async (
     }
 
     const updates = buildUpdateData(
-      connection.sheet_title,
+      sheetTitle,
       rowNumber,
       mappings,
       body.draft,
@@ -381,7 +391,7 @@ export const handleRunningSessionUpdate = async (
       return jsonResponse({ status: 'ok' }, 202);
     }
 
-    await client.batchUpdateValues(connection.spreadsheet_id, updates, 'USER_ENTERED');
+    await client.batchUpdateValues(spreadsheetId, updates, 'USER_ENTERED');
 
     return jsonResponse({ status: 'ok' }, 202);
   } catch (responseOrError) {
