@@ -20,6 +20,7 @@ description: "Task list template for feature implementation"
 - **Forge frontend**: `app/src/` 配下に実装（機能モジュールは `app/src/features/<feature>`）
 - **共有テスト**: コンポーネント/ドメインは実装ファイル横に `.test.ts[x]` を配置
 - **E2E テスト**: `app/tests/e2e/`
+- **外部サービス連携**: `app` から直接外部APIを叩くタスクは禁止。必ず Worker/API 側の実装（`api/src/`）を経由するタスクを明示的に追加すること
 - 他プロジェクト構成の場合は plan.md の構造に合わせてパスを調整すること
 
 <!-- 
