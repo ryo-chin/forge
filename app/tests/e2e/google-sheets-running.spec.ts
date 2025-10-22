@@ -10,8 +10,8 @@ const SESSIONS_KEY = 'codex-time-tracker/sessions';
  * 実際のSupabase同期をテストする場合は、Supabaseのテスト環境を設定してください。
  */
 
-test.describe('Running Session - Multi-Device Sync (LocalStorage)', () => {
-  test('should maintain running session across page reloads', async ({ page }) => {
+test.describe('Runningセッション - ローカルストレージでの複数デバイス同期', () => {
+  test('ページ再読み込み後も計測中セッションを維持できる', async ({ page }) => {
     await page.goto('/');
 
     // デバイスA: セッション開始
@@ -31,7 +31,7 @@ test.describe('Running Session - Multi-Device Sync (LocalStorage)', () => {
     await expect(page.getByRole('button', { name: '停止' })).toBeVisible({ timeout: 10000 });
   });
 
-  test('should preserve session ID across reload', async ({ page }) => {
+  test('再読み込み後もセッションIDが変わらない', async ({ page }) => {
     await page.goto('/');
 
     // セッション開始
@@ -64,7 +64,7 @@ test.describe('Running Session - Multi-Device Sync (LocalStorage)', () => {
     expect(sessionIdAfter).toBe(sessionIdBefore);
   });
 
-  test('should sync title changes across reload', async ({ page }) => {
+  test('タイトル変更が再読み込み後に反映される', async ({ page }) => {
     await page.goto('/');
 
     // セッション開始
@@ -95,7 +95,7 @@ test.describe('Running Session - Multi-Device Sync (LocalStorage)', () => {
     await expect(page.getByRole('textbox')).toHaveValue('変更後タイトル');
   });
 
-  test('should sync project changes across reload', async ({ page }) => {
+  test('プロジェクト変更が再読み込み後に反映される', async ({ page }) => {
     await page.goto('/');
 
     // セッション開始
@@ -131,7 +131,7 @@ test.describe('Running Session - Multi-Device Sync (LocalStorage)', () => {
     expect(hasProject).toBe(true);
   });
 
-  test('should complete session with same ID', async ({ page }) => {
+  test('停止後も同じセッションIDで履歴に保存される', async ({ page }) => {
     await page.goto('/');
 
     // セッション開始
@@ -167,8 +167,8 @@ test.describe('Running Session - Multi-Device Sync (LocalStorage)', () => {
   });
 });
 
-test.describe('Running Session - Multiple Browser Contexts', () => {
-  test('should simulate multi-device sync with separate contexts', async ({ browser }) => {
+test.describe('Runningセッション - 複数ブラウザコンテキスト', () => {
+  test('別コンテキストでも同じセッションを表示できる', async ({ browser }) => {
     // デバイスA
     const contextA = await browser.newContext();
     const pageA = await contextA.newPage();
@@ -222,7 +222,7 @@ test.describe('Running Session - Multiple Browser Contexts', () => {
     await contextB.close();
   });
 
-  test('should handle session stop from different device', async ({ browser }) => {
+  test('別コンテキストから停止しても正しく反映される', async ({ browser }) => {
     // デバイスA
     const contextA = await browser.newContext();
     const pageA = await contextA.newPage();
