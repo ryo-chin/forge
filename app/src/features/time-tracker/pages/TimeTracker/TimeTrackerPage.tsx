@@ -255,8 +255,11 @@ export function TimeTrackerPage() {
   }, [isRunning, runningState.draft, composerProject, updateDraft]);
 
   // ==== モーダル open/close ====
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   const openRunningEditor = useCallback(() => {
     if (runningState.status !== 'running') return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     setModalState({ type: 'running' });
   }, [runningState.status]);
 
@@ -264,6 +267,7 @@ export function TimeTrackerPage() {
     (sessionId: string) => {
       const target = sessions.find((session) => session.id === sessionId);
       if (!target) return;
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
       // キャンセルで戻せるように元を保存
       setHistoryEditSnapshot(target);
       setModalState({ type: 'history', sessionId: target.id });
@@ -540,11 +544,16 @@ export function TimeTrackerPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (modalState) {
-      const previousFocus = document.activeElement as HTMLElement | null;
       return () => {
-        if (previousFocus && typeof previousFocus.focus === 'function') {
-          previousFocus.focus();
+        const target = previousFocusRef.current;
+        if (target && typeof target.focus === 'function') {
+          queueMicrotask(() => {
+            if (typeof target.focus === 'function') {
+              target.focus();
+            }
+          });
         }
+        previousFocusRef.current = null;
       };
     }
   }, [modalState]);

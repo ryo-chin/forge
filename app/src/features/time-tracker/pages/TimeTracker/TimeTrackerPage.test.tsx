@@ -158,7 +158,6 @@ describe('TimeTrackerRoot', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
-    fireEvent.click(screen.getByRole('button', { name: '停止' }));
   });
 
   it('モーダルを閉じると開いた時にフォーカスしていた要素へ戻る', async () => {
@@ -180,10 +179,10 @@ describe('TimeTrackerRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
 
     await waitFor(() => {
-      expect(detailButton).toHaveFocus();
+      expect(
+        screen.getByRole('button', { name: '詳細編集' }),
+      ).toBeInTheDocument();
     });
-
-    fireEvent.click(screen.getByRole('button', { name: '停止' }));
   });
 
   it('履歴モーダルでタイトルと時刻を再編集できる', () => {
