@@ -1,13 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: 1.0.0 → 1.0.1
-- Modified principles: I. Feature-First Architecture (path clarified)
-- Added sections: None
+- Version change: 1.0.1 → 1.1.0
+- Modified principles: II. レイヤー分離とデータフロー（外部連携の責務明確化）
+- Added sections: VIII. 外部サービス連携の制御
 - Removed sections: None
 - Templates requiring updates:
-  ✅ .specify/templates/plan-template.md（ディレクトリ構成の更新）
-  ✅ .specify/templates/tasks-template.md（パスガイドラインの更新）
-  ⚠ spec-template.md（変更なし、継続利用可）
+  ✅ .specify/templates/plan-template.md（憲法チェック参照時の外部連携ガイド補足）
+  ✅ .specify/templates/tasks-template.md（外部API作業のワーカー経由ルール周知）
+  ⚠ .specify/templates/spec-template.md（特筆すべき変更なし、現行利用継続可）
 - Follow-up TODOs: None
 -->
 
@@ -26,12 +26,12 @@ Sync Impact Report:
 機能内部は責務ごとに明確にレイヤー分離する:
 - `domain/`: 純粋関数、計算、バリデーション（副作用なし）
 - `components/`: UI とユーザーインタラクション
-- `hooks/data/`: データ取得・更新の副作用を集約
-- `infra/`: プラットフォーム固有の実装（API、ストレージ）
+- `hooks/data/`: データ取得・更新など副作用を集約
+- `infra/`: プラットフォーム固有の実装（API、ストレージ、認証など）
 
-データは `hooks/data/` から取得し、propsで子コンポーネントへ渡す。propsが煩雑な場合のみContext/Providerを使用する。
+データは `hooks/data/` から取得し、propsで子コンポーネントへ渡す。propsが煩雑な場合のみContext/Providerを使用する。外部サービスとの通信は `hooks/data/` → `infra/` → Worker/サーバー → 外部サービスという順に一方向で流れ、UI層から直接外部サービスへ到達してはならない。
 
-**理由**: 責務の分離により、テストが容易になり、永続化レイヤーの差し替えが可能になる。
+**理由**: 責務の分離により、テストが容易になり、永続化・外部連携レイヤーの差し替えが可能になる。
 
 ### III. Test-First Development (NON-NEGOTIABLE)
 
@@ -48,7 +48,7 @@ Sync Impact Report:
 
 ### IV. Incremental Delivery & User Story Independence
 
-各ユーザーストーリーは独立して実装・テスト・デプロイ可能でなければならない。優先順位（P1, P2, P3）に従って段階的に価値を提供する。P1だけでMVP（Minimum Viable Product）として機能する。
+各ユーザーストーリーは独立して実装・テスト・デプロイ可能でなければならない。優先順位（P1, P2, P3）に従って段階的に価値を提供する。P1だけでMVPとして機能する。
 
 **理由**: 早期のフィードバック獲得、リスクの最小化、並行開発の実現。
 
@@ -70,6 +70,12 @@ TypeScript の型システムを最大限活用する。`any` の使用は禁止
 
 **理由**: チームメンバーの理解を助け、将来の保守を容易にする。
 
+### VIII. 外部サービス連携の制御
+
+外部サービスとのやり取りは必ずサーバー/Worker層で仲介し、ブラウザや純粋なクライアントコードが直接外部APIへアクセスしてはならない。外部連携時は、資格情報とフォーマット変換をサーバー側で統一し、日時・列マッピングなどの表現をユーティリティで一元管理する。クライアントは整形済みのSDK/HTTPエンドポイントを利用し、IDLの変更があればサーバー層で吸収する。
+
+**理由**: 資格情報の保護と、連携仕様変更時の影響範囲をサーバー側に閉じ込めることで、安全で一貫した拡張が可能になる。
+
 ## Architecture Standards
 
 ### Directory Structure
@@ -90,7 +96,7 @@ app/
 │   ├── ui/                  # 共有UIコンポーネント・トークン
 │   └── index.tsx            # アプリエントリーポイント
 ├── tests/
-│   └── e2e/                 # Playwright シナリオ
+│   └── e2e/
 ├── IMPLEMENTS.md
 └── package.json
 ```
@@ -101,7 +107,7 @@ app/
 - **Build Tool**: Vite
 - **State Management**: TanStack Query (React Query) for server state
 - **Testing**: Vitest (unit/component), Playwright (E2E)
-- **Backend**: Supabase (PostgreSQL + Auth)
+- **Backend / Worker**: Cloudflare Workers, Supabase REST API
 - **Deployment**: Cloudflare Workers/Pages
 
 ### Code Organization Rules
@@ -111,6 +117,7 @@ app/
 - Circular dependencies are PROHIBITED
 - Feature-to-feature dependencies MUST go through explicit public APIs
 - Barrel files (`index.ts`) are optional but recommended for public APIs
+- 外部API連携は `app` → Worker(API) → 外部サービスのパスに限定し、資格情報はクライアントに配布しない
 
 ## Testing Strategy
 
@@ -126,11 +133,12 @@ app/
 - 単体・コンポーネントテストは実装ファイルと同階層に `.test.ts[x]` を配置
 - 機能横断の統合テストは `app/tests` 配下に配置（必要に応じてサブディレクトリを作成）
 - E2E テストは `app/tests/e2e/`
+- E2E シナリオ名・テストケース名は日本語で記述する
 
 ### Mocking Strategy
 
 - Mock `hooks/data/` functions to isolate UI/domain tests from network/storage
-- Use MSW (Mock Service Worker) for API mocking in integration tests
+- Use MSW (Mock Service Worker) or equivalentで API をモックし、外部連携の契約確認は Worker 層で行う
 - Avoid mocking implementation details; focus on behavior
 
 ## Development Workflow
@@ -163,7 +171,7 @@ app/
 - Amendments require documentation of rationale and impact analysis
 - Version increments follow semantic versioning:
   - **MAJOR**: Backward-incompatible principle changes
-  - **MINOR**: New principles or significant additions
+  - **MINOR**: 新しい原則の追加やガバナンスの大幅な拡張
   - **PATCH**: Clarifications, wording improvements
 - All amendments MUST update dependent templates and documentation
 
@@ -172,7 +180,7 @@ app/
 - All PRs MUST comply with core principles
 - Violations of NON-NEGOTIABLE principles are grounds for PR rejection
 - Complexity introduced MUST be justified with clear rationale
-- Use `app/IMPLEMENTS.md` as runtime development guidance
+- Use `app/IMPLEMENTS.md` と `api/IMPLEMENTS.md` を実装時の基準として参照する
 
 ### Review Process
 
@@ -181,5 +189,6 @@ app/
   - Feature independence is maintained
   - Type safety is preserved
   - Documentation is updated
+  - 外部連携が必ず Worker/API 経由で制御されている
 
-**Version**: 1.0.1 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-13
+**Version**: 1.1.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-24

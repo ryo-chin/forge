@@ -33,6 +33,8 @@
 
 [Gates determined based on constitution file]
 
+- フロントエンドから外部サービスへ直接アクセスする設計になっていないか（Worker/API 経由で制御する）
+
 ## Project Structure
 
 ### Documentation (this feature)
