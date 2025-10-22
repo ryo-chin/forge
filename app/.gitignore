@@ -9,3 +9,4 @@ playwright/.cache
 .env
 .env.development
 .env.production
+test-results

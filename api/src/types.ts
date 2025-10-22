@@ -40,6 +40,8 @@ export type SheetSummary = {
 };
 
 export type ColumnMapping = {
+  id?: string;
+  status?: string;
   title: string;
   startedAt: string;
   endedAt: string;
@@ -49,6 +51,26 @@ export type ColumnMapping = {
   tags?: string;
   skill?: string;
   intensity?: string;
+};
+
+export type RunningSessionDraftPayload = {
+  id: string;
+  title: string;
+  startedAt: string;
+  project?: string | null;
+  tags?: string[];
+  skill?: string | null;
+  intensity?: string | null;
+  notes?: string | null;
+};
+
+export type RunningSessionStartRequest = {
+  draft: RunningSessionDraftPayload;
+};
+
+export type RunningSessionUpdateRequest = {
+  draft: RunningSessionDraftPayload;
+  elapsedSeconds: number;
 };
 
 export type ColumnMappingConfig = {

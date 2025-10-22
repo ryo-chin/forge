@@ -29,21 +29,16 @@ import {
   serverError,
 } from '../http/response';
 import { ensureValidAccessToken } from './oauth';
-
-const formatDateTime = (input: string): string => {
-  const date = new Date(input);
-
-  // JST（UTC+9）に変換
-  const jstOffset = 9 * 60; // 9時間 = 540分
-  const utcTime = date.getTime();
-  const jstTime = new Date(utcTime + jstOffset * 60 * 1000);
-
-  const pad = (value: number) => value.toString().padStart(2, '0');
-  return `${jstTime.getUTCFullYear()}/${pad(jstTime.getUTCMonth() + 1)}/${pad(jstTime.getUTCDate())} ${pad(jstTime.getUTCHours())}:${pad(jstTime.getUTCMinutes())}:${pad(jstTime.getUTCSeconds())}`;
-};
+import {
+  columnKeyToIndex,
+  formatDateTime,
+  requiresHeaderLookup,
+  resolveColumnLetter,
+} from '../utils/googleSheets';
 
 const normalizeSessionPayload = (session: SyncSessionPayload) => ({
   id: session.id,
+  status: 'Completed' as const,
   title: session.title ?? '',
   startedAt: formatDateTime(session.startedAt),
   endedAt: formatDateTime(session.endedAt),
@@ -57,6 +52,7 @@ const normalizeSessionPayload = (session: SyncSessionPayload) => ({
 
 const defaultColumnOrder: Array<keyof ReturnType<typeof normalizeSessionPayload>> =
   [
+    'status',
     'title',
     'startedAt',
     'endedAt',
@@ -72,33 +68,57 @@ const defaultColumnOrder: Array<keyof ReturnType<typeof normalizeSessionPayload>
  * 列記号（A, B, C, ...）を0始まりの数値インデックスに変換
  * A -> 0, B -> 1, C -> 2, ...
  */
-const parseColumnKey = (columnKey: string): number | null => {
-  const trimmed = columnKey.trim().toUpperCase();
-
-  // 列記号（A, B, C, ...）の場合
-  if (/^[A-Z]+$/u.test(trimmed)) {
-    let index = 0;
-    for (let i = 0; i < trimmed.length; i++) {
-      index = index * 26 + (trimmed.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
+const findRowNumberById = async (
+  client: GoogleSheetsClient,
+  spreadsheetId: string,
+  sheetTitle: string,
+  columnKey: string,
+  targetId: string,
+): Promise<number | null> => {
+  const range = `${sheetTitle}!${columnKey}:${columnKey}`;
+  const result = await client.getRange(spreadsheetId, range);
+  const values = result.values ?? [];
+  for (let index = 0; index < values.length; index++) {
+    const row = values[index];
+    if (row && String(row[0]).trim() === targetId) {
+      return index + 1;
     }
-    return index - 1; // 0始まりに変換
   }
-
-  // 列記号でない場合はnull（ヘッダー名として扱う）
   return null;
 };
 
-/**
- * ヘッダー行からヘッダー名に対応する列インデックスを取得
- */
-const findColumnIndexByHeader = (
-  headerRow: (string | number)[],
-  headerName: string,
-): number | null => {
-  const index = headerRow.findIndex(
-    (cell) => String(cell).trim() === headerName.trim(),
-  );
-  return index >= 0 ? index : null;
+const buildCompletionUpdates = (
+  sheetTitle: string,
+  rowNumber: number,
+  mapping: ColumnMapping | null,
+  normalized: ReturnType<typeof normalizeSessionPayload>,
+  headerRow: (string | number)[] | null,
+) => {
+  if (!mapping) return [] as Array<{ range: string; values: (string | number | null)[][] }>;
+
+  const updates: Array<{ range: string; values: (string | number | null)[][] }> = [];
+
+  const add = (key: keyof ColumnMapping, value: string | number | null) => {
+    const column = resolveColumnLetter(mapping[key], headerRow);
+    if (!column) return;
+    updates.push({
+      range: `${sheetTitle}!${column}${rowNumber}`,
+      values: [[value ?? '']],
+    });
+  };
+
+  add('status', 'Completed');
+  add('title', normalized.title);
+  add('startedAt', normalized.startedAt);
+  add('endedAt', normalized.endedAt);
+  add('durationSeconds', normalized.durationSeconds);
+  add('project', normalized.project);
+  add('notes', normalized.notes);
+  add('tags', normalized.tags);
+  add('skill', normalized.skill);
+  add('intensity', normalized.intensity);
+
+  return updates;
 };
 
 const buildRowValues = (
@@ -115,27 +135,26 @@ const buildRowValues = (
   // マッピングから列インデックスを取得して、値を適切な位置に配置
   const columnPositions: Array<{ index: number; value: string | number }> = [];
 
-  for (const key of Object.keys(mapping) as Array<keyof ColumnMapping>) {
-    const columnKey = mapping[key];
-    if (!columnKey) {
-      continue;
-    }
+  const assign = (key: keyof ColumnMapping, value: string | number | null) => {
+    const column = resolveColumnLetter(mapping[key], headerRow);
+    if (!column) return;
+    columnPositions.push({
+      index: columnKeyToIndex(column),
+      value: value ?? '',
+    });
+  };
 
-    // 列記号（A, B, Cなど）を数値インデックスに変換
-    let columnIndex = parseColumnKey(columnKey);
-
-    // 列記号でない場合は、ヘッダー名として扱う
-    if (columnIndex === null && headerRow) {
-      columnIndex = findColumnIndexByHeader(headerRow, columnKey);
-    }
-
-    if (columnIndex !== null) {
-      columnPositions.push({
-        index: columnIndex,
-        value: normalized[key as keyof typeof normalized],
-      });
-    }
-  }
+  assign('id', normalized.id);
+  assign('status', normalized.status);
+  assign('title', normalized.title);
+  assign('startedAt', normalized.startedAt);
+  assign('endedAt', normalized.endedAt);
+  assign('durationSeconds', normalized.durationSeconds);
+  assign('project', normalized.project);
+  assign('notes', normalized.notes);
+  assign('tags', normalized.tags);
+  assign('skill', normalized.skill);
+  assign('intensity', normalized.intensity);
 
   if (columnPositions.length === 0) {
     return defaultColumnOrder.map((key) => normalized[key]);
@@ -305,32 +324,65 @@ export const handleSyncSession = async (
   try {
     // ヘッダー名を使用したマッピングの場合、ヘッダー行を読み取る
     let headerRow: (string | number)[] | null = null;
-    if (mappings) {
-      const hasHeaderMapping = Object.values(mappings).some(
-        (key) => key && parseColumnKey(key) === null,
-      );
-      if (hasHeaderMapping) {
-        try {
-          const range = `${connection.sheet_title}!1:1`;
-          const result = await client.getRange(connection.spreadsheet_id, range);
-          headerRow = result.values?.[0] ?? null;
-        } catch (error) {
-          // ヘッダー行の読み取りに失敗した場合は警告してnullのまま続行
-          console.warn('Failed to read header row:', error);
-        }
+    if (requiresHeaderLookup(mappings ?? null)) {
+      try {
+        const range = `${connection.sheet_title}!1:1`;
+        const result = await client.getRange(connection.spreadsheet_id, range);
+        headerRow = result.values?.[0] ?? null;
+      } catch (error) {
+        console.warn('Failed to read header row:', error);
       }
     }
 
+    const normalizedSession = normalizeSessionPayload(payload.session);
     const rowValues = buildRowValues(payload.session, mappings, headerRow);
-    const appendResult = await client.appendRow(
-      connection.spreadsheet_id,
-      connection.sheet_title,
-      rowValues,
-      {
-        valueInputOption: 'USER_ENTERED',
-        insertDataOption: 'INSERT_ROWS',
-      },
-    );
+
+    const idColumn = mappings ? resolveColumnLetter(mappings.id, headerRow) : null;
+    let existingRowNumber: number | null = null;
+
+    if (idColumn) {
+      try {
+        existingRowNumber = await findRowNumberById(
+          client,
+          connection.spreadsheet_id,
+          connection.sheet_title,
+          idColumn,
+          payload.session.id,
+        );
+      } catch (error) {
+        console.warn('Failed to locate existing row for session id', error);
+      }
+    }
+
+    let appendResult: unknown = null;
+
+    if (existingRowNumber) {
+      const updates = buildCompletionUpdates(
+        connection.sheet_title,
+        existingRowNumber,
+        mappings,
+        normalizedSession,
+        headerRow,
+      );
+
+      if (updates.length > 0) {
+        await client.batchUpdateValues(
+          connection.spreadsheet_id,
+          updates,
+          'USER_ENTERED',
+        );
+      }
+    } else {
+      appendResult = await client.appendRow(
+        connection.spreadsheet_id,
+        connection.sheet_title,
+        rowValues,
+        {
+          valueInputOption: 'USER_ENTERED',
+          insertDataOption: 'INSERT_ROWS',
+        },
+      );
+    }
 
     let updated;
     try {

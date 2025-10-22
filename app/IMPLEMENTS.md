@@ -131,3 +131,140 @@ graph LR
 - データ取得・更新の副作用は `hooks/data/` または `features/<feature>/hooks/data/` のカスタムフックに集約し、TanStack Query などのクライアントはそこで初期化・利用する。
 - テストでは `hooks/data/` 内のフックをモックし、UI／ドメインのテストからネットワークや永続化の詳細を隠蔽する。
 - 永続化レイヤーを差し替える場合は `hooks/data/` 内の実装を切り替えることで対応し、UI やドメインへの影響を最小限に抑える。
+
+---
+
+## Running Session同期機能
+
+### 概要
+Running状態のセッションを複数デバイス間およびGoogle Sheetsとリアルタイムに同期する機能を実装。セッションIDを開始時に生成し、完了まで不変とする**Immutable ID Design**を採用。
+
+### P1: デバイス間同期（Supabase）
+
+**目的**: 複数デバイスでRunning中のセッションを共有し、どのデバイスからでも編集・停止できるようにする
+
+**実装概要**:
+- `features/time-tracker/hooks/data/useRunningSession.ts`
+  - セッション開始時に`crypto.randomUUID()`でIDを生成
+  - 状態変更時に`persistRunningState()`で自動保存
+  - マウント時に`fetchRunningState()`でリモート状態を取得
+  - シグネチャベースの差分検出で不要な同期を抑制
+
+**データ構造**:
+```typescript
+type SessionDraft = {
+  id: string;              // 開始時に生成、完了まで不変
+  title: string;
+  startedAt: number;
+  project?: string;
+  tags?: string[];
+  skill?: string;
+  intensity?: 'low' | 'medium' | 'high';
+  notes?: string;
+};
+
+type RunningSessionState =
+  | { status: 'idle'; draft: null; elapsedSeconds: 0 }
+  | { status: 'running'; draft: SessionDraft; elapsedSeconds: number };
+```
+
+**LocalStorage設計**:
+- キー: `codex-time-tracker/running`
+- idle時はLocalStorageから削除（`saveRunningState`参照）
+- running時のみJSONで永続化
+
+**主要な設計決定**:
+1. **Immutable ID**: 開始時に生成したIDを完了まで保持
+2. **シグネチャベース同期**: `running:${title}|${project}|${startedAt}`で変更検出
+3. **状態復元**: マウント時にリモート状態を優先
+
+### P2: Google Sheets同期
+
+**目的**: Running中のセッション情報をGoogle Sheetsにリアルタイム反映し、外部ツールからの可視化を実現
+
+**実装概要**:
+- `infra/google/googleSheetsRunningSync.ts`
+  - `appendRunningSession()`: 開始時に新しい行を追加（status="Running"）
+  - `updateRunningSession()`: Running中の更新（debounce 1秒）
+  - `completeRunningSession()`: 完了時にstatus="Completed"に変更
+
+- `features/time-tracker/hooks/data/useGoogleSpreadsheetSync.ts`
+  - `syncRunningSessionStart()`: セッション開始時の同期
+  - `syncRunningSessionUpdate()`: セッション更新時の同期（debounce適用）
+  - `syncRunningSessionComplete()`: セッション完了時の同期
+
+**Google Sheets行構造**:
+```
+| id | status    | title | startedAt | endedAt | durationSeconds | project | tags | skill | intensity | notes |
+|----|-----------|-------|-----------|---------|-----------------|---------|------|-------|-----------|-------|
+| uuid | Running | 資料作成 | ISO8601  | (空)    | (空)            | 新規事業 | 重要  | ...   | ...       | ...   |
+```
+
+**主要な設計決定**:
+1. **Direct API Access**: 既存のバックエンドAPI経由ではなく、`gapi.client.sheets`を直接使用
+2. **Debounce更新**: 1秒のdebounceで頻繁な更新を制限（`setTimeout`ベース）
+3. **ID検索**: A列（id列）でRunning行を検索し、行番号を特定して`batchUpdate`
+4. **エラー耐性**: Google Sheets同期エラーがあってもアプリは正常動作（console.warn）
+
+**設定管理**:
+```typescript
+type GoogleSheetsOptions = {
+  spreadsheetId: string;
+  sheetName: string;
+  mappings: {
+    id?: string;           // 'A'
+    status?: string;       // 'B'
+    title: string;         // 'C'
+    startedAt: string;     // 'D'
+    endedAt: string;       // 'E'
+    durationSeconds: string; // 'F'
+    // ... その他のフィールド
+  };
+};
+```
+
+設定はLocalStorage（`google-sheets-sync-config`キー）から読み込み
+
+### テスト戦略
+
+**ユニットテスト**:
+- `googleSheetsRunningSync.test.ts`: Google Sheets API呼び出しのモック検証（5テスト）
+- `useGoogleSpreadsheetSync.running.test.tsx`: フック動作の検証（4テスト、3スキップ）
+- `useRunningSession.sync.test.tsx`: Supabase同期の検証（5テスト）
+
+**E2Eテスト**:
+- `running-session-sync.spec.ts`: マルチデバイス同期のシミュレーション（14テスト）
+- `google-sheets-sync.spec.ts`: Google Sheets API モックとの統合（12テスト）
+
+**テスト結果**:
+- ✅ ユニットテスト: 57成功、3スキップ
+- ✅ TypeScript: エラーなし
+- ✅ E2Eテスト: 34成功、2スキップ（モバイル専用テストは意図的）
+
+### ファイル構成
+
+```
+app/src/
+├── features/time-tracker/
+│   ├── domain/
+│   │   ├── types.ts                    # SessionDraft.id追加
+│   │   ├── runningSession.ts           # createSessionFromDraft更新
+│   │   └── sessionParsers.ts           # parseRunningDraft移行ロジック
+│   └── hooks/data/
+│       ├── useRunningSession.ts        # Supabase同期実装
+│       └── useGoogleSpreadsheetSync.ts # Google Sheets同期実装
+├── infra/
+│   ├── google/
+│   │   └── googleSheetsRunningSync.ts  # Google Sheets API直接呼び出し
+│   └── localstorage/
+│       └── timeTrackerStorage.ts       # LocalStorage永続化
+└── tests/e2e/
+    ├── running-session-sync.spec.ts    # マルチデバイス同期E2E
+    └── google-sheets-sync.spec.ts      # Google Sheets同期E2E
+```
+
+### 今後の拡張
+
+- UI: Column Mapping設定画面への`id`/`status`列追加
+- リアルタイム更新: Supabase Realtimeによるプッシュ通知
+- 競合解決: 複数デバイスからの同時編集時のマージ戦略

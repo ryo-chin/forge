@@ -10,7 +10,7 @@ describe('runningSessionReducer', () => {
   it('START アクションでランニング状態になる', () => {
     const state = runningSessionReducer(initialRunningSessionState, {
       type: 'START',
-      payload: { title: 'ギター練習', startedAt: START_TIME },
+      payload: { id: 'test-id', title: 'ギター練習', startedAt: START_TIME },
     });
 
     if (state.status !== 'running') {
@@ -26,7 +26,7 @@ describe('runningSessionReducer', () => {
   it('TICK アクションで経過秒が更新される', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',
-      payload: { title: 'ギター練習', startedAt: START_TIME },
+      payload: { id: 'test-id', title: 'ギター練習', startedAt: START_TIME },
     });
 
     if (runningState.status !== 'running') {
@@ -44,7 +44,7 @@ describe('runningSessionReducer', () => {
   it('RESET で初期状態に戻る', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',
-      payload: { title: 'ギター練習', startedAt: START_TIME },
+      payload: { id: 'test-id', title: 'ギター練習', startedAt: START_TIME },
     });
 
     const resetState = runningSessionReducer(runningState, { type: 'RESET' });
@@ -54,7 +54,7 @@ describe('runningSessionReducer', () => {
   it('ADJUST_DURATION で作業時間を加算できる', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',
-      payload: { title: 'ギター練習', startedAt: START_TIME },
+      payload: { id: 'test-id', title: 'ギター練習', startedAt: START_TIME },
     });
 
     const adjustedState = runningSessionReducer(runningState, {
@@ -73,7 +73,7 @@ describe('runningSessionReducer', () => {
   it('ADJUST_DURATION は連続加算に追従する', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',
-      payload: { title: 'ギター練習', startedAt: START_TIME },
+      payload: { id: 'test-id', title: 'ギター練習', startedAt: START_TIME },
     });
 
     const afterFirstAdjust = runningSessionReducer(runningState, {
@@ -101,7 +101,7 @@ describe('runningSessionReducer', () => {
   it('ADJUST_DURATION で作業時間を減算できるが0未満にはならない', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',
-      payload: { title: 'ギター練習', startedAt: START_TIME },
+      payload: { id: 'test-id', title: 'ギター練習', startedAt: START_TIME },
     });
 
     const afterIncrease = runningSessionReducer(runningState, {
@@ -130,6 +130,7 @@ describe('runningSessionReducer', () => {
 describe('createSessionFromDraft', () => {
   it('最低1秒の継続時間でセッションを生成する', () => {
     const draft = {
+      id: 'test-id-123',
       title: 'ギター練習',
       startedAt: START_TIME,
       tags: ['music'],

@@ -12,6 +12,17 @@ import type {
   SpreadsheetOption,
 } from '../../features/time-tracker/domain/googleSyncTypes.ts';
 
+type RunningSessionDraftPayload = {
+  id: string;
+  title: string;
+  startedAt: string;
+  project?: string | null;
+  tags?: string[];
+  skill?: string | null;
+  intensity?: string | null;
+  notes?: string | null;
+};
+
 export type UpdateGoogleSettingsPayload = {
   spreadsheetId: string;
   sheetId: number;
@@ -25,13 +36,15 @@ export type OAuthStartResponse = {
 
 export type SyncRetryResponse = GoogleSyncLog;
 
-class GoogleSyncClientError extends Error {
+export class GoogleSyncClientError extends Error {
   readonly status: number;
+  readonly detail: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail?: unknown) {
     super(message);
     this.name = 'GoogleSyncClientError';
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -84,6 +97,7 @@ const request = async <T>(
         detail,
       )}`,
       response.status,
+      detail,
     );
   }
 
@@ -169,6 +183,24 @@ export const startOAuth = (
 export const revokeOAuth = (token: string): Promise<void> =>
   request(token, '/integrations/google/oauth/revoke', {
     method: 'POST',
+  });
+
+export const appendRunningSession = (
+  token: string,
+  draft: RunningSessionDraftPayload,
+): Promise<{ status: string }> =>
+  request(token, '/integrations/google/running/start', {
+    method: 'POST',
+    body: JSON.stringify({ draft }),
+  });
+
+export const updateRunningSession = (
+  token: string,
+  payload: { draft: RunningSessionDraftPayload; elapsedSeconds: number },
+): Promise<{ status: string }> =>
+  request(token, '/integrations/google/running/update', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   });
 
 export const isGoogleSyncClientEnabled = (): boolean => isGoogleSyncEnabled();

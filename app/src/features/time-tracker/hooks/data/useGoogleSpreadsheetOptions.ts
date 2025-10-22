@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchSettings,
@@ -20,12 +20,49 @@ import type {
 import { getSupabaseClient } from '@infra/supabase';
 import { useAuth } from '@infra/auth';
 
+type GoogleSheetsOptions = {
+  spreadsheetId: string;
+  sheetName: string;
+  mappings: Record<string, string>;
+};
+
 type UpdateSelectionPayload = UpdateGoogleSettingsPayload;
 
 type FetchSpreadsheetsResult = { items: SpreadsheetOption[]; nextPageToken?: string };
 type FetchSheetsResult = { items: SheetOption[] };
 
 const SETTINGS_QUERY_KEY = ['google-sync', 'settings'] as const;
+const LOCAL_STORAGE_KEY = 'google-sheets-sync-config';
+
+const persistSheetsConfig = (settings: GoogleSyncSettings | null) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    if (
+      !settings?.spreadsheet?.id ||
+      !settings.spreadsheet.sheetTitle ||
+      !settings.columnMapping?.mappings
+    ) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return;
+    }
+
+    const config: GoogleSheetsOptions = {
+      spreadsheetId: settings.spreadsheet.id,
+      sheetName: settings.spreadsheet.sheetTitle,
+      mappings: settings.columnMapping.mappings,
+    };
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(config));
+  } catch (error) {
+    if (import.meta.env.MODE !== 'test') {
+      // eslint-disable-next-line no-console
+      console.warn('[google-sync] Failed to persist sheets config', error);
+    }
+  }
+};
 
 const getAccessToken = async (): Promise<string> => {
   const supabase = getSupabaseClient();
@@ -65,6 +102,7 @@ export const useGoogleSpreadsheetOptions = () => {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(SETTINGS_QUERY_KEY, data);
+      persistSheetsConfig(data);
     },
   });
 
@@ -97,6 +135,10 @@ export const useGoogleSpreadsheetOptions = () => {
     },
     [],
   );
+
+  useEffect(() => {
+    persistSheetsConfig(settingsQuery.data ?? null);
+  }, [settingsQuery.data]);
 
   return {
     settings: settingsQuery,

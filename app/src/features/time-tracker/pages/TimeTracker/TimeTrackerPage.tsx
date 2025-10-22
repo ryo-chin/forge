@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../index.css';
 import { useTimeTrackerSessions } from '../../hooks/data/useTimeTrackerSessions.ts';
 import { useRunningSession } from '../../hooks/data/useRunningSession.ts';
 import { useGoogleSpreadsheetSync } from '../../hooks/data/useGoogleSpreadsheetSync.ts';
 import { useGoogleSpreadsheetOptions } from '../../hooks/data/useGoogleSpreadsheetOptions.ts';
 import { formatDateTimeLocal } from '../../../../lib/date.ts';
-import type { TimeTrackerSession } from '../../domain/types.ts';
+import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 import { Composer } from '../../components/Composer';
 import { HistoryList } from '../../components/HistoryList';
 import { EditorModal } from '../../components/EditorModal';
@@ -21,6 +21,18 @@ import { localDateTimeToMs } from '../../../../lib/time.ts';
 import { useAuth } from '../../../../infra/auth';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
+
+const buildDraftSignature = (draft: SessionDraft): string =>
+  JSON.stringify({
+    id: draft.id,
+    title: draft.title ?? '',
+    startedAt: draft.startedAt,
+    project: draft.project ?? '',
+    tags: Array.isArray(draft.tags) ? [...draft.tags].sort() : [],
+    skill: draft.skill ?? '',
+    intensity: draft.intensity ?? '',
+    notes: draft.notes ?? '',
+  });
 
 type ModalState =
   | { type: 'running' }
@@ -50,8 +62,14 @@ export function TimeTrackerPage() {
     stop,
     updateDraft,
     adjustDuration,
+    persistRunningState,
   } = useRunningSession({ userId: user?.id ?? null });
-  const { state: syncState, syncSession } = useGoogleSpreadsheetSync();
+  const {
+    state: syncState,
+    syncSession,
+    syncRunningSessionStart,
+    syncRunningSessionUpdate,
+  } = useGoogleSpreadsheetSync();
   const {
     settings: googleSettings,
     updateSelection,
@@ -80,9 +98,17 @@ export function TimeTrackerPage() {
   const [composerProject, setComposerProject] = useState(
     initialComposerProject,
   );
+  const composerProjectForDisplay =
+    runningState.status === 'running'
+      ? runningState.draft.project ?? ''
+      : composerProject;
   const isRunning = runningState.status === 'running';
   const elapsedSeconds = runningState.elapsedSeconds;
   const runningDraftTitle = isRunning ? runningState.draft.title : null;
+  const runningDraftSyncRef = useRef<{ id: string | null; signature: string | null }>({
+    id: isRunning ? runningState.draft.id : null,
+    signature: isRunning ? buildDraftSignature(runningState.draft) : null,
+  });
 
   // ==== モーダルの活性可否（フォームstateを廃し、現在のドメイン値から判定） ====
   const modalComputed = useMemo(() => {
@@ -164,13 +190,13 @@ export function TimeTrackerPage() {
     (title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return false;
-      const started = start(trimmed);
+      const started = start(trimmed, composerProject || null);
       if (started) {
         setUndoState(null);
       }
       return started;
     },
-    [start],
+    [composerProject, start],
   );
 
   const handleComposerStop = useCallback(() => {
@@ -217,9 +243,23 @@ export function TimeTrackerPage() {
     [adjustDuration],
   );
 
+  useEffect(() => {
+    if (!isRunning || !runningState.draft) {
+      return;
+    }
+    const trimmed = composerProject.trim();
+    const current = runningState.draft.project ?? '';
+    if (current !== trimmed) {
+      updateDraft({ project: trimmed || undefined });
+    }
+  }, [isRunning, runningState.draft, composerProject, updateDraft]);
+
   // ==== モーダル open/close ====
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   const openRunningEditor = useCallback(() => {
     if (runningState.status !== 'running') return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     setModalState({ type: 'running' });
   }, [runningState.status]);
 
@@ -227,6 +267,7 @@ export function TimeTrackerPage() {
     (sessionId: string) => {
       const target = sessions.find((session) => session.id === sessionId);
       if (!target) return;
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
       // キャンセルで戻せるように元を保存
       setHistoryEditSnapshot(target);
       setModalState({ type: 'history', sessionId: target.id });
@@ -303,7 +344,8 @@ export function TimeTrackerPage() {
       if (!modalState) return;
 
       if (modalState.type === 'running') {
-        // 走行中は draft を直接編集済みなので保存時は閉じるだけ
+        // 走行中はここで即座に永続化をトリガーする
+        void persistRunningState();
         setModalState(null);
         return;
       }
@@ -327,7 +369,7 @@ export function TimeTrackerPage() {
       setHistoryEditSnapshot(null);
       setModalState(null);
     },
-    [modalState, persistSessions, setSessions],
+    [modalState, persistRunningState, persistSessions, setSessions],
   );
 
   // ==== モーダルの onChange：ドメインを直接パッチ ====
@@ -359,7 +401,10 @@ export function TimeTrackerPage() {
       const project = trimmed ? trimmed : undefined;
 
       if (modalState.type === 'running') {
-        if (isRunning) updateDraft({ project });
+        if (isRunning) {
+          updateDraft({ project });
+          setComposerProject(project ?? '');
+        }
         return;
       }
       // history
@@ -467,22 +512,48 @@ export function TimeTrackerPage() {
     }
   }, [startOAuth]);
 
-  // ==== プロジェクトの同期（走行中だけdraftへ反映） ====
   useEffect(() => {
-    if (!isRunning) return;
-    const project = composerProject.trim();
-    updateDraft({ project: project || undefined });
-  }, [isRunning, composerProject, updateDraft]);
+    if (!isRunning) {
+      runningDraftSyncRef.current = { id: null, signature: null };
+      return;
+    }
+
+    const draft = runningState.draft;
+    const signature = buildDraftSignature(draft);
+    const prev = runningDraftSyncRef.current;
+
+    if (!prev.id || prev.id !== draft.id) {
+      runningDraftSyncRef.current = { id: draft.id, signature };
+      void syncRunningSessionStart(draft);
+      return;
+    }
+
+    if (prev.signature !== signature) {
+      runningDraftSyncRef.current = { id: draft.id, signature };
+      void syncRunningSessionUpdate(draft, runningState.elapsedSeconds);
+    }
+  }, [
+    isRunning,
+    runningState.draft,
+    runningState.elapsedSeconds,
+    syncRunningSessionStart,
+    syncRunningSessionUpdate,
+  ]);
 
   // ==== モーダルのフォーカス復元 ====
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (modalState) {
-      const previousFocus = document.activeElement as HTMLElement | null;
       return () => {
-        if (previousFocus && typeof previousFocus.focus === 'function') {
-          previousFocus.focus();
+        const target = previousFocusRef.current;
+        if (target && typeof target.focus === 'function') {
+          queueMicrotask(() => {
+            if (typeof target.focus === 'function') {
+              target.focus();
+            }
+          });
         }
+        previousFocusRef.current = null;
       };
     }
   }, [modalState]);
@@ -525,7 +596,7 @@ export function TimeTrackerPage() {
 
         <Composer
           sessions={sessions}
-          project={composerProject}
+          project={composerProjectForDisplay}
           onProjectChange={handleComposerProjectChange}
           isRunning={isRunning}
           runningDraftTitle={runningDraftTitle}
