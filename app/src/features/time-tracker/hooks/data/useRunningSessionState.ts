@@ -21,7 +21,7 @@ export type UseRunningSessionStateOptions = {
 
 export type RunningSessionStateApi = {
   state: RunningSessionState;
-  start: (title: string, project?: string) => boolean;
+  start: (title: string, project?: string | null) => boolean;
   stop: () => TimeTrackerSession | null;
   updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
   adjustDuration: (deltaSeconds: number) => void;
