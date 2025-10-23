@@ -354,7 +354,7 @@ export const handleSyncSession = async (
       }
     }
 
-    let appendResult: unknown = null;
+    let appendResult: Record<string, unknown> | null = null;
 
     if (existingRowNumber) {
       const updates = buildCompletionUpdates(
@@ -373,7 +373,7 @@ export const handleSyncSession = async (
         );
       }
     } else {
-      appendResult = await client.appendRow(
+      appendResult = (await client.appendRow(
         connection.spreadsheet_id,
         connection.sheet_title,
         rowValues,
@@ -381,7 +381,7 @@ export const handleSyncSession = async (
           valueInputOption: 'USER_ENTERED',
           insertDataOption: 'INSERT_ROWS',
         },
-      );
+      )) as Record<string, unknown>;
     }
 
     let updated;
@@ -389,7 +389,7 @@ export const handleSyncSession = async (
       updated = await updateSyncLog(env, syncLog.id, {
         status: 'success',
         failureReason: null,
-        googleAppendResponse: appendResult ?? null,
+        googleAppendResponse: appendResult,
       });
     } catch (updateError) {
       if (updateError instanceof SupabaseRepositoryError) {

@@ -387,25 +387,45 @@ export function TimeTrackerPage() {
       }
 
       const nextSessions = setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        const idx = prev.findIndex((session) => session.id === modalState.sessionId);
         if (idx === -1) return prev;
+
         const target = prev[idx];
-        const next = buildUpdatedSession(target, {
+        const updated = buildUpdatedSession(target, {
           title: target.title,
           project: target.project ?? '',
           startTime: formatDateTimeLocal(target.startedAt),
           endTime: formatDateTimeLocal(target.endedAt),
         });
-        if (!next) return prev;
-        const replaced = [...prev];
-        replaced[idx] = next;
-        return replaced;
+        if (!updated) return prev;
+
+        return prev.map((session, index) => (index === idx ? updated : session));
       });
-      persistSessions(nextSessions);
+
+      if (nextSessions !== sessions) {
+        const updatedSession = nextSessions.find(
+          (session) => session.id === modalState.sessionId,
+        );
+
+        const persistPromise = persistSessions(nextSessions);
+        if (updatedSession) {
+          void persistPromise.then(() => {
+            void syncSession(updatedSession);
+          });
+        }
+      }
+
       setHistoryEditSnapshot(null);
       setModalState(null);
     },
-    [modalState, persistRunningState, persistSessions, setSessions],
+    [
+      modalState,
+      persistRunningState,
+      persistSessions,
+      setSessions,
+      syncSession,
+      sessions,
+    ],
   );
 
   // ==== モーダルの onChange：ドメインを直接パッチ ====

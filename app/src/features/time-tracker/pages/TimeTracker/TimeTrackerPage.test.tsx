@@ -1,10 +1,16 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, vi } from 'vitest';
+import * as googleSyncHooks from '../../hooks/data/useGoogleSpreadsheetSync.ts';
 import { TimeTrackerPage } from './TimeTrackerPage.tsx';
 
 const STORAGE_KEY_SESSIONS = 'codex-time-tracker/sessions';
 const STORAGE_KEY_RUNNING = 'codex-time-tracker/running';
+
+const syncSessionMock = vi.fn(async () => null);
+const syncRunningSessionStartMock = vi.fn(async () => ({ success: true }));
+const syncRunningSessionUpdateMock = vi.fn(async () => ({ success: true }));
+const syncRunningSessionCancelMock = vi.fn(async () => ({ success: true }));
 
 const formatDateTimeLocal = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
@@ -28,6 +34,27 @@ const renderTimeTrackerPage = () => {
 
 beforeEach(() => {
   window.localStorage.clear();
+});
+
+beforeEach(() => {
+  syncSessionMock.mockReset();
+  syncRunningSessionStartMock.mockReset();
+  syncRunningSessionUpdateMock.mockReset();
+  syncRunningSessionCancelMock.mockReset();
+  vi
+    .spyOn(googleSyncHooks, 'useGoogleSpreadsheetSync')
+    .mockImplementation(() => ({
+      state: {
+        status: 'idle',
+        lastSessionId: null,
+        lastSyncedAt: null,
+        error: null,
+      },
+      syncSession: syncSessionMock,
+      syncRunningSessionStart: syncRunningSessionStartMock,
+      syncRunningSessionUpdate: syncRunningSessionUpdateMock,
+      syncRunningSessionCancel: syncRunningSessionCancelMock,
+    }));
 });
 
 afterEach(() => {
@@ -182,6 +209,31 @@ describe('TimeTrackerRoot', () => {
     await waitFor(() => {
       expect(window.localStorage.getItem(STORAGE_KEY_RUNNING)).toBeNull();
     });
+  });
+
+  it('履歴編集の保存時にGoogle同期を再実行する', async () => {
+    renderTimeTrackerPage();
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: 'ギター練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '停止' }));
+    await waitFor(() => expect(syncSessionMock).toHaveBeenCalled());
+    syncSessionMock.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: '「ギター練習」を編集' }));
+
+    const titleField = screen.getByLabelText('タイトル');
+    fireEvent.change(titleField, { target: { value: 'ギター練習（編集）' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() =>
+      expect(syncSessionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'ギター練習（編集）' }),
+      ),
+    );
   });
 
   it('モーダルを閉じると開いた時にフォーカスしていた要素へ戻る', async () => {
