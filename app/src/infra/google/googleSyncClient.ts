@@ -212,6 +212,15 @@ export const clearRunningSession = (
     body: JSON.stringify({ id: sessionId }),
   });
 
+export const deleteSessionRow = (
+  token: string,
+  sessionId: string,
+): Promise<{ status: string }> =>
+  request(token, '/integrations/google/sync/delete', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId }),
+  });
+
 export const isGoogleSyncClientEnabled = (): boolean => isGoogleSyncEnabled();
 export const getGoogleSyncBaseUrl = (): string | null => {
   return getGoogleSyncApiBaseUrl() || null;

@@ -232,4 +232,31 @@ export class GoogleSheetsClient {
       }),
     });
   }
+
+  async deleteRows(
+    spreadsheetId: string,
+    sheetId: number,
+    startIndex: number,
+    endIndex: number,
+  ): Promise<void> {
+    const url = new URL(`${spreadsheetId}:batchUpdate`, `${SHEETS_BASE_URL}/`);
+
+    await this.request(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex,
+                endIndex,
+              },
+            },
+          },
+        ],
+      }),
+    });
+  }
 }

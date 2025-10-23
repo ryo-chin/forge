@@ -8,6 +8,7 @@ import {
   appendRunningSession as appendRunningSessionRequest,
   updateRunningSession as updateRunningSessionRequest,
   clearRunningSession as clearRunningSessionRequest,
+  deleteSessionRow as deleteSessionRowRequest,
 } from '@infra/google';
 import { getSupabaseClient } from '@infra/supabase';
 import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
@@ -262,11 +263,39 @@ export const useGoogleSpreadsheetSync = () => {
     [canSync, resolveAccessToken],
   );
 
+  const deleteSessionRow = useCallback(
+    async (sessionId: string) => {
+      if (!canSync) {
+        return null;
+      }
+      if (!hasGoogleSheetsConfig()) {
+        return null;
+      }
+      if (!sessionId) {
+        return null;
+      }
+
+      try {
+        const accessToken = await resolveAccessToken();
+        await deleteSessionRowRequest(accessToken, sessionId);
+        return { success: true };
+      } catch (error) {
+        if (import.meta.env.MODE !== 'test') {
+          // eslint-disable-next-line no-console
+          console.warn('[Google Sheets] Failed to delete session row', error);
+        }
+        return null;
+      }
+    },
+    [canSync, resolveAccessToken],
+  );
+
   return {
     state,
     syncSession,
     syncRunningSessionStart,
     syncRunningSessionUpdate,
     syncRunningSessionCancel,
+    deleteSessionRow,
   };
 };

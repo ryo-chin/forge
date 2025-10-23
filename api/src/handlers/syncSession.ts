@@ -6,6 +6,7 @@ import {
 } from '../auth/verifySupabaseJwt';
 import {
   createSyncLog,
+  findSyncLog,
   getColumnMappingByConnection,
   getConnectionByUser,
   updateSyncLog,
@@ -35,6 +36,10 @@ import {
   requiresHeaderLookup,
   resolveColumnLetter,
 } from '../utils/googleSheets';
+
+type SyncDeleteRequestBody = {
+  sessionId: string;
+};
 
 const normalizeSessionPayload = (session: SyncSessionPayload) => ({
   id: session.id,
@@ -427,5 +432,157 @@ export const handleSyncSession = async (
           ? 502
           : 500;
     return serverError(failureReason, status);
+  }
+};
+
+export const handleDeleteSyncedSession = async (
+  request: Request,
+  env: Env,
+): Promise<Response> => {
+  let body: SyncDeleteRequestBody;
+  try {
+    body = (await request.json()) as SyncDeleteRequestBody;
+  } catch (error) {
+    return badRequest(
+      error instanceof Error ? error.message : 'Invalid request body',
+    );
+  }
+
+  if (!body || typeof body.sessionId !== 'string' || body.sessionId.trim().length === 0) {
+    return badRequest('sessionId is required');
+  }
+
+  const token = extractBearerToken(request);
+  if (!token) {
+    return unauthorized('Bearer token is required');
+  }
+
+  let auth;
+  try {
+    auth = await verifySupabaseJwt(token, env);
+  } catch (error) {
+    if (error instanceof SupabaseAuthError) {
+      return unauthorized(error.message);
+    }
+    return unauthorized('Invalid token');
+  }
+
+  let connection;
+  try {
+    connection = await getConnectionByUser(env, auth.userId);
+  } catch (error) {
+    if (error instanceof SupabaseRepositoryError) {
+      return serverError(error.message, error.status >= 500 ? 502 : error.status);
+    }
+    throw error;
+  }
+
+  if (!connection) {
+    return conflict('connection_missing', 'Google spreadsheet connection not found');
+  }
+  if (connection.status !== 'active') {
+    return conflict('connection_inactive', 'Google spreadsheet connection is not active');
+  }
+  if (!connection.spreadsheet_id || !connection.sheet_id || !connection.sheet_title) {
+    return conflict('selection_missing', 'Spreadsheet or sheet selection is not configured');
+  }
+
+  let mappingsRow;
+  try {
+    mappingsRow = await getColumnMappingByConnection(env, connection.id);
+  } catch (error) {
+    if (error instanceof SupabaseRepositoryError) {
+      return serverError(error.message, error.status >= 500 ? 502 : error.status);
+    }
+    throw error;
+  }
+
+  const mappings =
+    mappingsRow?.mappings && typeof mappingsRow.mappings === 'object'
+      ? (mappingsRow.mappings as ColumnMapping)
+      : null;
+
+  const idColumn = mappings ? mappings.id : undefined;
+  if (!idColumn || !idColumn.trim()) {
+    return conflict('mapping_incomplete', 'ID column must be configured to delete sessions');
+  }
+
+  let accessToken: string;
+  try {
+    accessToken = await ensureValidAccessToken(env, connection);
+  } catch (error) {
+    return serverError(
+      error instanceof Error ? error.message : 'Failed to refresh access token',
+      401,
+    );
+  }
+
+  const client = GoogleSheetsClient.fromAccessToken(accessToken);
+
+  try {
+    let headerRow: (string | number)[] | null = null;
+    if (requiresHeaderLookup(mappings ?? null)) {
+      try {
+        const headerRange = `${connection.sheet_title}!1:1`;
+        const result = await client.getRange(connection.spreadsheet_id, headerRange);
+        headerRow = result.values?.[0] ?? null;
+      } catch (error) {
+        console.warn('Failed to load header row for delete', error);
+      }
+    }
+
+    const resolvedColumn = resolveColumnLetter(idColumn, headerRow);
+    if (!resolvedColumn) {
+      return conflict('mapping_incomplete', 'ID column mapping is invalid');
+    }
+
+    const rowNumber = await findRowNumberById(
+      client,
+      connection.spreadsheet_id,
+      connection.sheet_title,
+      resolvedColumn,
+      body.sessionId,
+    );
+
+    if (!rowNumber) {
+      return jsonResponse({ status: 'skipped' }, 202);
+    }
+
+    await client.deleteRows(
+      connection.spreadsheet_id,
+      connection.sheet_id,
+      rowNumber - 1,
+      rowNumber,
+    );
+
+    try {
+      const existingLog = await findSyncLog(env, connection.id, body.sessionId);
+      if (existingLog) {
+        await updateSyncLog(env, existingLog.id, {
+          status: 'success',
+          failureReason: null,
+          googleAppendResponse: { action: 'deleted' },
+        });
+      }
+    } catch (error) {
+      if (error instanceof SupabaseRepositoryError) {
+        return serverError(
+          error.message,
+          error.status >= 500 ? 502 : error.status,
+        );
+      }
+      throw error;
+    }
+
+    return jsonResponse({ status: 'ok' }, 202);
+  } catch (error) {
+    if (error instanceof GoogleSheetsApiError) {
+      const status = error.status >= 500 ? 502 : error.status;
+      return serverError(error.message, status);
+    }
+    if (error instanceof Error) {
+      return serverError(error.message, 500);
+    }
+    return serverError('Unknown error', 500);
   }
 };

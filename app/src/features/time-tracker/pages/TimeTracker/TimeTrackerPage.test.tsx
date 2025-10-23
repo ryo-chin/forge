@@ -11,6 +11,7 @@ const syncSessionMock = vi.fn(async () => null);
 const syncRunningSessionStartMock = vi.fn(async () => ({ success: true }));
 const syncRunningSessionUpdateMock = vi.fn(async () => ({ success: true }));
 const syncRunningSessionCancelMock = vi.fn(async () => ({ success: true }));
+const deleteSessionRowMock = vi.fn(async () => ({ success: true }));
 
 const formatDateTimeLocal = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
@@ -41,6 +42,7 @@ beforeEach(() => {
   syncRunningSessionStartMock.mockReset();
   syncRunningSessionUpdateMock.mockReset();
   syncRunningSessionCancelMock.mockReset();
+  deleteSessionRowMock.mockReset();
   vi
     .spyOn(googleSyncHooks, 'useGoogleSpreadsheetSync')
     .mockImplementation(() => ({
@@ -54,6 +56,7 @@ beforeEach(() => {
       syncRunningSessionStart: syncRunningSessionStartMock,
       syncRunningSessionUpdate: syncRunningSessionUpdateMock,
       syncRunningSessionCancel: syncRunningSessionCancelMock,
+      deleteSessionRow: deleteSessionRowMock,
     }));
 });
 
@@ -383,6 +386,22 @@ describe('TimeTrackerRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: '元に戻す' }));
 
     expect(screen.getByText('ギター練習')).toBeInTheDocument();
+  });
+
+  it('履歴を削除するとGoogle Sheetsの行も削除される', async () => {
+    renderTimeTrackerPage();
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: 'ギター練習' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+    fireEvent.click(screen.getByRole('button', { name: '停止' }));
+
+    await waitFor(() => expect(syncSessionMock).toHaveBeenCalled());
+    syncSessionMock.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: '「ギター練習」を削除' }));
+
+    await waitFor(() => expect(deleteSessionRowMock).toHaveBeenCalledTimes(1));
   });
 
   it('履歴がlocalStorageへ保存される', async () => {

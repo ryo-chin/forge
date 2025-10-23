@@ -71,6 +71,7 @@ export function TimeTrackerPage() {
     syncRunningSessionStart,
     syncRunningSessionUpdate,
     syncRunningSessionCancel,
+    deleteSessionRow,
   } = useGoogleSpreadsheetSync();
   const {
     settings: googleSettings,
@@ -337,16 +338,28 @@ export function TimeTrackerPage() {
       let removedIndex = -1;
       const nextSessions = setSessions((prev) => {
         const index = prev.findIndex((session) => session.id === sessionId);
-        if (index === -1) return prev;
+        if (index === -1) {
+          removedSession = null;
+          removedIndex = -1;
+          return prev;
+        }
         const next = [...prev];
         const [removed] = next.splice(index, 1);
-        removedSession = removed;
+        removedSession = removed ?? null;
         removedIndex = index;
         return next;
       });
+      const persistPromise = persistSessions(nextSessions);
       if (removedSession) {
+        const sessionIdForDelete: string = (removedSession as TimeTrackerSession).id;
         setUndoState({ session: removedSession, index: removedIndex });
-        persistSessions(nextSessions);
+        void persistPromise
+          .then(() => {
+            void deleteSessionRow(sessionIdForDelete);
+          })
+          .catch(() => {
+            // 永続化失敗時はシート削除をスキップ
+          });
       }
       if (
         modalState?.type === 'history' &&
@@ -356,7 +369,7 @@ export function TimeTrackerPage() {
         setModalState(null);
       }
     },
-    [modalState, persistSessions, setSessions],
+    [deleteSessionRow, modalState, persistSessions, setSessions],
   );
 
   const handleUndo = useCallback(() => {
@@ -409,9 +422,13 @@ export function TimeTrackerPage() {
 
         const persistPromise = persistSessions(nextSessions);
         if (updatedSession) {
-          void persistPromise.then(() => {
-            void syncSession(updatedSession);
-          });
+          void persistPromise
+            .then(() => {
+              void syncSession(updatedSession);
+            })
+            .catch(() => {
+              // 永続化エラー時は同期をスキップ
+            });
         }
       }
 
