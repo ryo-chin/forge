@@ -8,12 +8,14 @@ import { useGoogleSpreadsheetSync } from '../useGoogleSpreadsheetSync.ts';
 const mocks = vi.hoisted(() => {
   const syncSessionMock = vi.fn();
   const clearRunningSessionMock = vi.fn();
+  const deleteSessionRowMock = vi.fn();
   const isEnabledMock = vi.fn(() => true);
   const getBaseUrlMock = vi.fn(() => 'https://worker.example.com');
   const getSessionMock = vi.fn();
   return {
     syncSessionMock,
     clearRunningSessionMock,
+    deleteSessionRowMock,
     isEnabledMock,
     getBaseUrlMock,
     getSessionMock,
@@ -23,6 +25,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('@infra/google', () => ({
   syncSession: mocks.syncSessionMock,
   clearRunningSession: mocks.clearRunningSessionMock,
+  deleteSessionRow: mocks.deleteSessionRowMock,
   isGoogleSyncClientEnabled: mocks.isEnabledMock,
   getGoogleSyncBaseUrl: mocks.getBaseUrlMock,
 }));
@@ -83,6 +86,7 @@ describe('useGoogleSpreadsheetSync', () => {
       error: null,
     });
     mocks.clearRunningSessionMock.mockResolvedValue({ status: 'ok' });
+    mocks.deleteSessionRowMock.mockResolvedValue({ status: 'ok' });
   });
 
   it('returns success status after syncing a session', async () => {

@@ -1,5 +1,5 @@
 import type { Env } from './env';
-import { handleSyncSession } from './handlers/syncSession';
+import { handleSyncSession, handleDeleteSyncedSession } from './handlers/syncSession';
 import {
   handleOauthStart,
   handleOauthCallback,
@@ -20,6 +20,7 @@ import {
 
 const ROUTES = {
   SYNC: '/integrations/google/sync',
+  SYNC_DELETE: '/integrations/google/sync/delete',
   OAUTH_START: '/integrations/google/oauth/start',
   OAUTH_CALLBACK: '/integrations/google/oauth/callback',
   OAUTH_REVOKE: '/integrations/google/oauth/revoke',
@@ -73,6 +74,10 @@ export default {
     // Sync route
     if (request.method === 'POST' && url.pathname === ROUTES.SYNC) {
       return handleSyncSession(request, env);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.SYNC_DELETE) {
+      return handleDeleteSyncedSession(request, env);
     }
 
     if (request.method === 'POST' && url.pathname === ROUTES.RUNNING_START) {

@@ -71,6 +71,7 @@ export function TimeTrackerPage() {
     syncRunningSessionStart,
     syncRunningSessionUpdate,
     syncRunningSessionCancel,
+    deleteSessionRow,
   } = useGoogleSpreadsheetSync();
   const {
     settings: googleSettings,
@@ -337,16 +338,28 @@ export function TimeTrackerPage() {
       let removedIndex = -1;
       const nextSessions = setSessions((prev) => {
         const index = prev.findIndex((session) => session.id === sessionId);
-        if (index === -1) return prev;
+        if (index === -1) {
+          removedSession = null;
+          removedIndex = -1;
+          return prev;
+        }
         const next = [...prev];
         const [removed] = next.splice(index, 1);
-        removedSession = removed;
+        removedSession = removed ?? null;
         removedIndex = index;
         return next;
       });
+      const persistPromise = persistSessions(nextSessions);
       if (removedSession) {
+        const sessionIdForDelete: string = (removedSession as TimeTrackerSession).id;
         setUndoState({ session: removedSession, index: removedIndex });
-        persistSessions(nextSessions);
+        void persistPromise
+          .then(() => {
+            void deleteSessionRow(sessionIdForDelete);
+          })
+          .catch(() => {
+            // 永続化失敗時はシート削除をスキップ
+          });
       }
       if (
         modalState?.type === 'history' &&
@@ -356,7 +369,7 @@ export function TimeTrackerPage() {
         setModalState(null);
       }
     },
-    [modalState, persistSessions, setSessions],
+    [deleteSessionRow, modalState, persistSessions, setSessions],
   );
 
   const handleUndo = useCallback(() => {
@@ -387,25 +400,49 @@ export function TimeTrackerPage() {
       }
 
       const nextSessions = setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
+        const idx = prev.findIndex((session) => session.id === modalState.sessionId);
         if (idx === -1) return prev;
+
         const target = prev[idx];
-        const next = buildUpdatedSession(target, {
+        const updated = buildUpdatedSession(target, {
           title: target.title,
           project: target.project ?? '',
           startTime: formatDateTimeLocal(target.startedAt),
           endTime: formatDateTimeLocal(target.endedAt),
         });
-        if (!next) return prev;
-        const replaced = [...prev];
-        replaced[idx] = next;
-        return replaced;
+        if (!updated) return prev;
+
+        return prev.map((session, index) => (index === idx ? updated : session));
       });
-      persistSessions(nextSessions);
+
+      if (nextSessions !== sessions) {
+        const updatedSession = nextSessions.find(
+          (session) => session.id === modalState.sessionId,
+        );
+
+        const persistPromise = persistSessions(nextSessions);
+        if (updatedSession) {
+          void persistPromise
+            .then(() => {
+              void syncSession(updatedSession);
+            })
+            .catch(() => {
+              // 永続化エラー時は同期をスキップ
+            });
+        }
+      }
+
       setHistoryEditSnapshot(null);
       setModalState(null);
     },
-    [modalState, persistRunningState, persistSessions, setSessions],
+    [
+      modalState,
+      persistRunningState,
+      persistSessions,
+      setSessions,
+      syncSession,
+      sessions,
+    ],
   );
 
   // ==== モーダルの onChange：ドメインを直接パッチ ====

@@ -325,24 +325,53 @@ export const createSyncLog = async (
   env: Env,
   payload: CreateSyncLogPayload,
 ): Promise<GoogleSyncLogRow> => {
+  const existing = await findSyncLog(env, payload.connectionId, payload.sessionId);
   const body = {
     connection_id: payload.connectionId,
     session_id: payload.sessionId,
-    status: 'pending',
+    status: 'pending' as const,
     google_append_request: payload.googleAppendRequest ?? null,
     updated_at: new Date().toISOString(),
   };
 
+  if (!existing) {
+    const rows = await request<GoogleSyncLogRow[]>(
+      env,
+      'POST',
+      'google_sync_logs',
+      {
+        body,
+        searchParams: {
+          select: '*',
+        },
+        prefer: 'return=representation',
+      },
+    );
+    return rows[0];
+  }
+
   const rows = await request<GoogleSyncLogRow[]>(
     env,
-    'POST',
+    'PATCH',
     'google_sync_logs',
     {
       body,
-      searchParams: { select: '*' },
+      searchParams: {
+        connection_id: `eq.${payload.connectionId}`,
+        session_id: `eq.${payload.sessionId}`,
+        select: '*',
+      },
       prefer: 'return=representation',
     },
   );
+
+  if (rows.length === 0) {
+    throw new SupabaseRepositoryError(
+      'Failed to upsert sync log',
+      409,
+    );
+  }
+
   return rows[0];
 };
 

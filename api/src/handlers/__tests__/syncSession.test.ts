@@ -1,24 +1,28 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { handleSyncSession } from '../syncSession';
+import { handleSyncSession, handleDeleteSyncedSession } from '../syncSession';
 
 const mocks = vi.hoisted(() => {
   const verifySupabaseJwt = vi.fn();
   const getConnectionByUser = vi.fn();
   const getColumnMappingByConnection = vi.fn();
+  const findSyncLog = vi.fn();
   const createSyncLog = vi.fn();
   const updateSyncLog = vi.fn();
   const appendRow = vi.fn();
   const getRange = vi.fn();
   const batchUpdateValues = vi.fn();
+  const deleteRows = vi.fn();
   return {
     verifySupabaseJwt,
     getConnectionByUser,
     getColumnMappingByConnection,
+    findSyncLog,
     createSyncLog,
     updateSyncLog,
     appendRow,
     getRange,
     batchUpdateValues,
+    deleteRows,
   };
 });
 
@@ -39,6 +43,7 @@ vi.mock('../../repositories/googleConnections', async (importOriginal) => {
     ...actual,
     getConnectionByUser: mocks.getConnectionByUser,
     getColumnMappingByConnection: mocks.getColumnMappingByConnection,
+    findSyncLog: mocks.findSyncLog,
     createSyncLog: mocks.createSyncLog,
     updateSyncLog: mocks.updateSyncLog,
   };
@@ -55,6 +60,7 @@ vi.mock('../../services/googleSheetsClient', async (importOriginal) => {
         appendRow: mocks.appendRow,
         getRange: mocks.getRange,
         batchUpdateValues: mocks.batchUpdateValues,
+        deleteRows: mocks.deleteRows,
       })),
     },
   };
@@ -70,6 +76,20 @@ const env = {
 
 const buildRequest = (body: unknown, token?: string) =>
   new Request('https://example.com/integrations/google/sync', {
+    method: 'POST',
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      : {
+          'Content-Type': 'application/json',
+        },
+    body: JSON.stringify(body),
+  });
+
+const buildDeleteRequest = (body: unknown, token?: string) =>
+  new Request('https://example.com/integrations/google/sync/delete', {
     method: 'POST',
     headers: token
       ? {
@@ -332,5 +352,122 @@ describe('handleSyncSession', () => {
         expect.objectContaining({ range: 'TimeTracker!E1' }),
       ]),
     );
+  });
+});
+
+describe('handleDeleteSyncedSession', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.verifySupabaseJwt.mockResolvedValue({
+      userId: 'user-1',
+      raw: {},
+    });
+    mocks.getConnectionByUser.mockResolvedValue({
+      id: 'conn-1',
+      user_id: 'user-1',
+      google_user_id: 'google-1',
+      spreadsheet_id: 'sheet-spreadsheet',
+      sheet_id: 42,
+      sheet_title: 'TimeTracker',
+      access_token: 'g-access',
+      refresh_token: 'g-refresh',
+      access_token_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.getColumnMappingByConnection.mockResolvedValue({
+      id: 'mapping-1',
+      connection_id: 'conn-1',
+      mappings: {
+        id: 'A',
+        status: 'B',
+        title: 'C',
+        startedAt: 'D',
+        endedAt: 'E',
+        durationSeconds: 'F',
+      },
+      required_columns: [],
+      optional_columns: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.deleteRows.mockResolvedValue(undefined);
+    mocks.findSyncLog.mockResolvedValue({
+      id: 'log-1',
+      connection_id: 'conn-1',
+      session_id: 'session-1',
+      status: 'success',
+      attempted_at: new Date().toISOString(),
+      failure_reason: null,
+      google_append_request: null,
+      google_append_response: null,
+      retry_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.updateSyncLog.mockResolvedValue({
+      id: 'log-1',
+      connection_id: 'conn-1',
+      session_id: 'session-1',
+      status: 'success',
+      attempted_at: new Date().toISOString(),
+      failure_reason: null,
+      google_append_request: null,
+      google_append_response: { action: 'deleted' },
+      retry_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    mocks.getRange.mockResolvedValue({ values: [['session-1'], ['session-2']] });
+  });
+
+  it('returns 401 when authorization header is missing', async () => {
+    const response = await handleDeleteSyncedSession(
+      buildDeleteRequest({ sessionId: 'session-1' }),
+      env,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      error: 'unauthorized',
+    });
+  });
+
+  it('deletes the row and updates the sync log when found', async () => {
+    const response = await handleDeleteSyncedSession(
+      buildDeleteRequest({ sessionId: 'session-1' }, 'token-123'),
+      env,
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({ status: 'ok' });
+    expect(mocks.deleteRows).toHaveBeenCalledWith(
+      'sheet-spreadsheet',
+      42,
+      0,
+      1,
+    );
+    expect(mocks.updateSyncLog).toHaveBeenCalledWith(
+      env,
+      'log-1',
+      expect.objectContaining({
+        status: 'success',
+      }),
+    );
+  });
+
+  it('returns skipped when the row cannot be found', async () => {
+    mocks.getRange.mockResolvedValue({ values: [['session-x']] });
+
+    const response = await handleDeleteSyncedSession(
+      buildDeleteRequest({ sessionId: 'session-1' }, 'token-123'),
+      env,
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({ status: 'skipped' });
+    expect(mocks.deleteRows).not.toHaveBeenCalled();
   });
 });
