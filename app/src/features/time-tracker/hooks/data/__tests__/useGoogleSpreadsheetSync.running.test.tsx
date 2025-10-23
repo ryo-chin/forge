@@ -8,6 +8,7 @@ import { useGoogleSpreadsheetSync } from '../useGoogleSpreadsheetSync';
 const mocks = vi.hoisted(() => {
   const appendRunningSession = vi.fn();
   const updateRunningSession = vi.fn();
+  const clearRunningSession = vi.fn();
   const syncSession = vi.fn();
   const isEnabled = vi.fn(() => true);
   const getBaseUrl = vi.fn(() => 'https://worker.example.com');
@@ -15,6 +16,7 @@ const mocks = vi.hoisted(() => {
   return {
     appendRunningSession,
     updateRunningSession,
+    clearRunningSession,
     syncSession,
     isEnabled,
     getBaseUrl,
@@ -27,6 +29,7 @@ vi.mock('@infra/google', () => ({
   getGoogleSyncBaseUrl: mocks.getBaseUrl,
   appendRunningSession: mocks.appendRunningSession,
   updateRunningSession: mocks.updateRunningSession,
+  clearRunningSession: mocks.clearRunningSession,
   syncSession: mocks.syncSession,
 }));
 
@@ -90,6 +93,7 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
     vi.mocked(localStorage.getItem).mockReturnValue('{"configured":true}');
     mocks.appendRunningSession.mockResolvedValue({ status: 'ok' });
     mocks.updateRunningSession.mockResolvedValue({ status: 'ok' });
+    mocks.clearRunningSession.mockResolvedValue({ status: 'ok' });
   });
 
   it('calls appendRunningSession when a running session starts', async () => {
@@ -163,5 +167,21 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
     );
 
     expect(response).toBeNull();
+  });
+
+  it('calls clearRunningSession when cancelling a running session', async () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useGoogleSpreadsheetSync(), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.syncRunningSessionCancel('running-1');
+    });
+
+    expect(mocks.clearRunningSession).toHaveBeenCalledWith(
+      'supabase-token',
+      'running-1',
+    );
   });
 });

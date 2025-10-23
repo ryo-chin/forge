@@ -160,6 +160,30 @@ describe('TimeTrackerRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
   });
 
+  it('破棄ボタンで計測中セッションを取り消し履歴に残さない', async () => {
+    renderTimeTrackerPage();
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: '集中作業' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    const cancelButton = screen.getByRole('button', { name: '破棄' });
+    expect(cancelButton).toBeInTheDocument();
+
+    fireEvent.click(cancelButton);
+
+    const startButton = await screen.findByRole('button', { name: '開始' });
+    expect(startButton).toBeEnabled();
+    expect(screen.queryByText('計測中')).not.toBeInTheDocument();
+
+    const history = screen.queryByRole('region', { name: '最近の記録' });
+    expect(history).toBeNull();
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(STORAGE_KEY_RUNNING)).toBeNull();
+    });
+  });
+
   it('モーダルを閉じると開いた時にフォーカスしていた要素へ戻る', async () => {
     renderTimeTrackerPage();
 

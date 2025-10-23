@@ -25,6 +25,7 @@ import type {
   ColumnMapping,
   RunningSessionStartRequest,
   RunningSessionUpdateRequest,
+  RunningSessionCancelRequest,
   RunningSessionDraftPayload,
 } from '../types';
 import {
@@ -311,6 +312,39 @@ const buildUpdateData = (
   return updates;
 };
 
+const buildClearData = (
+  sheetTitle: string,
+  rowNumber: number,
+  mapping: ColumnMapping,
+  headerRow: (string | number)[] | null,
+) => {
+  const updates: Array<{ range: string; values: (string | number | null)[][] }> = [];
+  const keys: Array<keyof ColumnMapping> = [
+    'id',
+    'status',
+    'title',
+    'startedAt',
+    'endedAt',
+    'durationSeconds',
+    'project',
+    'notes',
+    'tags',
+    'skill',
+    'intensity',
+  ];
+
+  for (const key of keys) {
+    const column = resolveColumnLetter(mapping[key], headerRow);
+    if (!column) continue;
+    updates.push({
+      range: `${sheetTitle}!${column}${rowNumber}`,
+      values: [['']],
+    });
+  }
+
+  return updates;
+};
+
 export const handleRunningSessionUpdate = async (
   request: Request,
   env: Env,
@@ -386,6 +420,86 @@ export const handleRunningSessionUpdate = async (
       Math.floor(body.elapsedSeconds),
       headerRow,
     );
+
+    if (updates.length === 0) {
+      return jsonResponse({ status: 'ok' }, 202);
+    }
+
+    await client.batchUpdateValues(spreadsheetId, updates, 'USER_ENTERED');
+
+    return jsonResponse({ status: 'ok' }, 202);
+  } catch (responseOrError) {
+    if (responseOrError instanceof HttpResponseError) {
+      return responseOrError.response;
+    }
+    if (responseOrError instanceof GoogleSheetsApiError) {
+      return serverError(responseOrError.message, responseOrError.status);
+    }
+    if (responseOrError instanceof Error) {
+      return serverError(responseOrError.message, 500);
+    }
+    return serverError('Unknown error', 500);
+  }
+};
+
+export const handleRunningSessionCancel = async (
+  request: Request,
+  env: Env,
+): Promise<Response> => {
+  try {
+    const auth = await ensureAuthorized(request, env);
+    const body = await parseJson<RunningSessionCancelRequest>(request);
+
+    if (!body || typeof body.id !== 'string' || body.id.trim().length === 0) {
+      throw new HttpResponseError(badRequest('id is required'));
+    }
+
+    const {
+      connection,
+      spreadsheetId,
+      sheetTitle,
+      mappings,
+    } = await resolveConnectionContext(env, auth.userId);
+
+    const accessToken = await ensureValidAccessToken(env, connection);
+    const client = GoogleSheetsClient.fromAccessToken(accessToken);
+
+    let headerRow: (string | number)[] | null = null;
+    if (requiresHeaderLookup(mappings)) {
+      try {
+        const header = await client.getRange(
+          spreadsheetId,
+          `${sheetTitle}!1:1`,
+        );
+        headerRow = header.values?.[0] ?? null;
+      } catch (error) {
+        console.warn('Failed to load header row for running cancel', error);
+      }
+    }
+
+    const idColumn = resolveColumnLetter(mappings.id, headerRow);
+    if (!idColumn) {
+      throw new HttpResponseError(
+        conflict(
+          'mapping_incomplete',
+          'ID column must be configured for running sync',
+        ),
+      );
+    }
+
+    const rowNumber = await findRowNumberById(
+      client,
+      spreadsheetId,
+      sheetTitle,
+      idColumn,
+      body.id,
+    );
+
+    if (!rowNumber) {
+      return jsonResponse({ status: 'skipped' }, 202);
+    }
+
+    const updates = buildClearData(sheetTitle, rowNumber, mappings, headerRow);
 
     if (updates.length === 0) {
       return jsonResponse({ status: 'ok' }, 202);

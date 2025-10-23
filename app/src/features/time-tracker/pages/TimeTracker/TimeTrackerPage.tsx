@@ -62,6 +62,7 @@ export function TimeTrackerPage() {
     stop,
     updateDraft,
     adjustDuration,
+    reset,
     persistRunningState,
   } = useRunningSession({ userId: user?.id ?? null });
   const {
@@ -69,6 +70,7 @@ export function TimeTrackerPage() {
     syncSession,
     syncRunningSessionStart,
     syncRunningSessionUpdate,
+    syncRunningSessionCancel,
   } = useGoogleSpreadsheetSync();
   const {
     settings: googleSettings,
@@ -234,6 +236,40 @@ export function TimeTrackerPage() {
     setSessions,
     modalState,
     syncSession,
+  ]);
+
+  const handleComposerCancel = useCallback(() => {
+    if (runningState.status !== 'running') {
+      return {
+        nextInputValue: '',
+        nextProject: composerProject,
+      };
+    }
+
+    const draft = runningState.draft;
+    const nextProject = draft.project ?? '';
+    const nextTitle = draft.title ?? '';
+
+    runningDraftSyncRef.current = { id: null, signature: null };
+    reset();
+    setUndoState(null);
+    if (modalState?.type === 'running') {
+      setModalState(null);
+    }
+    setComposerProject(nextProject);
+
+    void syncRunningSessionCancel(draft.id);
+
+    return {
+      nextInputValue: nextTitle,
+      nextProject,
+    };
+  }, [
+    composerProject,
+    modalState,
+    reset,
+    runningState,
+    syncRunningSessionCancel,
   ]);
 
   const handleComposerAdjustDuration = useCallback(
@@ -603,6 +639,7 @@ export function TimeTrackerPage() {
           elapsedSeconds={elapsedSeconds}
           onStart={handleComposerStart}
           onStop={handleComposerStop}
+          onCancel={handleComposerCancel}
           onAdjustDuration={handleComposerAdjustDuration}
           timerId={RUNNING_TIMER_ID}
           onOpenRunningEditor={openRunningEditor}

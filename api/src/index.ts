@@ -15,6 +15,7 @@ import { handleOptions } from './http/response';
 import {
   handleRunningSessionStart,
   handleRunningSessionUpdate,
+  handleRunningSessionCancel,
 } from './handlers/runningSessions';
 
 const ROUTES = {
@@ -26,6 +27,7 @@ const ROUTES = {
   SPREADSHEETS: '/integrations/google/spreadsheets',
   RUNNING_START: '/integrations/google/running/start',
   RUNNING_UPDATE: '/integrations/google/running/update',
+  RUNNING_CANCEL: '/integrations/google/running/cancel',
 } as const;
 
 export default {
@@ -79,6 +81,10 @@ export default {
 
     if (request.method === 'PATCH' && url.pathname === ROUTES.RUNNING_UPDATE) {
       return handleRunningSessionUpdate(request, env);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.RUNNING_CANCEL) {
+      return handleRunningSessionCancel(request, env);
     }
 
     return new Response('Not Found', { status: 404 });

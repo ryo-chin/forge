@@ -30,6 +30,7 @@ type ComposerProps = {
   onProjectChange: (value: string) => void;
   onStart: (title: string) => boolean;
   onStop: () => ComposerStopResult;
+  onCancel: () => ComposerStopResult;
   onAdjustDuration: (deltaSeconds: number) => void;
   onOpenRunningEditor: () => void;
 };
@@ -45,6 +46,7 @@ export const Composer: React.FC<ComposerProps> = ({
   onProjectChange,
   onStart,
   onStop,
+  onCancel,
   onAdjustDuration,
   onOpenRunningEditor,
 }) => {
@@ -97,6 +99,14 @@ export const Composer: React.FC<ComposerProps> = ({
     setProjectQuery(t);
     setIsProjectMenuOpen(false);
     projectTriggerRef.current?.focus();
+  };
+
+  const handleCancel = () => {
+    if (!isRunning) return;
+    const { nextInputValue, nextProject } = onCancel();
+    setInputValue(nextInputValue);
+    setProjectQuery(nextProject);
+    setIsProjectMenuOpen(false);
   };
 
   useEffect(
@@ -250,14 +260,35 @@ export const Composer: React.FC<ComposerProps> = ({
           aria-label="取り組む内容"
         />
 
-        <button
-          type="button"
-          className="time-tracker__action time-tracker__touch-target"
-          onClick={handlePrimaryAction}
-          disabled={!canStart && !isRunning}
-        >
-          {primaryLabel}
-        </button>
+        <div className="time-tracker__actions">
+          {isRunning ? (
+            <>
+              <button
+                type="button"
+                className="time-tracker__action time-tracker__action--ghost time-tracker__touch-target"
+                onClick={handleCancel}
+              >
+                破棄
+              </button>
+              <button
+                type="button"
+                className="time-tracker__action time-tracker__touch-target"
+                onClick={handlePrimaryAction}
+              >
+                {primaryLabel}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="time-tracker__action time-tracker__touch-target"
+              onClick={handlePrimaryAction}
+              disabled={!canStart}
+            >
+              {primaryLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="time-tracker__hints">
