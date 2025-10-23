@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   handleRunningSessionStart,
   handleRunningSessionUpdate,
+  handleRunningSessionCancel,
 } from '../runningSessions';
 
 const mocks = vi.hoisted(() => {
@@ -95,6 +96,16 @@ const buildUpdateRequest = (body: unknown) =>
     body: JSON.stringify(body),
   });
 
+const buildCancelRequest = (body: unknown) =>
+  new Request('https://example.com/integrations/google/running/cancel', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer supabase-token',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
 const prepareConnectionMocks = () => {
   mocks.verifySupabaseJwt.mockResolvedValue({
     userId: 'user-1',
@@ -162,6 +173,46 @@ describe('handleRunningSessionStart', () => {
     expect(values).toEqual(
       expect.arrayContaining(['session-1', 'Running', 'Focus']),
     );
+  });
+});
+
+describe('handleRunningSessionCancel', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prepareConnectionMocks();
+    mocks.getRange.mockResolvedValue({
+      values: [['session-1'], ['session-2']],
+    });
+  });
+
+  it('clears the running session row when found', async () => {
+    const response = await handleRunningSessionCancel(
+      buildCancelRequest({ id: 'session-1' }),
+      env,
+    );
+
+    expect(response.status).toBe(202);
+    expect(mocks.batchUpdateValues).toHaveBeenCalledTimes(1);
+    const updates = mocks.batchUpdateValues.mock.calls[0][1];
+    expect(updates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ range: 'Sessions!A1', values: [['']] }),
+        expect.objectContaining({ range: 'Sessions!B1', values: [['']] }),
+      ]),
+    );
+  });
+
+  it('returns skipped status when row is not found', async () => {
+    mocks.getRange.mockResolvedValue({ values: [['session-x']] });
+
+    const response = await handleRunningSessionCancel(
+      buildCancelRequest({ id: 'session-1' }),
+      env,
+    );
+
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({ status: 'skipped' });
+    expect(mocks.batchUpdateValues).not.toHaveBeenCalled();
   });
 });
 

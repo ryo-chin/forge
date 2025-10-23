@@ -73,6 +73,10 @@ export type RunningSessionUpdateRequest = {
   elapsedSeconds: number;
 };
 
+export type RunningSessionCancelRequest = {
+  id: string;
+};
+
 export type ColumnMappingConfig = {
   mappings: ColumnMapping;
   requiredColumns: string[];
