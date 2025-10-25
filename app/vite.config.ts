@@ -11,6 +11,7 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, 'src/lib'),
       '@ui': path.resolve(__dirname, 'src/ui'),
       '@features': path.resolve(__dirname, 'src/features'),
+      'react-router-dom': path.resolve(__dirname, 'src/router'),
     },
   },
   test: {
