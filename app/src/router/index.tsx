@@ -289,7 +289,7 @@ export function Navigate({
   return null;
 }
 
-type NavLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
+type NavLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'className'> & {
   to: string;
   end?: boolean;
   className?: string | ((state: { isActive: boolean }) => string);
