@@ -1,7 +1,9 @@
 {
   "name": "forge",
+  "main": "cloudflare/worker/index.ts",
   "compatibility_date": "2025-10-12",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS"
   }
 }

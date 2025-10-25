@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 import { AuthStatusBar } from '@features/logiin';
 
 type NavListProps = {
@@ -14,13 +15,21 @@ const AppNavList: React.FC<NavListProps> = ({ onSelect }) => {
 
   return (
     <nav className="app-shell__nav" aria-label="Time Tracker ナビゲーション">
-      <button
-        type="button"
-        className="app-shell__nav-item app-shell__nav-item--active"
+      <NavLink
+        to="/time-tracker"
+        end
+        className={({ isActive }) =>
+          [
+            'app-shell__nav-item',
+            isActive ? 'app-shell__nav-item--active' : null,
+          ]
+            .filter(Boolean)
+            .join(' ')
+        }
         onClick={handleSelect}
       >
         Time Tracker
-      </button>
+      </NavLink>
       <button type="button" className="app-shell__nav-item" disabled>
         レポート (準備中)
       </button>

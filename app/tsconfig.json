@@ -19,7 +19,8 @@
       "@hooks/*": ["src/hooks/*"],
       "@lib/*": ["src/lib/*"],
       "@ui/*": ["src/ui/*"],
-      "@features/*": ["src/features/*"]
+      "@features/*": ["src/features/*"],
+      "react-router-dom": ["src/router"]
     },
     "types": ["vitest/globals", "vite/client"]
   },

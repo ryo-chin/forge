@@ -92,7 +92,7 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
       expect(screen.getByText('TimeTracker Main')).toBeInTheDocument();
     });
 
-    const spreadsheetSelect = document.getElementById('spreadsheet-select') as HTMLSelectElement;
+    const spreadsheetSelect = screen.getByLabelText('スプレッドシート');
     await user.selectOptions(spreadsheetSelect, 'spreadsheet-1');
 
     await waitFor(() => {
@@ -113,7 +113,7 @@ describe('GoogleSpreadsheetSettingsDialog', () => {
       expect(screen.getByText('Sheet1')).toBeInTheDocument();
     });
 
-    const sheetSelect = document.getElementById('sheet-select') as HTMLSelectElement;
+    const sheetSelect = screen.getByLabelText('シート');
     await user.selectOptions(sheetSelect, '1');
 
     expect(sheetSelect).toHaveValue('1');

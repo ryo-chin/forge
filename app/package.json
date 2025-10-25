@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && tsc --project tsconfig.worker.json --noEmit && vite build",
     "preview": "vite preview",
     "deploy": "npm run build && npx wrangler deploy",
     "lint": "eslint . --ext .ts,.tsx",
@@ -20,6 +20,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251014.0",
     "@playwright/test": "^1.43.1",
     "@testing-library/jest-dom": "^6.4.5",
     "@testing-library/react": "^14.2.1",
@@ -38,7 +39,7 @@
     "jsdom": "^24.0.0",
     "playwright": "^1.43.1",
     "prettier": "^3.3.2",
-    "typescript": "^5.4.5",
+    "typescript": "5.5.4",
     "vite": "^5.2.0",
     "vitest": "^1.6.0"
   }
