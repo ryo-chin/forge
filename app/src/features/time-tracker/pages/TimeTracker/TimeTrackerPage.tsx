@@ -10,7 +10,6 @@ import { Composer } from '../../components/Composer';
 import { HistoryList } from '../../components/HistoryList';
 import { EditorModal } from '../../components/EditorModal';
 import { SyncStatusBanner } from '../../components/SyncStatusBanner';
-import { GoogleSpreadsheetSettingsDialog } from '../../components/GoogleSpreadsheetSettingsDialog';
 import {
   isModalSaveDisabled,
   buildUpdatedSession,
@@ -19,6 +18,7 @@ import {
 import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
 import { localDateTimeToMs } from '../../../../lib/time.ts';
 import { useAuth } from '../../../../infra/auth';
+import { useNavigate } from 'react-router-dom';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 
@@ -73,19 +73,11 @@ export function TimeTrackerPage() {
     syncRunningSessionCancel,
     deleteSessionRow,
   } = useGoogleSpreadsheetSync();
-  const {
-    settings: googleSettings,
-    updateSelection,
-    fetchSpreadsheets,
-    fetchSheets,
-    startOAuth,
-  } = useGoogleSpreadsheetOptions();
+  const { settings: googleSettings } = useGoogleSpreadsheetOptions();
+  const navigate = useNavigate();
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
-
-  // Google スプレッドシート設定ダイアログの開閉状態
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
   // モーダルの種類
   const [modalState, setModalState] = useState<ModalState>(null);
@@ -547,43 +539,8 @@ export function TimeTrackerPage() {
   // 表示用に先頭5件のみに制限
   const displaySessions = useMemo(() => sessions.slice(0, 5), [sessions]);
 
-  // ==== Google スプレッドシート設定 ====
-  const handleOpenSettings = useCallback(() => {
-    setIsSettingsDialogOpen(true);
-  }, []);
-
-  const handleCloseSettings = useCallback(() => {
-    setIsSettingsDialogOpen(false);
-  }, []);
-
-  const handleSaveSettings = useCallback(
-    async (selection: {
-      spreadsheetId: string;
-      sheetId: number;
-      sheetTitle: string;
-      columnMapping?: Record<string, string>;
-    }) => {
-      try {
-        await updateSelection(selection);
-        setIsSettingsDialogOpen(false);
-      } catch (error) {
-        console.error('Failed to update Google spreadsheet settings:', error);
-      }
-    },
-    [updateSelection],
-  );
-
-  const handleStartOAuth = useCallback(async () => {
-    try {
-      const currentUrl = window.location.href;
-      const response = await startOAuth(currentUrl);
-      if (response.authorizationUrl) {
-        window.location.href = response.authorizationUrl;
-      }
-    } catch (error) {
-      console.error('Failed to start OAuth:', error);
-    }
-  }, [startOAuth]);
+  const isGoogleConnected = googleSettings.data?.connectionStatus === 'active';
+  const settingsButtonLabel = isGoogleConnected ? '⚙️ 設定 (連携中)' : '⚙️ 設定';
 
   useEffect(() => {
     if (!isRunning) {
@@ -648,11 +605,15 @@ export function TimeTrackerPage() {
             <h1>Time Tracker</h1>
             <button
               type="button"
-              onClick={handleOpenSettings}
+              onClick={() => navigate('/settings')}
               className="time-tracker__settings-button time-tracker__touch-target"
-              aria-label="Google スプレッドシート設定"
+              aria-label={
+                isGoogleConnected
+                  ? 'Google スプレッドシート設定（連携中）'
+                  : 'Google スプレッドシート設定'
+              }
             >
-              ⚙️ 設定
+              {settingsButtonLabel}
             </button>
           </div>
           <p>何をやりますか？</p>
@@ -715,19 +676,6 @@ export function TimeTrackerPage() {
           onCancel={closeModal}
         />
       ) : null}
-
-      <GoogleSpreadsheetSettingsDialog
-        isOpen={isSettingsDialogOpen}
-        isConnected={googleSettings.data?.connectionStatus === 'active'}
-        currentSpreadsheetId={googleSettings.data?.spreadsheet?.id}
-        currentSheetId={googleSettings.data?.spreadsheet?.sheetId}
-        currentColumnMapping={googleSettings.data?.columnMapping?.mappings}
-        onClose={handleCloseSettings}
-        onSave={handleSaveSettings}
-        onStartOAuth={handleStartOAuth}
-        onFetchSpreadsheets={fetchSpreadsheets}
-        onFetchSheets={fetchSheets}
-      />
     </main>
   );
 }
