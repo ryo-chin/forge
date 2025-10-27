@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, vi } from 'vitest';
 import * as googleSyncHooks from '../../hooks/data/useGoogleSpreadsheetSync.ts';
 import { TimeTrackerPage } from './TimeTrackerPage.tsx';
+import { BrowserRouter } from 'react-router-dom';
 
 const STORAGE_KEY_SESSIONS = 'codex-time-tracker/sessions';
 const STORAGE_KEY_RUNNING = 'codex-time-tracker/running';
@@ -28,7 +29,9 @@ const renderTimeTrackerPage = () => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <TimeTrackerPage />
+      <BrowserRouter>
+        <TimeTrackerPage />
+      </BrowserRouter>
     </QueryClientProvider>,
   );
 };

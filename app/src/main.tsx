@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom';
 import './index.css';
 import { TimeTrackerPage } from '@features/time-tracker';
+import { SettingsPage } from '@features/settings';
 import { AuthProvider, useAuth } from '@infra/auth';
 import type { AuthContextValue } from '@infra/auth/authContext.ts';
 import { AuthStatusBar, AuthLoading, LoginPage } from '@features/logiin';
@@ -137,6 +138,7 @@ function AppRoutes(): JSX.Element {
       >
         <Route index element={<Navigate to="/time-tracker" replace />} />
         <Route path="time-tracker" element={<TimeTrackerPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

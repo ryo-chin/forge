@@ -30,6 +30,21 @@ const AppNavList: React.FC<NavListProps> = ({ onSelect }) => {
       >
         Time Tracker
       </NavLink>
+      <NavLink
+        to="/settings"
+        end
+        className={({ isActive }) =>
+          [
+            'app-shell__nav-item',
+            isActive ? 'app-shell__nav-item--active' : null,
+          ]
+            .filter(Boolean)
+            .join(' ')
+        }
+        onClick={handleSelect}
+      >
+        設定
+      </NavLink>
       <button type="button" className="app-shell__nav-item" disabled>
         レポート (準備中)
       </button>
