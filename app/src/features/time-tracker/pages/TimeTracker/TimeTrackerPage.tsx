@@ -10,15 +10,14 @@ import { Composer } from '../../components/Composer';
 import { HistoryList } from '../../components/HistoryList';
 import { EditorModal } from '../../components/EditorModal';
 import { SyncStatusBanner } from '../../components/SyncStatusBanner';
-import { GoogleSpreadsheetSettingsDialog } from '../../components/GoogleSpreadsheetSettingsDialog';
 import {
   isModalSaveDisabled,
   buildUpdatedSession,
   calculateDurationDelta,
 } from './logic.ts';
 import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
-import { localDateTimeToMs } from '../../../../lib/time.ts';
 import { useAuth } from '../../../../infra/auth';
+import { useNavigate } from 'react-router-dom';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 
@@ -38,6 +37,13 @@ type ModalState =
   | { type: 'running' }
   | { type: 'history'; sessionId: string }
   | null;
+
+type HistoryDraft = {
+  title: string;
+  project: string;
+  startTime: string;
+  endTime: string;
+};
 
 type UndoState = {
   session: TimeTrackerSession;
@@ -73,19 +79,11 @@ export function TimeTrackerPage() {
     syncRunningSessionCancel,
     deleteSessionRow,
   } = useGoogleSpreadsheetSync();
-  const {
-    settings: googleSettings,
-    updateSelection,
-    fetchSpreadsheets,
-    fetchSheets,
-    startOAuth,
-  } = useGoogleSpreadsheetOptions();
+  const { settings: googleSettings } = useGoogleSpreadsheetOptions();
+  const navigate = useNavigate();
 
   // 「削除→元に戻す」用
   const [undoState, setUndoState] = useState<UndoState>(null);
-
-  // Google スプレッドシート設定ダイアログの開閉状態
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
   // モーダルの種類
   const [modalState, setModalState] = useState<ModalState>(null);
@@ -93,6 +91,7 @@ export function TimeTrackerPage() {
   // 履歴編集の元スナップショット（キャンセルで戻す）
   const [historyEditSnapshot, setHistoryEditSnapshot] =
     useState<HistoryEditSnapshot>(null);
+  const [historyDraft, setHistoryDraft] = useState<HistoryDraft | null>(null);
 
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
@@ -157,10 +156,15 @@ export function TimeTrackerPage() {
         disabled: true,
       };
     }
-    const title = target.title ?? '';
-    const project = target.project ?? '';
-    const startTime = formatDateTimeLocal(target.startedAt);
-    const endTime = formatDateTimeLocal(target.endedAt);
+    const draft =
+      historyDraft ??
+      ({
+        title: target.title ?? '',
+        project: target.project ?? '',
+        startTime: formatDateTimeLocal(target.startedAt),
+        endTime: formatDateTimeLocal(target.endedAt),
+      } satisfies HistoryDraft);
+    const { title, project, startTime, endTime } = draft;
     return {
       title,
       project,
@@ -175,6 +179,7 @@ export function TimeTrackerPage() {
     runningState.draft?.project,
     runningState.draft?.startedAt,
     runningState.draft?.title,
+    historyDraft,
   ]);
 
   // ==== Composer handlers ====
@@ -280,17 +285,6 @@ export function TimeTrackerPage() {
     [adjustDuration],
   );
 
-  useEffect(() => {
-    if (!isRunning || !runningState.draft) {
-      return;
-    }
-    const trimmed = composerProject.trim();
-    const current = runningState.draft.project ?? '';
-    if (current !== trimmed) {
-      updateDraft({ project: trimmed || undefined });
-    }
-  }, [isRunning, runningState.draft, composerProject, updateDraft]);
-
   // ==== モーダル open/close ====
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -307,6 +301,12 @@ export function TimeTrackerPage() {
       previousFocusRef.current = document.activeElement as HTMLElement | null;
       // キャンセルで戻せるように元を保存
       setHistoryEditSnapshot(target);
+      setHistoryDraft({
+        title: target.title,
+        project: target.project ?? '',
+        startTime: formatDateTimeLocal(target.startedAt),
+        endTime: formatDateTimeLocal(target.endedAt),
+      });
       setModalState({ type: 'history', sessionId: target.id });
     },
     [sessions],
@@ -328,8 +328,15 @@ export function TimeTrackerPage() {
       }
     }
     setHistoryEditSnapshot(null);
+    setHistoryDraft(null);
     setModalState(null);
-  }, [historyEditSnapshot, modalState, persistSessions, sessions, setSessions]);
+  }, [
+    historyEditSnapshot,
+    modalState,
+    persistSessions,
+    sessions,
+    setSessions,
+  ]);
 
   // ==== 履歴の削除/Undo ====
   const handleDeleteHistory = useCallback(
@@ -366,6 +373,7 @@ export function TimeTrackerPage() {
         modalState.sessionId === sessionId
       ) {
         setHistoryEditSnapshot(null);
+        setHistoryDraft(null);
         setModalState(null);
       }
     },
@@ -399,16 +407,20 @@ export function TimeTrackerPage() {
         return;
       }
 
+      if (!historyDraft) {
+        return;
+      }
+
       const nextSessions = setSessions((prev) => {
         const idx = prev.findIndex((session) => session.id === modalState.sessionId);
         if (idx === -1) return prev;
 
         const target = prev[idx];
         const updated = buildUpdatedSession(target, {
-          title: target.title,
-          project: target.project ?? '',
-          startTime: formatDateTimeLocal(target.startedAt),
-          endTime: formatDateTimeLocal(target.endedAt),
+          title: historyDraft.title,
+          project: historyDraft.project,
+          startTime: historyDraft.startTime,
+          endTime: historyDraft.endTime,
         });
         if (!updated) return prev;
 
@@ -433,9 +445,11 @@ export function TimeTrackerPage() {
       }
 
       setHistoryEditSnapshot(null);
+      setHistoryDraft(null);
       setModalState(null);
     },
     [
+      historyDraft,
       modalState,
       persistRunningState,
       persistSessions,
@@ -449,47 +463,40 @@ export function TimeTrackerPage() {
   const onModalTitleChange = useCallback(
     (value: string) => {
       if (!modalState) return;
-      const title = value.trim();
+      const title = value;
       if (modalState.type === 'running') {
         if (isRunning) updateDraft({ title });
         return;
       }
       // history
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], title };
-        // 保存は Save 時にまとめて（ここでは persist しない or しても良い）
-        return next;
+      setHistoryDraft((current) => {
+        if (!current || modalState.type !== 'history') return current;
+        return { ...current, title };
       });
     },
-    [isRunning, modalState, setSessions, updateDraft],
+    [isRunning, modalState, updateDraft],
   );
 
   const onModalProjectChange = useCallback(
     (value: string) => {
       if (!modalState) return;
-      const trimmed = value.trim();
-      const project = trimmed ? trimmed : undefined;
+      const project = value;
 
       if (modalState.type === 'running') {
         if (isRunning) {
-          updateDraft({ project });
-          setComposerProject(project ?? '');
+          const normalized = project.trim() === '' ? undefined : project;
+          updateDraft({ project: normalized });
+          setComposerProject(normalized ?? '');
         }
         return;
       }
       // history
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], project };
-        return next;
+      setHistoryDraft((current) => {
+        if (!current || modalState.type !== 'history') return current;
+        return { ...current, project };
       });
     },
-    [isRunning, modalState, setSessions, updateDraft],
+    [isRunning, modalState, updateDraft],
   );
 
   const onModalStartTimeChange = useCallback(
@@ -505,31 +512,23 @@ export function TimeTrackerPage() {
         return;
       }
       // history
-      const ms = localDateTimeToMs(value);
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], startedAt: ms };
-        return next;
+      setHistoryDraft((current) => {
+        if (!current || modalState.type !== 'history') return current;
+        return { ...current, startTime: value };
       });
     },
-    [adjustDuration, elapsedSeconds, isRunning, modalState, setSessions],
+    [adjustDuration, elapsedSeconds, isRunning, modalState],
   );
 
   const onModalEndTimeChange = useCallback(
     (value: string) => {
       if (!modalState || modalState.type !== 'history') return;
-      const ms = localDateTimeToMs(value);
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], endedAt: ms };
-        return next;
+      setHistoryDraft((current) => {
+        if (!current) return current;
+        return { ...current, endTime: value };
       });
     },
-    [modalState, setSessions],
+    [modalState],
   );
 
   const lastSyncedSession = useMemo(() => {
@@ -547,43 +546,8 @@ export function TimeTrackerPage() {
   // 表示用に先頭5件のみに制限
   const displaySessions = useMemo(() => sessions.slice(0, 5), [sessions]);
 
-  // ==== Google スプレッドシート設定 ====
-  const handleOpenSettings = useCallback(() => {
-    setIsSettingsDialogOpen(true);
-  }, []);
-
-  const handleCloseSettings = useCallback(() => {
-    setIsSettingsDialogOpen(false);
-  }, []);
-
-  const handleSaveSettings = useCallback(
-    async (selection: {
-      spreadsheetId: string;
-      sheetId: number;
-      sheetTitle: string;
-      columnMapping?: Record<string, string>;
-    }) => {
-      try {
-        await updateSelection(selection);
-        setIsSettingsDialogOpen(false);
-      } catch (error) {
-        console.error('Failed to update Google spreadsheet settings:', error);
-      }
-    },
-    [updateSelection],
-  );
-
-  const handleStartOAuth = useCallback(async () => {
-    try {
-      const currentUrl = window.location.href;
-      const response = await startOAuth(currentUrl);
-      if (response.authorizationUrl) {
-        window.location.href = response.authorizationUrl;
-      }
-    } catch (error) {
-      console.error('Failed to start OAuth:', error);
-    }
-  }, [startOAuth]);
+  const isGoogleConnected = googleSettings.data?.connectionStatus === 'active';
+  const settingsButtonLabel = isGoogleConnected ? '⚙️ 設定 (連携中)' : '⚙️ 設定';
 
   useEffect(() => {
     if (!isRunning) {
@@ -643,20 +607,28 @@ export function TimeTrackerPage() {
   return (
     <main className={rootClassName}>
       <div className="time-tracker__panel">
-        <header className="time-tracker__header">
-          <div className="time-tracker__header-top">
-            <h1>Time Tracker</h1>
+        <section
+          className="time-tracker__intro"
+          aria-labelledby="time-tracker-heading"
+        >
+          <div className="time-tracker__intro-top">
+            <h1 id="time-tracker-heading">Time Tracker</h1>
+          </div>
+          <div className="time-tracker__intro-actions">
             <button
               type="button"
-              onClick={handleOpenSettings}
+              onClick={() => navigate('/settings')}
               className="time-tracker__settings-button time-tracker__touch-target"
-              aria-label="Google スプレッドシート設定"
+              aria-label={
+                isGoogleConnected
+                  ? 'Google スプレッドシート設定（連携中）'
+                  : 'Google スプレッドシート設定'
+              }
             >
-              ⚙️ 設定
+              {settingsButtonLabel}
             </button>
           </div>
-          <p>何をやりますか？</p>
-        </header>
+        </section>
 
         <SyncStatusBanner
           state={syncState}
@@ -715,19 +687,6 @@ export function TimeTrackerPage() {
           onCancel={closeModal}
         />
       ) : null}
-
-      <GoogleSpreadsheetSettingsDialog
-        isOpen={isSettingsDialogOpen}
-        isConnected={googleSettings.data?.connectionStatus === 'active'}
-        currentSpreadsheetId={googleSettings.data?.spreadsheet?.id}
-        currentSheetId={googleSettings.data?.spreadsheet?.sheetId}
-        currentColumnMapping={googleSettings.data?.columnMapping?.mappings}
-        onClose={handleCloseSettings}
-        onSave={handleSaveSettings}
-        onStartOAuth={handleStartOAuth}
-        onFetchSpreadsheets={fetchSpreadsheets}
-        onFetchSheets={fetchSheets}
-      />
     </main>
   );
 }

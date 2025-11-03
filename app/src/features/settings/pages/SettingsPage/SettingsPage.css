@@ -1,0 +1,72 @@
+.settings-page {
+  min-height: 100%;
+  padding: 4rem 2rem;
+  box-sizing: border-box;
+  background: #f5f7fb;
+  color: #0f172a;
+}
+
+.settings-page__container {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.settings-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-page__title {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.settings-page__description {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.settings-page__alert {
+  padding: 0.9rem 1.1rem;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.settings-page__alert--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.settings-page__alert--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.settings-page__placeholder {
+  margin: 0;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: rgba(148, 163, 184, 0.12);
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 3rem 1.25rem;
+  }
+
+  .settings-page__title {
+    font-size: 1.75rem;
+  }
+}

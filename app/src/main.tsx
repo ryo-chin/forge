@@ -1,21 +1,20 @@
-import React, { useState, type ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   BrowserRouter,
   Navigate,
-  Outlet,
   Route,
   Routes,
 } from 'react-router-dom';
 import './index.css';
 import { TimeTrackerPage } from '@features/time-tracker';
+import { SettingsPage } from '@features/settings';
 import { AuthProvider, useAuth } from '@infra/auth';
 import type { AuthContextValue } from '@infra/auth/authContext.ts';
-import { AuthStatusBar, AuthLoading, LoginPage } from '@features/logiin';
+import { AuthLoading, LoginPage } from '@features/logiin';
 import { useTimeTrackerSessions } from './features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
-import { AppNav, AppNavOverlay } from './ui/components/AppNav';
-import { useResponsiveLayout } from './ui/hooks/useResponsiveLayout';
+import { AppLayout } from './ui/layouts/AppLayout';
 
 const queryClient = new QueryClient();
 
@@ -67,44 +66,6 @@ function RequireGuest({
   return <>{children}</>;
 }
 
-function AppLayout(): JSX.Element {
-  const viewport = useResponsiveLayout();
-  const [isMobileNavOpen, setMobileNavOpen] = useState(false);
-
-  return (
-    <>
-      <div className="app-shell">
-        <aside className="app-shell__sidebar">
-          <div className="app-shell__sidebar-header">
-            <span className="app-shell__product">forge</span>
-          </div>
-          <AppNav />
-          <AuthStatusBar />
-        </aside>
-        <div className="app-shell__main">
-          {viewport === 'mobile' ? (
-            <button
-              type="button"
-              className="app-shell__hamburger time-tracker__touch-target"
-              aria-label="メニューを開く"
-              aria-expanded={isMobileNavOpen}
-              onClick={() => setMobileNavOpen(true)}
-            >
-              ☰
-            </button>
-          ) : null}
-          <Outlet />
-        </div>
-      </div>
-      <AppNavOverlay
-        isOpen={isMobileNavOpen}
-        onClose={() => setMobileNavOpen(false)}
-        onSelect={() => setMobileNavOpen(false)}
-      />
-    </>
-  );
-}
-
 function AppRoutes(): JSX.Element {
   const { provider, status, user, signIn } = useAuth();
   const { mode } = useTimeTrackerSessions({ userId: user?.id ?? null });
@@ -137,6 +98,7 @@ function AppRoutes(): JSX.Element {
       >
         <Route index element={<Navigate to="/time-tracker" replace />} />
         <Route path="time-tracker" element={<TimeTrackerPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
