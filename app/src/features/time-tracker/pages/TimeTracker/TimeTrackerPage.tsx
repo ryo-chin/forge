@@ -16,7 +16,6 @@ import {
   calculateDurationDelta,
 } from './logic.ts';
 import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
-import { localDateTimeToMs } from '../../../../lib/time.ts';
 import { useAuth } from '../../../../infra/auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,6 +37,13 @@ type ModalState =
   | { type: 'running' }
   | { type: 'history'; sessionId: string }
   | null;
+
+type HistoryDraft = {
+  title: string;
+  project: string;
+  startTime: string;
+  endTime: string;
+};
 
 type UndoState = {
   session: TimeTrackerSession;
@@ -85,6 +91,7 @@ export function TimeTrackerPage() {
   // 履歴編集の元スナップショット（キャンセルで戻す）
   const [historyEditSnapshot, setHistoryEditSnapshot] =
     useState<HistoryEditSnapshot>(null);
+  const [historyDraft, setHistoryDraft] = useState<HistoryDraft | null>(null);
 
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
@@ -149,10 +156,15 @@ export function TimeTrackerPage() {
         disabled: true,
       };
     }
-    const title = target.title ?? '';
-    const project = target.project ?? '';
-    const startTime = formatDateTimeLocal(target.startedAt);
-    const endTime = formatDateTimeLocal(target.endedAt);
+    const draft =
+      historyDraft ??
+      ({
+        title: target.title ?? '',
+        project: target.project ?? '',
+        startTime: formatDateTimeLocal(target.startedAt),
+        endTime: formatDateTimeLocal(target.endedAt),
+      } satisfies HistoryDraft);
+    const { title, project, startTime, endTime } = draft;
     return {
       title,
       project,
@@ -167,6 +179,7 @@ export function TimeTrackerPage() {
     runningState.draft?.project,
     runningState.draft?.startedAt,
     runningState.draft?.title,
+    historyDraft,
   ]);
 
   // ==== Composer handlers ====
@@ -299,6 +312,12 @@ export function TimeTrackerPage() {
       previousFocusRef.current = document.activeElement as HTMLElement | null;
       // キャンセルで戻せるように元を保存
       setHistoryEditSnapshot(target);
+      setHistoryDraft({
+        title: target.title,
+        project: target.project ?? '',
+        startTime: formatDateTimeLocal(target.startedAt),
+        endTime: formatDateTimeLocal(target.endedAt),
+      });
       setModalState({ type: 'history', sessionId: target.id });
     },
     [sessions],
@@ -320,8 +339,15 @@ export function TimeTrackerPage() {
       }
     }
     setHistoryEditSnapshot(null);
+    setHistoryDraft(null);
     setModalState(null);
-  }, [historyEditSnapshot, modalState, persistSessions, sessions, setSessions]);
+  }, [
+    historyEditSnapshot,
+    modalState,
+    persistSessions,
+    sessions,
+    setSessions,
+  ]);
 
   // ==== 履歴の削除/Undo ====
   const handleDeleteHistory = useCallback(
@@ -358,6 +384,7 @@ export function TimeTrackerPage() {
         modalState.sessionId === sessionId
       ) {
         setHistoryEditSnapshot(null);
+        setHistoryDraft(null);
         setModalState(null);
       }
     },
@@ -391,16 +418,20 @@ export function TimeTrackerPage() {
         return;
       }
 
+      if (!historyDraft) {
+        return;
+      }
+
       const nextSessions = setSessions((prev) => {
         const idx = prev.findIndex((session) => session.id === modalState.sessionId);
         if (idx === -1) return prev;
 
         const target = prev[idx];
         const updated = buildUpdatedSession(target, {
-          title: target.title,
-          project: target.project ?? '',
-          startTime: formatDateTimeLocal(target.startedAt),
-          endTime: formatDateTimeLocal(target.endedAt),
+          title: historyDraft.title,
+          project: historyDraft.project,
+          startTime: historyDraft.startTime,
+          endTime: historyDraft.endTime,
         });
         if (!updated) return prev;
 
@@ -425,9 +456,11 @@ export function TimeTrackerPage() {
       }
 
       setHistoryEditSnapshot(null);
+      setHistoryDraft(null);
       setModalState(null);
     },
     [
+      historyDraft,
       modalState,
       persistRunningState,
       persistSessions,
@@ -441,47 +474,40 @@ export function TimeTrackerPage() {
   const onModalTitleChange = useCallback(
     (value: string) => {
       if (!modalState) return;
-      const title = value.trim();
+      const title = value;
       if (modalState.type === 'running') {
         if (isRunning) updateDraft({ title });
         return;
       }
       // history
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], title };
-        // 保存は Save 時にまとめて（ここでは persist しない or しても良い）
-        return next;
+      setHistoryDraft((current) => {
+        if (!current || modalState.type !== 'history') return current;
+        return { ...current, title };
       });
     },
-    [isRunning, modalState, setSessions, updateDraft],
+    [isRunning, modalState, updateDraft],
   );
 
   const onModalProjectChange = useCallback(
     (value: string) => {
       if (!modalState) return;
-      const trimmed = value.trim();
-      const project = trimmed ? trimmed : undefined;
+      const project = value;
 
       if (modalState.type === 'running') {
         if (isRunning) {
-          updateDraft({ project });
-          setComposerProject(project ?? '');
+          const normalized = project.trim() === '' ? undefined : project;
+          updateDraft({ project: normalized });
+          setComposerProject(normalized ?? '');
         }
         return;
       }
       // history
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], project };
-        return next;
+      setHistoryDraft((current) => {
+        if (!current || modalState.type !== 'history') return current;
+        return { ...current, project };
       });
     },
-    [isRunning, modalState, setSessions, updateDraft],
+    [isRunning, modalState, updateDraft],
   );
 
   const onModalStartTimeChange = useCallback(
@@ -497,31 +523,23 @@ export function TimeTrackerPage() {
         return;
       }
       // history
-      const ms = localDateTimeToMs(value);
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], startedAt: ms };
-        return next;
+      setHistoryDraft((current) => {
+        if (!current || modalState.type !== 'history') return current;
+        return { ...current, startTime: value };
       });
     },
-    [adjustDuration, elapsedSeconds, isRunning, modalState, setSessions],
+    [adjustDuration, elapsedSeconds, isRunning, modalState],
   );
 
   const onModalEndTimeChange = useCallback(
     (value: string) => {
       if (!modalState || modalState.type !== 'history') return;
-      const ms = localDateTimeToMs(value);
-      setSessions((prev) => {
-        const idx = prev.findIndex((s) => s.id === modalState.sessionId);
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = { ...next[idx], endedAt: ms };
-        return next;
+      setHistoryDraft((current) => {
+        if (!current) return current;
+        return { ...current, endTime: value };
       });
     },
-    [modalState, setSessions],
+    [modalState],
   );
 
   const lastSyncedSession = useMemo(() => {
