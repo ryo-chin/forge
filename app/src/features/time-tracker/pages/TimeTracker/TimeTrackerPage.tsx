@@ -606,6 +606,8 @@ export function TimeTrackerPage() {
         >
           <div className="time-tracker__intro-top">
             <h1 id="time-tracker-heading">Time Tracker</h1>
+          </div>
+          <div className="time-tracker__intro-actions">
             <button
               type="button"
               onClick={() => navigate('/settings')}
@@ -619,7 +621,6 @@ export function TimeTrackerPage() {
               {settingsButtonLabel}
             </button>
           </div>
-          <p>何をやりますか？</p>
         </section>
 
         <SyncStatusBanner
