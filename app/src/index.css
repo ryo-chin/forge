@@ -90,46 +90,13 @@ body {
   display: flex;
   flex-direction: column;
   background: #f5f7fb;
-  overflow-y: auto;
   position: relative;
 }
 
-.app-shell__main > * {
+.app-shell__content {
   flex: 1;
-  min-height: 100%;
-}
-
-.app-shell__hamburger {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 1rem);
-  left: 1rem;
-  border: none;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.18);
-  color: #0f172a;
-  font-size: 1.3rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
-  z-index: 10;
-  display: none;
-}
-
-.app-shell__hamburger:hover {
-  background: rgba(15, 23, 42, 0.24);
-  transform: translateY(-1px);
-}
-
-.app-shell__hamburger:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 3px;
-}
-
-@media (max-width: 768px) {
-  .app-shell__hamburger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .app-sidebar__auth {
@@ -194,5 +161,154 @@ body {
 @media (max-width: 768px) {
   .app-shell__sidebar {
     display: none;
+  }
+}
+
+.global-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1.5rem 1rem;
+  background: #f5f7fb;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+}
+
+.global-header__section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.global-header__section--right {
+  margin-left: auto;
+}
+
+.global-header__menu-button {
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.global-header__menu-button:hover {
+  background: rgba(15, 23, 42, 0.14);
+  transform: translateY(-1px);
+}
+
+.global-header__menu-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.global-header__slot {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-navigation__overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-navigation__overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+    z-index: 3000;
+  }
+
+  .app-navigation__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .app-navigation__panel {
+    position: relative;
+    height: 100%;
+    width: min(80%, 280px);
+    background: linear-gradient(180deg, #111827 0%, #0b1120 100%);
+    color: #e2e8f0;
+    padding: calc(1.75rem + env(safe-area-inset-top, 0px)) 1.5rem
+      calc(2rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.45);
+    overflow: hidden;
+  }
+
+  .app-navigation__panel-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .app-navigation__panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-navigation__panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .app-navigation__panel-close {
+    border: none;
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.2);
+    color: #f8fafc;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .app-navigation__panel-close:hover,
+  .app-navigation__panel-close:focus-visible {
+    background: rgba(148, 163, 184, 0.35);
+    outline: none;
+  }
+
+  .app-navigation__panel .app-shell__nav {
+    gap: 0.75rem;
+  }
+
+  .app-navigation__panel .app-shell__nav-item {
+    width: 100%;
+  }
+
+  .app-navigation__panel-footer {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .app-navigation__panel-footer .app-sidebar__auth {
+    width: 100%;
+    box-sizing: border-box;
   }
 }

@@ -600,9 +600,12 @@ export function TimeTrackerPage() {
   return (
     <main className={rootClassName}>
       <div className="time-tracker__panel">
-        <header className="time-tracker__header">
-          <div className="time-tracker__header-top">
-            <h1>Time Tracker</h1>
+        <section
+          className="time-tracker__intro"
+          aria-labelledby="time-tracker-heading"
+        >
+          <div className="time-tracker__intro-top">
+            <h1 id="time-tracker-heading">Time Tracker</h1>
             <button
               type="button"
               onClick={() => navigate('/settings')}
@@ -617,7 +620,7 @@ export function TimeTrackerPage() {
             </button>
           </div>
           <p>何をやりますか？</p>
-        </header>
+        </section>
 
         <SyncStatusBanner
           state={syncState}

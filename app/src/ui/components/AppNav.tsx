@@ -52,70 +52,76 @@ const AppNavList: React.FC<NavListProps> = ({ onSelect }) => {
   );
 };
 
-export const AppNav: React.FC<NavListProps> = ({ onSelect }) => (
-  <AppNavList onSelect={onSelect} />
-);
-
-type AppNavOverlayProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect?: () => void;
+type AppNavigationProps = {
+  variant: 'sidebar' | 'overlay';
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export const AppNavOverlay: React.FC<AppNavOverlayProps> = ({
-  isOpen,
-  onClose,
-  onSelect,
+export const AppNavigation: React.FC<AppNavigationProps> = ({
+  variant,
+  open = false,
+  onOpenChange,
 }) => {
   useEffect(() => {
-    if (!isOpen) return;
+    if (variant !== 'overlay' || !open) {
+      return;
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen]);
+  }, [variant, open]);
 
-  if (!isOpen) {
+  if (variant === 'sidebar') {
+    const handleSelect = () => {
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
+    };
+    return <AppNavList onSelect={handleSelect} />;
+  }
+
+  if (!open) {
     return null;
   }
 
-  const handleNavigate = () => {
-    if (onSelect) {
-      onSelect();
+  const handleClose = () => {
+    if (onOpenChange) {
+      onOpenChange(false);
     }
-    onClose();
   };
 
   return (
     <div
-      className="time-tracker__nav-overlay"
+      className="app-navigation__overlay"
       role="dialog"
       aria-modal="true"
       aria-label="ナビゲーションメニュー"
     >
       <button
         type="button"
-        className="time-tracker__nav-backdrop"
+        className="app-navigation__backdrop"
         aria-label="メニューを閉じる"
-        onClick={onClose}
+        onClick={handleClose}
       />
-      <div className="time-tracker__nav-panel">
-        <div className="time-tracker__nav-panel-header">
-          <span className="time-tracker__nav-title">メニュー</span>
+      <div className="app-navigation__panel">
+        <div className="app-navigation__panel-header">
+          <span className="app-navigation__panel-title">メニュー</span>
           <button
             type="button"
-            className="time-tracker__nav-close time-tracker__touch-target"
-            onClick={onClose}
+            className="app-navigation__panel-close"
+            onClick={handleClose}
             aria-label="メニューを閉じる"
           >
             ✕
           </button>
         </div>
-        <div className="time-tracker__nav-scroll">
-          <AppNavList onSelect={handleNavigate} />
+        <div className="app-navigation__panel-content">
+          <AppNavList onSelect={handleClose} />
         </div>
-        <div className="time-tracker__nav-footer">
+        <div className="app-navigation__panel-footer">
           <AuthStatusBar />
         </div>
       </div>
