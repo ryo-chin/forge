@@ -285,17 +285,6 @@ export function TimeTrackerPage() {
     [adjustDuration],
   );
 
-  useEffect(() => {
-    if (!isRunning || !runningState.draft) {
-      return;
-    }
-    const trimmed = composerProject.trim();
-    const current = runningState.draft.project ?? '';
-    if (current !== trimmed) {
-      updateDraft({ project: trimmed || undefined });
-    }
-  }, [isRunning, runningState.draft, composerProject, updateDraft]);
-
   // ==== モーダル open/close ====
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
