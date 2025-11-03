@@ -41,7 +41,8 @@ test.describe('モバイルレイアウト', () => {
     const menuDialog = page.getByRole('dialog', { name: 'ナビゲーションメニュー' });
     await expect(menuDialog).toBeVisible();
 
-    await page.locator('.time-tracker__nav-close').click();
-    await expect(page.locator('.time-tracker__nav-overlay')).toHaveCount(0);
+    const closeButton = menuDialog.locator('.app-navigation__panel-close');
+    await closeButton.click();
+    await expect(menuDialog).toBeHidden();
   });
 });
