@@ -4,6 +4,7 @@
 - `prototype` ディレクトリ内の実装は他に影響を与えない形で行うこと
 - ドキュメントは `docs` 配下を参照すること
 - `app/` の実装時は `app/README.md` の方針を必ず確認すること
+- 実装完了後はリポジトリルートで `make ci` を実行し、lint / unit-test / build / e2e / API lint-test の成功を確認してから成果物を共有すること
 
 ## プロトタイプ実装ルール
 - プロトタイプ用ブランチ名には必ず `prototype` を含め、`prototype/<branch-name>/` ディレクトリを作成してブランチ名と一致させること。
