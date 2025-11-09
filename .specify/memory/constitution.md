@@ -1,14 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: 1.0.1 → 1.1.0
-- Modified principles: II. レイヤー分離とデータフロー（外部連携の責務明確化）
-- Added sections: VIII. 外部サービス連携の制御
+- Version change: 1.1.0 → 1.2.0
+- Modified principles: None
+- Added sections: IX. プロトタイプの孤立とCloudflare準拠; プロトタイプ構成とデプロイ
 - Removed sections: None
 - Templates requiring updates:
-  ✅ .specify/templates/plan-template.md（憲法チェック参照時の外部連携ガイド補足）
-  ✅ .specify/templates/tasks-template.md（外部API作業のワーカー経由ルール周知）
-  ⚠ .specify/templates/spec-template.md（特筆すべき変更なし、現行利用継続可）
-- Follow-up TODOs: None
+  ✅ .specify/templates/plan-template.md（プロトタイプ隔離ゲート追記）
+  ✅ .specify/templates/tasks-template.md（外部連携タスクガイドにプロトタイプ隔離追記）
+- Follow-up TODOs: commands テンプレートは存在せず確認不要
 -->
 
 # Forge Constitution
@@ -76,6 +75,17 @@ TypeScript の型システムを最大限活用する。`any` の使用は禁止
 
 **理由**: 資格情報の保護と、連携仕様変更時の影響範囲をサーバー側に閉じ込めることで、安全で一貫した拡張が可能になる。
 
+### IX. プロトタイプの孤立とCloudflare準拠
+
+プロトタイプを作成する際は以下を厳守する:
+- ブランチ名に必ず `prototype` を含め、`prototype/<branch-name>/` ディレクトリを同名で用意する。
+- 依存関係・設定・ビルド成果物はディレクトリ内に隔離し、`app/` など他領域へ副作用を持ち込まない。
+- `package.json` の `scripts.build` で `npm install` → `npm run build` により `dist/`（または `build/`）へ出力できる構成を維持する。
+- `wrangler.toml` の `[assets]` でビルド成果物ディレクトリを指定し、必要に応じて `BRANCH_NAME_RAW` / `SANITIZED_BRANCH` を参照する。
+- プロトタイプ固有のセットアップ/起動手順は `prototype/<branch-name>/README.md` に明記し、Cloudflare Workers 上で完結することを保証する。
+
+**理由**: プロトタイプを安全かつ再現可能に検証し、メインアプリケーションの安定性を損なわないため。
+
 ## Architecture Standards
 
 ### Directory Structure
@@ -119,6 +129,13 @@ app/
 - Barrel files (`index.ts`) are optional but recommended for public APIs
 - 外部API連携は `app` → Worker(API) → 外部サービスのパスに限定し、資格情報はクライアントに配布しない
 
+### プロトタイプ構成とデプロイ
+
+- `prototype/<branch-name>/` 配下で Cloudflare Workers 向けプロジェクトを完結させる。
+- `npm install` と `npm run build` のみで `dist/`（または `build/`）に静的アセットをビルドできる `package.json` を用意する。
+- `wrangler.toml` の `[assets]` セクションでビルド成果物ディレクトリを指定し、認証情報や変数はディレクトリ内に閉じ込める。
+- プロトタイプ固有の README に開発・起動手順と `BRANCH_NAME_RAW` / `SANITIZED_BRANCH` の利用箇所を記載する。
+
 ## Testing Strategy
 
 ### Test Coverage Requirements
@@ -151,11 +168,13 @@ app/
 4. Implement tasks in priority order (P1 → P2 → P3)
 5. Each user story MUST be independently testable
 6. Deploy/demo after each story completion
+7. プロトタイプを扱う場合は対応ブランチと同名の `prototype/<branch-name>/` ディレクトリを作成し、Cloudflare Workers 上で再現可能なビルド・デプロイ手順を `README.md` に記録する。
 
 ### Branch Strategy
 
 - Feature branches: `<number>-<feature-name>`
-- Prototype branches: `prototype/<branch-name>` (自己完結型、他への影響なし)
+- Prototype branches: `prototype/<branch-name>` を必ず使用し、ブランチ名と一致する `prototype/<branch-name>/` ディレクトリを作成する。
+- プロトタイプは `prototype/<branch-name>/` 内で依存関係を完結させ、`npm install` → `npm run build` で成果物を生成できる状態と README の手順記載を維持する。
 - Main branch への直接コミット禁止
 
 ### Commit Guidelines
@@ -190,5 +209,6 @@ app/
   - Type safety is preserved
   - Documentation is updated
   - 外部連携が必ず Worker/API 経由で制御されている
+  - プロトタイプ変更がある場合は `prototype/<branch-name>/` に隔離され、ビルド/デプロイ手順が `README.md` に記載されている
 
-**Version**: 1.1.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-24
+**Version**: 1.2.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-11-03

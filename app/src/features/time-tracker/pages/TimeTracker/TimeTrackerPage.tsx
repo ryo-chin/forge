@@ -27,6 +27,11 @@ const buildDraftSignature = (draft: SessionDraft): string =>
     title: draft.title ?? '',
     startedAt: draft.startedAt,
     project: draft.project ?? '',
+    projectId: draft.projectId ?? null,
+    themeId: draft.themeId ?? null,
+    classificationPath: Array.isArray(draft.classificationPath)
+      ? draft.classificationPath
+      : [],
     tags: Array.isArray(draft.tags) ? [...draft.tags].sort() : [],
     skill: draft.skill ?? '',
     intensity: draft.intensity ?? '',
@@ -198,7 +203,7 @@ export function TimeTrackerPage() {
     (title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return false;
-      const started = start(trimmed, composerProject || null);
+      const started = start(trimmed, { project: composerProject || null });
       if (started) {
         setUndoState(null);
       }

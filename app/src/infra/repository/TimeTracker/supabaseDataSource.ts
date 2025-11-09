@@ -2,36 +2,36 @@ import type {
   RunningSessionState,
   SessionDraft,
   TimeTrackerSession,
-} from '../../../features/time-tracker/domain/types.ts';
+} from '@features/time-tracker';
 import { getSupabaseClient } from '@infra/supabase';
+import type { Database } from '@infra/supabase';
 import type {
   CreateDataSourceOptions,
   TimeTrackerDataSource,
 } from './types.ts';
 
-const SESSIONS_TABLE = 'time_tracker_sessions';
-const RUNNING_STATE_TABLE = 'time_tracker_running_states';
+const SESSIONS_TABLE = 'time_tracker_sessions' as const;
+const RUNNING_STATE_TABLE = 'time_tracker_running_states' as const;
 
-type SessionRow = {
-  id: string;
-  title: string;
-  started_at: string;
-  ended_at: string;
-  duration_seconds: number | null;
-  tags: string[] | null;
-  project: string | null;
-  notes: string | null;
-};
+type SessionRow =
+  Database['public']['Tables']['time_tracker_sessions']['Row'];
+type SessionInsertRow =
+  Database['public']['Tables']['time_tracker_sessions']['Insert'];
+type SessionIdRow = Pick<SessionRow, 'id'>;
 
 type StoredSessionDraft = Omit<SessionDraft, 'startedAt'> & {
   startedAt: number | string;
 };
 
-type RunningStateRow = {
-  status: 'idle' | 'running';
-  elapsed_seconds: number | null;
+type DbRunningStateRow =
+  Database['public']['Tables']['time_tracker_running_states']['Row'];
+type RunningStateRow = Omit<DbRunningStateRow, 'draft'> & {
   draft: StoredSessionDraft | null;
 };
+type RunningStateInsert =
+  Database['public']['Tables']['time_tracker_running_states']['Insert'] & {
+    draft?: StoredSessionDraft | null;
+  };
 
 const mapRowToSession = (row: SessionRow): TimeTrackerSession => {
   const session: TimeTrackerSession = {
@@ -39,13 +39,18 @@ const mapRowToSession = (row: SessionRow): TimeTrackerSession => {
     title: row.title,
     startedAt: new Date(row.started_at).getTime(),
     endedAt: new Date(row.ended_at).getTime(),
-    durationSeconds: row.duration_seconds ?? 0,
+    durationSeconds: row.duration_seconds,
   };
 
-  if (Array.isArray(row.tags) && row.tags.length > 0) {
-    session.tags = row.tags as string[];
+  if (row.tags?.length) {
+    session.tags = [...row.tags];
   }
   if (row.project) session.project = row.project;
+  if (row.project_id) session.projectId = row.project_id;
+  if (row.theme_id) session.themeId = row.theme_id;
+  if (row.classification_path?.length) {
+    session.classificationPath = [...row.classification_path];
+  }
   if (row.notes) session.notes = row.notes;
 
   return session;
@@ -54,7 +59,7 @@ const mapRowToSession = (row: SessionRow): TimeTrackerSession => {
 const mapSessionToRow = (
   session: TimeTrackerSession,
   userId: string,
-) => ({
+): SessionInsertRow => ({
   id: session.id,
   user_id: userId,
   title: session.title,
@@ -63,6 +68,12 @@ const mapSessionToRow = (
   duration_seconds: session.durationSeconds,
   tags: session.tags ?? null,
   project: session.project ?? null,
+  project_id: session.projectId ?? null,
+  theme_id: session.themeId ?? null,
+  classification_path:
+    session.classificationPath && session.classificationPath.length > 0
+      ? session.classificationPath
+      : null,
   notes: session.notes ?? null,
 });
 
@@ -98,18 +109,31 @@ const mapRowToRunningState = (
 const mapRunningStateToRow = (
   state: RunningSessionState,
   userId: string,
-) => ({
-  user_id: userId,
-  status: state.status,
-  elapsed_seconds: state.elapsedSeconds,
-  draft:
-    state.status === 'running'
-      ? {
-          ...state.draft,
-          startedAt: new Date(state.draft.startedAt).toISOString(),
-        }
-      : null,
-});
+): RunningStateInsert => {
+  const nowIso = new Date().toISOString();
+  if (state.status === 'idle') {
+    return {
+      user_id: userId,
+      status: 'idle',
+      elapsed_seconds: 0,
+      draft: null,
+      updated_at: nowIso,
+    };
+  }
+
+  const storedDraft: StoredSessionDraft = {
+    ...state.draft,
+    startedAt: new Date(state.draft.startedAt).toISOString(),
+  };
+
+  return {
+    user_id: userId,
+    status: 'running',
+    elapsed_seconds: state.elapsedSeconds,
+    draft: storedDraft,
+    updated_at: nowIso,
+  };
+};
 
 export const createSupabaseDataSource = (
   options: CreateDataSourceOptions = {},
@@ -136,11 +160,10 @@ export const createSupabaseDataSource = (
       if (!userId) return [];
       const { data, error } = await supabase
         .from(SESSIONS_TABLE)
-        .select(
-          'id, title, started_at, ended_at, duration_seconds, tags, project, notes',
-        )
+        .select('*')
         .eq('user_id', userId)
-        .order('started_at', { ascending: false });
+        .order('started_at', { ascending: false })
+        .overrideTypes<SessionRow[]>();
       if (error) {
         if (import.meta.env.MODE !== 'test') {
           // eslint-disable-next-line no-console
@@ -156,9 +179,10 @@ export const createSupabaseDataSource = (
       if (!userId) return null;
       const { data, error } = await supabase
         .from(RUNNING_STATE_TABLE)
-        .select('status, elapsed_seconds, draft')
+        .select('*')
         .eq('user_id', userId)
-        .maybeSingle();
+        .maybeSingle()
+        .overrideTypes<RunningStateRow | null>();
       if (error && error.code !== 'PGRST116') {
         if (import.meta.env.MODE !== 'test') {
           // eslint-disable-next-line no-console
@@ -175,7 +199,7 @@ export const createSupabaseDataSource = (
       const userId = await resolveUserId();
       if (!userId) return;
 
-      const upsertRows = sessions.map((session) =>
+      const upsertRows: SessionInsertRow[] = sessions.map((session) =>
         mapSessionToRow(session, userId),
       );
 
@@ -188,21 +212,28 @@ export const createSupabaseDataSource = (
         }
       }
 
-      const { data: existingRows, error: existingError } = await supabase
+      const {
+        data: existingRows,
+        error: existingError,
+      } = await supabase
         .from(SESSIONS_TABLE)
         .select('id')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .overrideTypes<SessionIdRow[]>();
       if (existingError) {
         if (import.meta.env.MODE !== 'test') {
           // eslint-disable-next-line no-console
-          console.warn('[supabase] Failed to load current session ids', existingError.message);
+          console.warn(
+            '[supabase] Failed to load current session ids',
+            existingError.message,
+          );
         }
         return;
       }
 
       const targetIds = new Set(upsertRows.map((row) => row.id));
-      const idsToDelete = (existingRows ?? [])
-        .map((row) => row.id as string)
+      const idsToDelete = ((existingRows ?? []) as SessionIdRow[])
+        .map((row) => row.id)
         .filter((id) => !targetIds.has(id));
 
       if (idsToDelete.length > 0) {
