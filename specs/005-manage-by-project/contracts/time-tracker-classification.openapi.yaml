@@ -1,0 +1,301 @@
+openapi: 3.1.0
+info:
+  title: Time Tracker Classification API
+  version: 0.1.0
+  description: >
+    API endpoints for managing themes, projects, and their association with time tracker sessions.
+servers:
+  - url: https://api.example.com
+    description: Placeholder — actual URL provided by deployment config.
+tags:
+  - name: Themes
+  - name: Projects
+  - name: Sessions
+components:
+  schemas:
+    Theme:
+      type: object
+      required: [id, ownerId, name, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          pattern: "^#([A-Fa-f0-9]{6})$"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, archived]
+    Project:
+      type: object
+      required: [id, ownerId, name, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        themeId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, archived]
+    Session:
+      type: object
+      required: [id, title, startedAt, endedAt, durationSeconds]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+        themeId:
+          type: string
+          format: uuid
+          nullable: true
+        projectId:
+          type: string
+          format: uuid
+          nullable: true
+        project:
+          type: string
+          nullable: true
+        classificationPath:
+          type: array
+          items:
+            type: string
+          minItems: 0
+paths:
+  /themes:
+    get:
+      tags: [Themes]
+      summary: List themes for the authenticated user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Theme'
+    post:
+      tags: [Themes]
+      summary: Create a new theme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                color:
+                  type: string
+                  pattern: "^#([A-Fa-f0-9]{6})$"
+                  nullable: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+  /themes/{themeId}:
+    patch:
+      tags: [Themes]
+      summary: Update a theme
+      parameters:
+        - in: path
+          name: themeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                color:
+                  type: string
+                  pattern: "^#([A-Fa-f0-9]{6})$"
+                  nullable: true
+                status:
+                  type: string
+                  enum: [active, archived]
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+    delete:
+      tags: [Themes]
+      summary: Archive a theme
+      parameters:
+        - in: path
+          name: themeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted (archived)
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List projects with optional theme filter
+      parameters:
+        - in: query
+          name: themeId
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+    post:
+      tags: [Projects]
+      summary: Create or migrate a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                themeId:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+  /projects/{projectId}:
+    patch:
+      tags: [Projects]
+      summary: Update project (rename or reassign theme)
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                themeId:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        '200':
+          description: Updated
+  /sessions/{sessionId}/classification:
+    put:
+      tags: [Sessions]
+      summary: Update classification metadata for a session
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                themeId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                projectId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                classificationPath:
+                  type: array
+                  minItems: 0
+                  items:
+                    type: string
+      responses:
+        '204':
+          description: Updated

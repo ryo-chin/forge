@@ -12,6 +12,9 @@ export type RunningSessionAction =
         title: string;
         startedAt: number;
         project?: string | null;
+        projectId?: string | null;
+        themeId?: string | null;
+        classificationPath?: string[];
         id?: string | null;
       };
     }
@@ -40,6 +43,23 @@ export const runningSessionReducer = (
         typeof action.payload.project === 'string'
           ? action.payload.project.trim()
           : undefined;
+      const normalizedThemeId =
+        typeof action.payload.themeId === 'string'
+          ? action.payload.themeId.trim() || null
+          : null;
+      const normalizedProjectId =
+        typeof action.payload.projectId === 'string'
+          ? action.payload.projectId.trim() || null
+          : null;
+      const normalizedClassificationPath = Array.isArray(
+        action.payload.classificationPath,
+      )
+        ? action.payload.classificationPath
+            .map((segment) =>
+              typeof segment === 'string' ? segment.trim() : '',
+            )
+            .filter(Boolean)
+        : undefined;
       const draft: SessionDraft = {
         id:
           action.payload.id && action.payload.id.trim().length > 0
@@ -49,7 +69,12 @@ export const runningSessionReducer = (
         startedAt: action.payload.startedAt,
         tags: [],
         project: trimmedProject ? trimmedProject : undefined,
+        themeId: normalizedThemeId,
+        projectId: normalizedProjectId,
       };
+      if (normalizedClassificationPath?.length) {
+        draft.classificationPath = normalizedClassificationPath;
+      }
       return { status: 'running', draft, elapsedSeconds: 0 };
     }
 
@@ -71,6 +96,36 @@ export const runningSessionReducer = (
       if (typeof patch.project === 'string') {
         const t = patch.project.trim();
         patch.project = t ? t : undefined;
+      }
+      if ('themeId' in patch) {
+        if (
+          typeof patch.themeId === 'string' &&
+          patch.themeId.trim().length > 0
+        ) {
+          patch.themeId = patch.themeId.trim();
+        } else {
+          patch.themeId = null;
+        }
+      }
+      if ('projectId' in patch) {
+        if (
+          typeof patch.projectId === 'string' &&
+          patch.projectId.trim().length > 0
+        ) {
+          patch.projectId = patch.projectId.trim();
+        } else {
+          patch.projectId = null;
+        }
+      }
+      if ('classificationPath' in patch && Array.isArray(patch.classificationPath)) {
+        patch.classificationPath = patch.classificationPath
+          .map((segment) =>
+            typeof segment === 'string' ? segment.trim() : '',
+          )
+          .filter(Boolean);
+        if (patch.classificationPath.length === 0) {
+          delete patch.classificationPath;
+        }
       }
       return { ...state, draft: { ...state.draft, ...patch } };
     }
@@ -126,6 +181,18 @@ export const createSessionFromDraft = (
 
   if (draft.tags?.length) session.tags = draft.tags.slice();
   if (draft.project) session.project = draft.project;
+  if (draft.projectId) session.projectId = draft.projectId;
+  if (draft.themeId) session.themeId = draft.themeId;
+  if (draft.classificationPath?.length) {
+    session.classificationPath = [...draft.classificationPath];
+  } else {
+    const path: string[] = [];
+    if (draft.themeId) path.push(draft.themeId);
+    if (draft.projectId) path.push(draft.projectId);
+    if (path.length) {
+      session.classificationPath = path;
+    }
+  }
   if (draft.skill) session.skill = draft.skill;
   if (draft.intensity) session.intensity = draft.intensity;
   if (draft.notes) session.notes = draft.notes;

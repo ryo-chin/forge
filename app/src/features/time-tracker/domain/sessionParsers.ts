@@ -53,6 +53,25 @@ export const parseSession = (value: unknown): TimeTrackerSession | null => {
   if (tags) session.tags = tags;
   const project = parseOptionalString(value.project);
   if (project) session.project = project;
+  if (typeof value.projectId === 'string' && value.projectId.trim().length > 0) {
+    session.projectId = value.projectId.trim();
+  } else if (value.projectId === null) {
+    session.projectId = null;
+  }
+  if (typeof value.themeId === 'string' && value.themeId.trim().length > 0) {
+    session.themeId = value.themeId.trim();
+  } else if (value.themeId === null) {
+    session.themeId = null;
+  }
+  if (Array.isArray(value.classificationPath)) {
+    const path = value.classificationPath
+      .filter((segment): segment is string => typeof segment === 'string')
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    if (path.length) {
+      session.classificationPath = path;
+    }
+  }
   const skill = parseOptionalString(value.skill);
   if (skill) session.skill = skill;
   const notes = parseOptionalString(value.notes);
@@ -72,14 +91,41 @@ export const parseRunningDraft = (value: unknown): SessionDraft | null => {
   // マイグレーション: 既存のdraftにidがない場合は新規生成
   const id = typeof value.id === 'string' ? value.id : crypto.randomUUID();
 
-  return {
+  const projectId =
+    typeof value.projectId === 'string' && value.projectId.trim().length > 0
+      ? value.projectId.trim()
+      : value.projectId === null
+      ? null
+      : undefined;
+  const themeId =
+    typeof value.themeId === 'string' && value.themeId.trim().length > 0
+      ? value.themeId.trim()
+      : value.themeId === null
+      ? null
+      : undefined;
+  const rawClassificationPath = Array.isArray(value.classificationPath)
+    ? value.classificationPath
+        .filter((segment): segment is string => typeof segment === 'string')
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const draft: SessionDraft = {
     id,
     title,
     startedAt,
     tags: parseTagsArray(value.tags),
     project: parseOptionalString(value.project),
+    projectId,
+    themeId,
     skill: parseOptionalString(value.skill),
     notes: parseOptionalString(value.notes),
     intensity: parseIntensity(value.intensity),
   };
+
+  if (rawClassificationPath && rawClassificationPath.length > 0) {
+    draft.classificationPath = rawClassificationPath;
+  }
+
+  return draft;
 };

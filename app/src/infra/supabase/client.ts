@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './types.ts';
 
-let client: SupabaseClient | null = null;
+let client: SupabaseClient<Database> | null = null;
 
 const REQUIRED_ENV_VARS = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'] as const;
 
@@ -14,7 +15,7 @@ const readEnv = (key: RequiredEnvKey): string | null => {
   return null;
 };
 
-export const getSupabaseClient = (): SupabaseClient => {
+export const getSupabaseClient = (): SupabaseClient<Database> => {
   if (client) {
     return client;
   }
@@ -40,13 +41,17 @@ export const getSupabaseClient = (): SupabaseClient => {
     );
   }
 
-  client = createClient(config.VITE_SUPABASE_URL, config.VITE_SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      storageKey: 'time-tracker-auth',
-      autoRefreshToken: true,
+  client = createClient<Database>(
+    config.VITE_SUPABASE_URL,
+    config.VITE_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: true,
+        storageKey: 'time-tracker-auth',
+        autoRefreshToken: true,
+      },
     },
-  });
+  );
 
   return client;
 };

@@ -21,6 +21,7 @@ description: "Task list template for feature implementation"
 - **共有テスト**: コンポーネント/ドメインは実装ファイル横に `.test.ts[x]` を配置
 - **E2E テスト**: `app/tests/e2e/`
 - **外部サービス連携**: `app` から直接外部APIを叩くタスクは禁止。必ず Worker/API 側の実装（`api/src/`）を経由するタスクを明示的に追加すること
+- **プロトタイプ**: ブランチ名に `prototype` を含め、`prototype/<branch-name>/` 内で依存関係と成果物を完結させる。`npm install` / `npm run build` で再現可能な構成と `README.md` の手順更新をタスクに含めること
 - 他プロジェクト構成の場合は plan.md の構造に合わせてパスを調整すること
 
 <!-- 

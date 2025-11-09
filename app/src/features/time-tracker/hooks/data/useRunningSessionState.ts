@@ -19,9 +19,15 @@ export type UseRunningSessionStateOptions = {
   initialState?: RunningSessionState;
 };
 
+export type StartSessionOptions = {
+  project?: string | null;
+  projectId?: string | null;
+  themeId?: string | null;
+};
+
 export type RunningSessionStateApi = {
   state: RunningSessionState;
-  start: (title: string, project?: string | null) => boolean;
+  start: (title: string, options?: StartSessionOptions) => boolean;
   stop: () => TimeTrackerSession | null;
   updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
   adjustDuration: (deltaSeconds: number) => void;
@@ -49,14 +55,39 @@ export const useRunningSessionState = (
   useRunningSessionTimer({ state, dispatch, now, tickIntervalMs });
 
   const start = useCallback(
-    (rawTitle: string, project?: string | null) => {
+    (rawTitle: string, options?: StartSessionOptions) => {
       const title = rawTitle.trim();
       if (!title) return false;
       if (state.status === 'running') return false;
 
+      const sanitizedProject =
+        typeof options?.project === 'string' ? options.project.trim() : '';
+
+      const payloadProjectId =
+        typeof options?.projectId === 'string'
+          ? options.projectId.trim() || null
+          : null;
+      const payloadThemeId =
+        typeof options?.themeId === 'string'
+          ? options.themeId.trim() || null
+          : null;
+      const classificationPath = [
+        ...(payloadThemeId ? [payloadThemeId] : []),
+        ...(payloadProjectId ? [payloadProjectId] : []),
+      ];
+
       dispatch({
         type: 'START',
-        payload: { title, startedAt: now(), project },
+        payload: {
+          title,
+          startedAt: now(),
+          project: sanitizedProject ? sanitizedProject : undefined,
+          projectId: payloadProjectId,
+          themeId: payloadThemeId,
+          ...(classificationPath.length > 0
+            ? { classificationPath }
+            : undefined),
+        },
       });
       return true;
     },

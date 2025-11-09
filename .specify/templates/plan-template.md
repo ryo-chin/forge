@@ -34,6 +34,7 @@
 [Gates determined based on constitution file]
 
 - フロントエンドから外部サービスへ直接アクセスする設計になっていないか（Worker/API 経由で制御する）
+- プロトタイプ作業の場合、`prototype/<branch-name>/` に隔離され `npm install` / `npm run build` のみで成果物を生成できる構成になっているか
 
 ## Project Structure
 
