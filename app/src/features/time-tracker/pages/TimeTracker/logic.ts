@@ -1,5 +1,8 @@
 import { parseDateTimeLocal } from '../../../../lib/date.ts';
-import type { TimeTrackerSession } from '../../domain/types.ts';
+import type {
+  TimeTrackerSession,
+  TimeTrackerTheme,
+} from '../../domain/types.ts';
 
 /* ===========================
  * 純粋ユーティリティ（副作用なし）
@@ -71,3 +74,62 @@ export function calculateDurationDelta(
   const newDuration = Math.max(0, Math.floor((nowMs - clampedStart) / 1000));
   return newDuration - currentElapsedSeconds;
 }
+
+export type ThemeProjectTree = Array<{
+  themeId: string | null;
+  themeName: string;
+  projects: Array<{
+    projectName: string;
+    sessions: TimeTrackerSession[];
+  }>;
+}>;
+
+export const buildThemeProjectTree = (
+  sessions: TimeTrackerSession[],
+  themes: TimeTrackerTheme[],
+): ThemeProjectTree => {
+  if (sessions.length === 0) return [];
+  const nameMap = new Map<string, string>();
+  themes.forEach((theme) => {
+    nameMap.set(theme.id, theme.name);
+  });
+  const groups = new Map<
+    string,
+    { themeId: string | null; themeName: string; projects: Map<string, TimeTrackerSession[]> }
+  >();
+
+  sessions.forEach((session) => {
+    const themeId = session.themeId ?? null;
+    const key = themeId ?? 'no-theme';
+    let group = groups.get(key);
+    if (!group) {
+      const themeName = themeId
+        ? nameMap.get(themeId) ?? '未登録のテーマ'
+        : 'テーマなし';
+      group = {
+        themeId,
+        themeName,
+        projects: new Map(),
+      };
+      groups.set(key, group);
+    }
+    const projectName =
+      session.project && session.project.trim().length > 0
+        ? session.project
+        : 'プロジェクトなし';
+    const current = group.projects.get(projectName) ?? [];
+    current.push(session);
+    group.projects.set(projectName, current);
+  });
+
+  return Array.from(groups.values()).map((group) => ({
+    themeId: group.themeId,
+    themeName: group.themeName,
+    projects: Array.from(group.projects.entries()).map(
+      ([projectName, projectSessions]) => ({
+        projectName,
+        sessions: projectSessions,
+      }),
+    ),
+  }));
+};

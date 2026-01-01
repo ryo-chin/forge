@@ -86,6 +86,243 @@
   justify-content: flex-end;
 }
 
+.time-tracker__theme-manager {
+  width: 100%;
+  text-align: left;
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.time-tracker__theme-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.time-tracker__theme-eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.time-tracker__theme-manager h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.time-tracker__theme-status {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.time-tracker__theme-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.time-tracker__theme-form label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.time-tracker__theme-form-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.time-tracker__theme-form input {
+  flex: 1 1 240px;
+  border-radius: 9999px;
+  border: 1px solid #d0d7e2;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  background: #f9fafc;
+  color: #0f172a;
+}
+
+.time-tracker__theme-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+.time-tracker__theme-form button {
+  border: none;
+  border-radius: 9999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.55rem 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.time-tracker__theme-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.time-tracker__theme-form button:not(:disabled):hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.time-tracker__theme-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.time-tracker__theme-error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(248, 113, 113, 0.15);
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.time-tracker__theme-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.time-tracker__theme-column {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.time-tracker__theme-column h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.time-tracker__theme-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.time-tracker__theme-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-tracker__theme-item {
+  background: #ffffff;
+  border-radius: 0.85rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.65rem 0.85rem;
+}
+
+.time-tracker__theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.time-tracker__theme-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.time-tracker__theme-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.time-tracker__theme-actions button {
+  border: none;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.time-tracker__theme-actions button:hover {
+  background: #cbd5f5;
+}
+
+.time-tracker__theme-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.time-tracker__theme-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-tracker__theme-edit input {
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5f5;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.time-tracker__theme-edit input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+.time-tracker__theme-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.time-tracker__theme-edit-actions button {
+  border: none;
+  border-radius: 9999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.time-tracker__theme-edit-actions button:first-of-type {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.time-tracker__theme-edit-actions button:last-of-type {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 .time-tracker__settings-button {
   border: none;
   border-radius: 9999px;
@@ -167,7 +404,7 @@
   top: calc(100% + 0.5rem);
   left: 0;
   z-index: 10;
-  width: 260px;
+  width: 320px;
   padding: 1rem;
   border-radius: 1rem;
   background: #ffffff;
@@ -177,6 +414,65 @@
   gap: 0.75rem;
 }
 
+.time-tracker__theme-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.time-tracker__theme-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.time-tracker__theme-selector-status {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.time-tracker__theme-selector-error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #b91c1c;
+}
+
+.time-tracker__theme-selector-empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.time-tracker__theme-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.time-tracker__theme-chip {
+  border: none;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.time-tracker__theme-chip:hover {
+  background: #e2e8f0;
+}
+
+.time-tracker__theme-chip[aria-pressed='true'] {
+  background: #2563eb;
+  color: #ffffff;
+}
 
 .time-tracker__project-search {
   position: relative;
@@ -493,6 +789,63 @@
   margin: 0;
   font-size: 1rem;
   color: #4b5563;
+}
+
+.time-tracker__history-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.time-tracker__history-theme {
+  background: #f8fafc;
+  border-radius: 1.25rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.time-tracker__history-theme-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.time-tracker__history-theme-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.time-tracker__history-theme-header span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.time-tracker__history-projects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+
+.time-tracker__history-project-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 0.85rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.time-tracker__history-project-card h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
 }
 
 .time-tracker__history ul {

@@ -1,9 +1,17 @@
 # Feature Specification: Manage Sessions by Higher-Level Theme
 
-**Feature Branch**: `005-manage-by-project`  
-**Created**: 2025-11-03  
-**Status**: Draft  
+**Feature Branch**: `005-manage-by-project`
+**Created**: 2025-11-03
+**Status**: ⏸️ FROZEN - アーキテクチャ変更により設計・実装の見直しが必要
+**Last Updated**: 2026-01-02
 **Input**: User description: "useRunningSessionState の project を上位概念でグルーピングしたい。経営者鍛錬、楽器鍛錬などの大分類を表現し、2階層を基本にしつつ将来拡張余地も残したい。プロジェクトの名称変更（topic/category）も視野に入れる。"
+
+**GitHub Issues**:
+- [#20 - [P0] テーマ・プロジェクトの用語・命名規則の決定](https://github.com/ryo-chin/forge/issues/20) - ⚠️ 実装前に必須
+- [#21 - [P1] 上位テーマでセッションを整理する（MVP実装）](https://github.com/ryo-chin/forge/issues/21) - #20完了後
+- [#22 - [P2] 将来の階層拡張余地を検討する](https://github.com/ryo-chin/forge/issues/22) - #21完了後
+
+**Note**: 他の優先度の高い機能実装のため、このブランチの作業は一時凍結しています。アーキテクチャが変更される可能性があるため、再開時には設計・実装の見直しが必要です。
 
 ## User Scenarios & Testing *(mandatory)*
 

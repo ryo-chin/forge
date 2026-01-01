@@ -15,13 +15,13 @@ type UseThemesOptions = {
   ownerId?: string | null;
 };
 
-type CreateThemeInput = {
+export type CreateThemeInput = {
   name: string;
   color?: string;
   description?: string;
 };
 
-type UpdateThemeInput = {
+export type UpdateThemeInput = {
   id: string;
   name?: string;
   color?: string | null;
@@ -80,3 +80,5 @@ export const useThemes = (options: UseThemesOptions = {}) => {
     isArchiving: archiveThemeMutation.isPending,
   };
 };
+
+export type UseThemesResult = ReturnType<typeof useThemes>;
