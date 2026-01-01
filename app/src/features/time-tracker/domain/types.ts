@@ -7,6 +7,9 @@ export type TimeTrackerSession = {
   tags?: string[];
   skill?: string;
   project?: string;
+  projectId?: string | null;
+  themeId?: string | null;
+  classificationPath?: string[];
   intensity?: 'low' | 'medium' | 'high';
   notes?: string;
 };
@@ -18,6 +21,9 @@ export type SessionDraft = {
   tags?: string[];
   skill?: string;
   project?: string;
+  projectId?: string | null;
+  themeId?: string | null;
+  classificationPath?: string[];
   intensity?: 'low' | 'medium' | 'high';
   notes?: string;
 };
@@ -33,3 +39,28 @@ export type RunningSessionState =
       draft: SessionDraft;
       elapsedSeconds: number;
     };
+
+export type TimeTrackerThemeStatus = 'active' | 'archived';
+
+export type TimeTrackerTheme = {
+  id: string;
+  ownerId: string;
+  name: string;
+  status: TimeTrackerThemeStatus;
+  createdAt: number;
+  updatedAt: number;
+  color?: string;
+  description?: string;
+};
+
+export type TimeTrackerProjectStatus = 'active' | 'archived';
+
+export type TimeTrackerProject = {
+  id: string;
+  ownerId: string;
+  themeId: string | null;
+  name: string;
+  status: TimeTrackerProjectStatus;
+  createdAt: number;
+  updatedAt: number;
+};

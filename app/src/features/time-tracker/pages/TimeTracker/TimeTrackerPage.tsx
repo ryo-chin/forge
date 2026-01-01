@@ -7,6 +7,7 @@ import { useGoogleSpreadsheetOptions } from '../../hooks/data/useGoogleSpreadshe
 import { formatDateTimeLocal } from '../../../../lib/date.ts';
 import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 import { Composer } from '../../components/Composer';
+import { ThemeManager } from '../../components/ThemeManager';
 import { HistoryList } from '../../components/HistoryList';
 import { EditorModal } from '../../components/EditorModal';
 import { SyncStatusBanner } from '../../components/SyncStatusBanner';
@@ -14,10 +15,12 @@ import {
   isModalSaveDisabled,
   buildUpdatedSession,
   calculateDurationDelta,
+  buildThemeProjectTree,
 } from './logic.ts';
 import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
 import { useAuth } from '../../../../infra/auth';
 import { useNavigate } from 'react-router-dom';
+import { useThemes } from '../../hooks/data/useThemes.ts';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 
@@ -27,11 +30,30 @@ const buildDraftSignature = (draft: SessionDraft): string =>
     title: draft.title ?? '',
     startedAt: draft.startedAt,
     project: draft.project ?? '',
+    projectId: draft.projectId ?? null,
+    themeId: draft.themeId ?? null,
+    classificationPath: Array.isArray(draft.classificationPath)
+      ? draft.classificationPath
+      : [],
     tags: Array.isArray(draft.tags) ? [...draft.tags].sort() : [],
     skill: draft.skill ?? '',
     intensity: draft.intensity ?? '',
     notes: draft.notes ?? '',
   });
+
+const buildClassificationPathFromIds = (
+  themeId: string | null | undefined,
+  projectId: string | null | undefined,
+): string[] | undefined => {
+  const segments: string[] = [];
+  if (typeof themeId === 'string' && themeId.trim().length > 0) {
+    segments.push(themeId.trim());
+  }
+  if (typeof projectId === 'string' && projectId.trim().length > 0) {
+    segments.push(projectId.trim());
+  }
+  return segments.length > 0 ? segments : undefined;
+};
 
 type ModalState =
   | { type: 'running' }
@@ -71,6 +93,21 @@ export function TimeTrackerPage() {
     reset,
     persistRunningState,
   } = useRunningSession({ userId: user?.id ?? null });
+  const themesState = useThemes({ ownerId: user?.id ?? null });
+  const themeNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    themesState.themes.forEach((theme) => {
+      map.set(theme.id, theme.name);
+    });
+    return map;
+  }, [themesState.themes]);
+  const resolveThemeName = useCallback(
+    (themeId: string | null) => {
+      if (!themeId) return null;
+      return themeNameMap.get(themeId) ?? '未登録のテーマ';
+    },
+    [themeNameMap],
+  );
   const {
     state: syncState,
     syncSession,
@@ -78,7 +115,7 @@ export function TimeTrackerPage() {
     syncRunningSessionUpdate,
     syncRunningSessionCancel,
     deleteSessionRow,
-  } = useGoogleSpreadsheetSync();
+  } = useGoogleSpreadsheetSync({ resolveThemeName });
   const { settings: googleSettings } = useGoogleSpreadsheetOptions();
   const navigate = useNavigate();
 
@@ -92,7 +129,6 @@ export function TimeTrackerPage() {
   const [historyEditSnapshot, setHistoryEditSnapshot] =
     useState<HistoryEditSnapshot>(null);
   const [historyDraft, setHistoryDraft] = useState<HistoryDraft | null>(null);
-
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
   const initialComposerProject =
@@ -100,10 +136,26 @@ export function TimeTrackerPage() {
   const [composerProject, setComposerProject] = useState(
     initialComposerProject,
   );
+  const initialComposerThemeId =
+    runningState.status === 'running' ? runningState.draft.themeId ?? null : null;
+  const [composerThemeId, setComposerThemeId] = useState<string | null>(
+    initialComposerThemeId,
+  );
+  const [themeInitialized, setThemeInitialized] = useState(
+    () => runningState.status === 'running',
+  );
+  const activeThemes = useMemo(
+    () => themesState.themes.filter((theme) => theme.status === 'active'),
+    [themesState.themes],
+  );
   const composerProjectForDisplay =
     runningState.status === 'running'
       ? runningState.draft.project ?? ''
       : composerProject;
+  const composerThemeIdForDisplay =
+    runningState.status === 'running'
+      ? runningState.draft.themeId ?? null
+      : composerThemeId;
   const isRunning = runningState.status === 'running';
   const elapsedSeconds = runningState.elapsedSeconds;
   const runningDraftTitle = isRunning ? runningState.draft.title : null;
@@ -111,6 +163,16 @@ export function TimeTrackerPage() {
     id: isRunning ? runningState.draft.id : null,
     signature: isRunning ? buildDraftSignature(runningState.draft) : null,
   });
+
+  useEffect(() => {
+    if (themeInitialized) return;
+    if (isRunning) return;
+    const fallback = activeThemes[0]?.id ?? null;
+    if (fallback) {
+      setComposerThemeId(fallback);
+      setThemeInitialized(true);
+    }
+  }, [activeThemes, isRunning, themeInitialized]);
 
   // ==== モーダルの活性可否（フォームstateを廃し、現在のドメイン値から判定） ====
   const modalComputed = useMemo(() => {
@@ -183,6 +245,26 @@ export function TimeTrackerPage() {
   ]);
 
   // ==== Composer handlers ====
+  const handleComposerThemeChange = useCallback(
+    (themeId: string | null) => {
+      setComposerThemeId(themeId);
+      setThemeInitialized(true);
+      if (isRunning && runningState.status === 'running') {
+        const classificationPath = buildClassificationPathFromIds(
+          themeId,
+          runningState.draft.projectId ?? null,
+        );
+        updateDraft({
+          themeId: themeId ?? null,
+          ...(classificationPath
+            ? { classificationPath }
+            : { classificationPath: [] }),
+        });
+      }
+    },
+    [isRunning, runningState, updateDraft],
+  );
+
   const handleComposerProjectChange = useCallback(
     (value: string) => {
       const trimmed = value.trim();
@@ -198,13 +280,17 @@ export function TimeTrackerPage() {
     (title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return false;
-      const started = start(trimmed, composerProject || null);
+      const started = start(trimmed, {
+        project: composerProject || null,
+        themeId: composerThemeId || null,
+      });
       if (started) {
+        setThemeInitialized(true);
         setUndoState(null);
       }
       return started;
     },
-    [composerProject, start],
+    [composerProject, composerThemeId, start],
   );
 
   const handleComposerStop = useCallback(() => {
@@ -214,6 +300,7 @@ export function TimeTrackerPage() {
       return {
         nextInputValue: previousTitle,
         nextProject: composerProject,
+        nextThemeId: composerThemeId ?? null,
       };
     }
     const nextSessions = setSessions((prev) => [session, ...prev]);
@@ -226,6 +313,11 @@ export function TimeTrackerPage() {
 
     const nextProject = session.project ?? '';
     setComposerProject(nextProject); // 停止後のプロジェクトを表示用に同期
+    const nextThemeId = session.themeId ?? null;
+    const fallbackThemeId =
+      nextThemeId ?? composerThemeId ?? (activeThemes[0]?.id ?? null);
+    setComposerThemeId(fallbackThemeId);
+    setThemeInitialized(true);
     setUndoState(null);
     if (modalState?.type === 'running') {
       setModalState(null);
@@ -233,9 +325,12 @@ export function TimeTrackerPage() {
     return {
       nextInputValue: session.title,
       nextProject,
+      nextThemeId,
     };
   }, [
     composerProject,
+    composerThemeId,
+    activeThemes,
     runningDraftTitle,
     stop,
     persistSessions,
@@ -249,12 +344,14 @@ export function TimeTrackerPage() {
       return {
         nextInputValue: '',
         nextProject: composerProject,
+        nextThemeId: composerThemeId ?? null,
       };
     }
 
     const draft = runningState.draft;
     const nextProject = draft.project ?? '';
     const nextTitle = draft.title ?? '';
+    const nextThemeId = draft.themeId ?? null;
 
     runningDraftSyncRef.current = { id: null, signature: null };
     reset();
@@ -263,15 +360,22 @@ export function TimeTrackerPage() {
       setModalState(null);
     }
     setComposerProject(nextProject);
+    const fallbackThemeId =
+      nextThemeId ?? composerThemeId ?? (activeThemes[0]?.id ?? null);
+    setComposerThemeId(fallbackThemeId);
+    setThemeInitialized(true);
 
     void syncRunningSessionCancel(draft.id);
 
     return {
       nextInputValue: nextTitle,
       nextProject,
+      nextThemeId,
     };
   }, [
     composerProject,
+    composerThemeId,
+    activeThemes,
     modalState,
     reset,
     runningState,
@@ -545,6 +649,10 @@ export function TimeTrackerPage() {
 
   // 表示用に先頭5件のみに制限
   const displaySessions = useMemo(() => sessions.slice(0, 5), [sessions]);
+  const themeTree = useMemo(
+    () => buildThemeProjectTree(displaySessions, themesState.themes),
+    [displaySessions, themesState.themes],
+  );
 
   const isGoogleConnected = googleSettings.data?.connectionStatus === 'active';
   const settingsButtonLabel = isGoogleConnected ? '⚙️ 設定 (連携中)' : '⚙️ 設定';
@@ -639,8 +747,15 @@ export function TimeTrackerPage() {
           }
         />
 
+        <ThemeManager state={themesState} />
+
         <Composer
           sessions={sessions}
+          themes={themesState.themes}
+          selectedThemeId={composerThemeIdForDisplay}
+          onThemeChange={handleComposerThemeChange}
+          isThemeLoading={themesState.isLoading}
+          themeError={themesState.error}
           project={composerProjectForDisplay}
           onProjectChange={handleComposerProjectChange}
           isRunning={isRunning}
@@ -656,7 +771,7 @@ export function TimeTrackerPage() {
         />
 
         <HistoryList
-          sessions={displaySessions}
+          tree={themeTree}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
         />

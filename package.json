@@ -4,9 +4,14 @@
   "private": true,
   "description": "Time Tracker with Google Spreadsheet integration",
   "scripts": {
-    "lint": "npm run lint --prefix app && npm run lint --prefix api/google-sync",
-    "lint:fix": "npm run lint:fix --prefix app && npm run lint:fix --prefix api/google-sync",
-    "lint:app": "npm run lint --prefix app",
-    "lint:worker": "npm run lint --prefix api/google-sync"
+    "app:lint": "npm run lint --prefix app",
+    "app:test": "npm run test:unit --prefix app",
+    "app:build": "npm run build --prefix app",
+    "app:test:e2e": "npm run test:e2e --prefix app",
+    "api:lint": "npm run lint --prefix api",
+    "api:test": "CI=1 npm run test --prefix api",
+    "lint": "npm run app:lint && npm run api:lint",
+    "lint:fix": "npm run lint:fix --prefix app && npm run lint:fix --prefix api",
+    "ci": "make ci"
   }
 }

@@ -17,3 +17,5 @@ export const createTimeTrackerDataSource = (
 };
 
 export type { TimeTrackerDataSource } from './types.ts';
+export { createThemeRepository } from './themeRepository.ts';
+export type { ThemeRepository } from './themeRepository.ts';

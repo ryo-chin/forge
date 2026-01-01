@@ -23,6 +23,11 @@ const serializeState = (state: RunningSessionState): string => {
       startedAt: draft.startedAt,
       tags: Array.isArray(draft.tags) ? draft.tags : [],
       project: draft.project ?? null,
+      projectId: draft.projectId ?? null,
+      themeId: draft.themeId ?? null,
+      classificationPath: Array.isArray(draft.classificationPath)
+        ? draft.classificationPath
+        : undefined,
       skill: draft.skill ?? null,
       intensity: draft.intensity ?? null,
       notes: draft.notes ?? null,

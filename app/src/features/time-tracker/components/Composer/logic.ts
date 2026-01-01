@@ -9,15 +9,22 @@ import React from 'react';
 export function buildProjectSuggestions(
   project: string,
   sessions: TimeTrackerSession[],
-  limit = 12
+  options?: { limit?: number; themeId?: string | null },
 ): string[] {
+  const limit = options?.limit ?? 12;
+  const filterThemeId = options?.themeId ?? null;
   const seen = new Set<string>();
   const add = (v?: string | null) => {
     const t = (v ?? "").trim();
     if (t) seen.add(t);
   };
   add(project);
-  sessions.forEach((s) => add(s.project));
+  sessions.forEach((s) => {
+    if (filterThemeId && (s.themeId ?? null) !== filterThemeId) {
+      return;
+    }
+    add(s.project);
+  });
   return Array.from(seen).slice(0, limit);
 }
 

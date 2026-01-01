@@ -37,6 +37,7 @@ const initialState: SyncState = {
 
 const toRequestBody = (
   session: TimeTrackerSession,
+  themeName: string | null,
 ): GoogleSyncRequestBody => ({
   session: {
     id: session.id,
@@ -45,6 +46,7 @@ const toRequestBody = (
     endedAt: new Date(session.endedAt).toISOString(),
     durationSeconds: session.durationSeconds,
     project: session.project ?? null,
+    theme: themeName,
     notes: session.notes ?? null,
     tags: session.tags ?? [],
     skill: session.skill ?? null,
@@ -65,7 +67,16 @@ const hasGoogleSheetsConfig = (): boolean => {
   }
 };
 
-export const useGoogleSpreadsheetSync = () => {
+export const useGoogleSpreadsheetSync = ({
+  resolveThemeName,
+}: { resolveThemeName?: (themeId: string | null) => string | null } = {}) => {
+  const resolveThemeLabel = useCallback(
+    (themeId: string | null | undefined) => {
+      if (!resolveThemeName) return null;
+      return resolveThemeName(themeId ?? null);
+    },
+    [resolveThemeName],
+  );
   const { status: authStatus } = useAuth();
   const [state, setState] = useState<SyncState>(initialState);
   const updateDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -96,9 +107,10 @@ export const useGoogleSpreadsheetSync = () => {
   const mutation = useMutation({
     mutationFn: async (session: TimeTrackerSession) => {
       const accessToken = await resolveAccessToken();
+       const themeName = resolveThemeLabel(session.themeId ?? null);
       const response = await syncSessionRequest(
         accessToken,
-        toRequestBody(session),
+        toRequestBody(session, themeName),
       );
       return {
         response,
@@ -172,6 +184,7 @@ export const useGoogleSpreadsheetSync = () => {
           title: draft.title,
           startedAt: new Date(draft.startedAt).toISOString(),
           project: draft.project ?? null,
+          theme: resolveThemeLabel(draft.themeId ?? null),
           tags: draft.tags ?? [],
           skill: draft.skill ?? null,
           intensity: draft.intensity ?? null,
@@ -186,7 +199,7 @@ export const useGoogleSpreadsheetSync = () => {
         return null;
       }
     },
-    [canSync, resolveAccessToken],
+    [canSync, resolveAccessToken, resolveThemeLabel],
   );
 
   /**
@@ -209,17 +222,18 @@ export const useGoogleSpreadsheetSync = () => {
         updateDebounceTimerRef.current = setTimeout(async () => {
           try {
             const accessToken = await resolveAccessToken();
-            await updateRunningSessionRequest(accessToken, {
-              draft: {
-                id: draft.id,
-                title: draft.title,
-                startedAt: new Date(draft.startedAt).toISOString(),
-                project: draft.project ?? null,
-                tags: draft.tags ?? [],
-                skill: draft.skill ?? null,
-                intensity: draft.intensity ?? null,
-                notes: draft.notes ?? null,
-              },
+        await updateRunningSessionRequest(accessToken, {
+          draft: {
+            id: draft.id,
+            title: draft.title,
+            startedAt: new Date(draft.startedAt).toISOString(),
+            project: draft.project ?? null,
+            theme: resolveThemeLabel(draft.themeId ?? null),
+            tags: draft.tags ?? [],
+            skill: draft.skill ?? null,
+            intensity: draft.intensity ?? null,
+            notes: draft.notes ?? null,
+          },
               elapsedSeconds,
             });
             resolve({ success: true });
@@ -233,7 +247,7 @@ export const useGoogleSpreadsheetSync = () => {
         }, 1000);
       });
     },
-    [canSync, resolveAccessToken],
+    [canSync, resolveAccessToken, resolveThemeLabel],
   );
 
   const syncRunningSessionCancel = useCallback(

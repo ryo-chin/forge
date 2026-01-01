@@ -7,6 +7,7 @@ export type GoogleSyncSessionPayload = {
   endedAt: string;
   durationSeconds: number;
   project?: string | null;
+  theme?: string | null;
   notes?: string | null;
   tags?: string[];
   skill?: string | null;
@@ -48,6 +49,7 @@ export type ColumnMappingConfig = {
     endedAt: string;
     durationSeconds: string;
     project?: string;
+    theme?: string;
     notes?: string;
     tags?: string;
     skill?: string;

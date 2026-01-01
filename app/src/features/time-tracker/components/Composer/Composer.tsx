@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createNudgeLabel, formatTimer } from '../../../../lib/time.ts';
-import type { TimeTrackerSession } from '../../domain/types.ts';
+import type { TimeTrackerSession, TimeTrackerTheme } from '../../domain/types.ts';
 
 import {
   buildProjectSuggestions,
@@ -17,10 +17,16 @@ import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
 type ComposerStopResult = {
   nextInputValue: string;
   nextProject: string;
+  nextThemeId: string | null;
 };
 
 type ComposerProps = {
   sessions: TimeTrackerSession[];
+  themes: TimeTrackerTheme[];
+  selectedThemeId: string | null;
+  onThemeChange: (themeId: string | null) => void;
+  isThemeLoading?: boolean;
+  themeError?: unknown;
   project: string;
   runningDraftTitle: string | null;
   elapsedSeconds: number;
@@ -37,6 +43,11 @@ type ComposerProps = {
 
 export const Composer: React.FC<ComposerProps> = ({
   sessions,
+  themes,
+  selectedThemeId,
+  onThemeChange,
+  isThemeLoading = false,
+  themeError,
   project,
   runningDraftTitle,
   elapsedSeconds,
@@ -58,6 +69,20 @@ export const Composer: React.FC<ComposerProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [projectQuery, setProjectQuery] = useState('');
+  const activeThemes = useMemo(
+    () => themes.filter((theme) => theme.status === 'active'),
+    [themes],
+  );
+  const selectedTheme = useMemo(
+    () => themes.find((theme) => theme.id === selectedThemeId) ?? null,
+    [selectedThemeId, themes],
+  );
+  const themeErrorMessage = useMemo(() => {
+    if (!themeError) return null;
+    if (themeError instanceof Error) return themeError.message;
+    if (typeof themeError === 'string') return themeError;
+    return 'テーマの取得に失敗しました';
+  }, [themeError]);
 
   const timerLabel = useMemo(
     () => formatTimer(elapsedSeconds),
@@ -66,11 +91,19 @@ export const Composer: React.FC<ComposerProps> = ({
   const displayInputValue = isRunning ? (runningDraftTitle ?? '') : inputValue;
   const canStart = inputValue.trim().length > 0 && !isRunning;
   const primaryLabel = isRunning ? '停止' : '開始';
-  const projectButtonLabel = project || 'プロジェクト';
+  const themeLabel = selectedTheme?.name ?? 'テーマなし';
+  const projectButtonLabel = selectedTheme
+    ? `${themeLabel} / ${project || 'プロジェクト'}`
+    : project
+    ? `テーマなし / ${project}`
+    : 'テーマ / プロジェクト';
 
   const projectSuggestions = useMemo(
-    () => buildProjectSuggestions(project, sessions),
-    [project, sessions],
+    () =>
+      buildProjectSuggestions(project, sessions, {
+        themeId: selectedThemeId ?? null,
+      }),
+    [project, sessions, selectedThemeId],
   );
   const filteredProjectSuggestions = useMemo(
     () => filterSuggestions(projectSuggestions, projectQuery),
@@ -132,6 +165,11 @@ export const Composer: React.FC<ComposerProps> = ({
     });
   }, [isProjectMenuOpen]);
 
+  const handleThemeSelect = (themeId: string | null) => {
+    if (themeId === selectedThemeId) return;
+    onThemeChange(themeId);
+  };
+
   return (
     <>
       <div className="time-tracker__composer">
@@ -146,7 +184,11 @@ export const Composer: React.FC<ComposerProps> = ({
             aria-controls="time-tracker-project-menu"
             title="プロジェクトを選択"
             aria-label={
-              project ? `プロジェクト: ${project}` : 'プロジェクトを選択'
+              selectedTheme
+                ? `テーマ ${themeLabel}、プロジェクト ${project || '未選択'}`
+                : project
+                ? `テーマなし、プロジェクト ${project}`
+                : 'テーマとプロジェクトを選択'
             }
           >
             <span className="time-tracker__project-icon" aria-hidden="true">
@@ -171,6 +213,53 @@ export const Composer: React.FC<ComposerProps> = ({
                   trapTabFocus(projectMenuRef.current, e);
               }}
             >
+              <div className="time-tracker__theme-selector">
+                <div className="time-tracker__theme-selector-header">
+                  <span>テーマ</span>
+                  {isThemeLoading ? (
+                    <span className="time-tracker__theme-selector-status">
+                      読込中…
+                    </span>
+                  ) : null}
+                </div>
+                {themeErrorMessage ? (
+                  <p className="time-tracker__theme-selector-error">
+                    {themeErrorMessage}
+                  </p>
+                ) : null}
+                <div
+                  className="time-tracker__theme-options"
+                  role="group"
+                  aria-label="利用可能なテーマ"
+                >
+                  <button
+                    type="button"
+                    className="time-tracker__theme-chip"
+                    aria-pressed={!selectedThemeId}
+                    onClick={() => handleThemeSelect(null)}
+                  >
+                    テーマなし
+                  </button>
+                  {activeThemes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      className="time-tracker__theme-chip"
+                      data-active={theme.id === selectedThemeId}
+                      aria-pressed={theme.id === selectedThemeId}
+                      onClick={() => handleThemeSelect(theme.id)}
+                    >
+                      {theme.name}
+                    </button>
+                  ))}
+                </div>
+                {!isThemeLoading && activeThemes.length === 0 ? (
+                  <p className="time-tracker__theme-selector-empty">
+                    テーマがありません。上部で追加してください。
+                  </p>
+                ) : null}
+              </div>
+
               <label className="time-tracker__sr-only" htmlFor="project-search">
                 プロジェクトを検索・設定
               </label>

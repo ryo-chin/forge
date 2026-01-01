@@ -17,6 +17,7 @@ type RunningSessionDraftPayload = {
   title: string;
   startedAt: string;
   project?: string | null;
+  theme?: string | null;
   tags?: string[];
   skill?: string | null;
   intensity?: string | null;
