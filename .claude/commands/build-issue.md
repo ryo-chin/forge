@@ -2,6 +2,8 @@
 description: Issue作成・編集・改善を行う
 ---
 
-issue-builder スキルを使用して、Issueの作成・編集・改善を行ってください。
+以下のワークフローに従ってIssueを作成・編集・改善してください。
 
-$ARGUMENTS
+@.claude/skills/issue-builder/SKILL.md
+
+対象: $ARGUMENTS
