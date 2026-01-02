@@ -38,12 +38,12 @@ Time Tracker のセッション停止時に DB と Google スプレッドシー�
 
 ```
 specs/001-app-features-time/
-├── plan.md              # このファイル (/speckit.plan 出力)
+├── plan.md              # このファイル
 ├── research.md          # Phase 0 成果物
 ├── data-model.md        # Phase 1 成果物
 ├── quickstart.md        # Phase 1 成果物
 ├── contracts/           # Phase 1 成果物
-└── tasks.md             # Phase 2 (/speckit.tasks が作成)
+└── tasks.md             # Phase 2 成果物
 ```
 
 ### Source Code (repository root)

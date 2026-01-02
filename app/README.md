@@ -7,7 +7,7 @@
 
 ## 実装ガイドライン
 
-`app/IMPLEMENTS.md` 参照
+`docs/architecture/frontend.md` 参照
 
 ## セットアップ
 
