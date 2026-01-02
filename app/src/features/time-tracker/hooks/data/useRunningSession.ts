@@ -4,7 +4,7 @@ import {
   type TimeTrackerDataSource,
 } from '../../../../infra/repository/TimeTracker';
 import type { RunningSessionState } from '../../domain/types.ts';
-import { useRunningSessionState, type RunningSessionStateApi } from './useRunningSessionState.ts';
+import { type RunningSessionStateApi, useRunningSessionState } from './useRunningSessionState.ts';
 import { useRunningSessionSync } from './useRunningSessionSync.ts';
 
 type NowFn = () => number;

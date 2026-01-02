@@ -5,7 +5,7 @@
   "description": "Time Tracker with Google Spreadsheet integration",
   "scripts": {
     "format": "biome format --write .",
-    "format:check": "biome format .",
+    "format:check": "biome check .",
     "lint": "pnpm --filter forge-app lint && pnpm --filter api lint",
     "lint:fix": "pnpm --filter forge-app lint:fix && pnpm --filter api lint:fix",
     "lint:app": "pnpm --filter forge-app lint",

@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import './SettingsPage.css';
-import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
 import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
 import { isGoogleSyncClientEnabled } from '@infra/google';
+import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
 
 type FeedbackState = {
   type: 'success' | 'error';

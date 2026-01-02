@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
 import { ColumnMappingForm } from '@features/time-tracker/components/ColumnMappingForm';
 import type {
-  SpreadsheetOption,
   SheetOption,
+  SpreadsheetOption,
 } from '@features/time-tracker/domain/googleSyncTypes.ts';
 import { GoogleSyncClientError } from '@infra/google';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './GoogleSpreadsheetSettingsSection.css';
 
 type ColumnMapping = {

@@ -59,7 +59,7 @@ export const verifySupabaseJwt = async (token: string, env: Env): Promise<Supaba
   }
 
   const payload = (await response.json()) as Record<string, unknown>;
-  const userId = typeof payload['id'] === 'string' ? payload['id'] : null;
+  const userId = typeof payload.id === 'string' ? payload.id : null;
 
   if (!userId) {
     throw new SupabaseAuthError('Supabase user response missing id', 500);
@@ -67,7 +67,7 @@ export const verifySupabaseJwt = async (token: string, env: Env): Promise<Supaba
 
   return {
     userId,
-    email: typeof payload['email'] === 'string' ? payload['email'] : null,
+    email: typeof payload.email === 'string' ? payload.email : null,
     raw: payload,
   };
 };

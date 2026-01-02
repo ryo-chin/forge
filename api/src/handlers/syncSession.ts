@@ -1,27 +1,27 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
   createSyncLog,
   findSyncLog,
   getColumnMappingByConnection,
   getConnectionByUser,
-  updateSyncLog,
   SupabaseRepositoryError,
+  updateSyncLog,
 } from '../repositories/googleConnections';
 import { GoogleSheetsApiError, GoogleSheetsClient } from '../services/googleSheetsClient';
 import type { ColumnMapping, SyncLogPayload, SyncRequestBody, SyncSessionPayload } from '../types';
-import { jsonResponse, badRequest, unauthorized, conflict, serverError } from '../http/response';
-import { ensureValidAccessToken } from './oauth';
 import {
   columnKeyToIndex,
   formatDateTime,
   requiresHeaderLookup,
   resolveColumnLetter,
 } from '../utils/googleSheets';
+import { ensureValidAccessToken } from './oauth';
 
 type SyncDeleteRequestBody = {
   sessionId: string;

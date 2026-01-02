@@ -1,19 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../index.css';
-import { useTimeTrackerSessions } from '../../hooks/data/useTimeTrackerSessions.ts';
-import { useRunningSession } from '../../hooks/data/useRunningSession.ts';
-import { useGoogleSpreadsheetSync } from '../../hooks/data/useGoogleSpreadsheetSync.ts';
-import { useGoogleSpreadsheetOptions } from '../../hooks/data/useGoogleSpreadsheetOptions.ts';
-import { formatDateTimeLocal } from '../../../../lib/date.ts';
-import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
-import { Composer } from '../../components/Composer';
-import { HistoryList } from '../../components/HistoryList';
-import { EditorModal } from '../../components/EditorModal';
-import { SyncStatusBanner } from '../../components/SyncStatusBanner';
-import { isModalSaveDisabled, buildUpdatedSession, calculateDurationDelta } from './logic.ts';
-import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
-import { useAuth } from '../../../../infra/auth';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../../infra/auth';
+import { formatDateTimeLocal } from '../../../../lib/date.ts';
+import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
+import { Composer } from '../../components/Composer';
+import { EditorModal } from '../../components/EditorModal';
+import { HistoryList } from '../../components/HistoryList';
+import { SyncStatusBanner } from '../../components/SyncStatusBanner';
+import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
+import { useGoogleSpreadsheetOptions } from '../../hooks/data/useGoogleSpreadsheetOptions.ts';
+import { useGoogleSpreadsheetSync } from '../../hooks/data/useGoogleSpreadsheetSync.ts';
+import { useRunningSession } from '../../hooks/data/useRunningSession.ts';
+import { useTimeTrackerSessions } from '../../hooks/data/useTimeTrackerSessions.ts';
+import { buildUpdatedSession, calculateDurationDelta, isModalSaveDisabled } from './logic.ts';
 
 const RUNNING_TIMER_ID = 'time-tracker-running-timer';
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 
 /** ダイアログ内のTabでフォーカスをループさせる */
 export function trapTabFocus(container: HTMLElement, e: React.KeyboardEvent<HTMLDivElement>) {

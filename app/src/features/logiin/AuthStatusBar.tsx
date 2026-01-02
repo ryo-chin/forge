@@ -1,5 +1,5 @@
-import React from 'react';
 import { useAuth } from '@infra/auth';
+import type React from 'react';
 
 const extractDisplayName = (
   name: string | undefined,

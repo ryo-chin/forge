@@ -23,6 +23,15 @@
     }
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "useSemanticElements": "off"
+      },
+      "suspicious": {
+        "noImplicitAnyLet": "off"
+      }
+    }
   }
 }

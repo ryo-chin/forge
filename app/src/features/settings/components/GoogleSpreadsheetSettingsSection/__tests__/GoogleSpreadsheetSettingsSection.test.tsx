@@ -1,12 +1,12 @@
+import type {
+  SheetOption,
+  SpreadsheetOption,
+} from '@features/time-tracker/domain/googleSyncTypes.ts';
+import { GoogleSyncClientError } from '@infra/google';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleSpreadsheetSettingsSection } from '../GoogleSpreadsheetSettingsSection.tsx';
-import { GoogleSyncClientError } from '@infra/google';
-import type {
-  SpreadsheetOption,
-  SheetOption,
-} from '@features/time-tracker/domain/googleSyncTypes.ts';
 
 describe('GoogleSpreadsheetSettingsSection', () => {
   const mockSpreadsheets: SpreadsheetOption[] = [

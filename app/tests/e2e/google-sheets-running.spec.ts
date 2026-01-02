@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const RUNNING_STATE_KEY = 'codex-time-tracker/running';
 const SESSIONS_KEY = 'codex-time-tracker/sessions';

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
+import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 import { initialRunningSessionState } from '../../domain/runningSession.ts';
 import type { RunningSessionState } from '../../domain/types.ts';
-import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 
 type UseRunningSessionSyncOptions = {
   dataSource: TimeTrackerDataSource;

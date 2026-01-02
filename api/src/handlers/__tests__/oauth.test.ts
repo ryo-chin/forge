@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { handleOauthStart, handleOauthCallback, handleOauthRevoke } from '../oauth';
+import { handleOauthCallback, handleOauthRevoke, handleOauthStart } from '../oauth';
 
 const env = {
   SUPABASE_URL: 'https://supabase.test',

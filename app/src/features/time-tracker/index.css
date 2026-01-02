@@ -368,8 +368,8 @@
   border: 1px solid #d0d7e2;
   background: #eef1f6;
   font-family:
-    "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
   font-size: 0.85rem;
   color: #4b5563;
 }

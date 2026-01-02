@@ -1,16 +1,16 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
   getConnectionByUser,
-  upsertConnection,
-  updateAccessToken,
   SupabaseRepositoryError,
+  updateAccessToken,
+  upsertConnection,
 } from '../repositories/googleConnections';
-import { jsonResponse, badRequest, unauthorized, serverError } from '../http/response';
 
 type OauthStatePayload = {
   userId: string;

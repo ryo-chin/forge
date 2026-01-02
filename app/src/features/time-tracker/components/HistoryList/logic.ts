@@ -1,5 +1,5 @@
-import type { TimeTrackerSession } from '../../domain/types.ts';
 import { formatDurationForAria } from '../../../../lib/time.ts';
+import type { TimeTrackerSession } from '../../domain/types.ts';
 
 /* ===========================
  * 純粋ユーティリティ（副作用なし）

@@ -113,7 +113,7 @@ const restHeaders = (env: Env, prefer?: string): HeadersInit => {
     'Content-Type': 'application/json',
   };
   if (prefer) {
-    headers['Prefer'] = prefer;
+    headers.Prefer = prefer;
   }
   return headers;
 };

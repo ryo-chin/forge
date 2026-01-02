@@ -1,7 +1,7 @@
-import React, { useMemo, type ReactNode } from 'react';
-import { useSupabaseAuth } from '@infra/supabase';
 import { isSupabaseDataSourceEnabled } from '@infra/config';
-import { AuthContext, fallbackAuthContext, type AuthContextValue } from './authContext.ts';
+import { useSupabaseAuth } from '@infra/supabase';
+import React, { type ReactNode, useMemo } from 'react';
+import { AuthContext, type AuthContextValue, fallbackAuthContext } from './authContext.ts';
 
 const detectAuthProvider = () => (isSupabaseDataSourceEnabled() ? 'supabase' : 'none');
 

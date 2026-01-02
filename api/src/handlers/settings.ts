@@ -1,18 +1,18 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
-  getConnectionByUser,
   getColumnMappingByConnection,
-  updateConnectionSelection,
-  saveColumnMapping,
+  getConnectionByUser,
   SupabaseRepositoryError,
+  saveColumnMapping,
+  updateConnectionSelection,
 } from '../repositories/googleConnections';
-import { GoogleSheetsClient, GoogleSheetsApiError } from '../services/googleSheetsClient';
-import { jsonResponse, badRequest, unauthorized, conflict, serverError } from '../http/response';
+import { GoogleSheetsApiError, GoogleSheetsClient } from '../services/googleSheetsClient';
 import { ensureValidAccessToken } from './oauth';
 
 type ConnectionRow = Awaited<ReturnType<typeof getConnectionByUser>>;

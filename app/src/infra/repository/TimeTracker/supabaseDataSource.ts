@@ -1,9 +1,9 @@
+import { getSupabaseClient } from '@infra/supabase';
 import type {
   RunningSessionState,
   SessionDraft,
   TimeTrackerSession,
 } from '../../../features/time-tracker/domain/types.ts';
-import { getSupabaseClient } from '@infra/supabase';
 import type { CreateDataSourceOptions, TimeTrackerDataSource } from './types.ts';
 
 const SESSIONS_TABLE = 'time_tracker_sessions';

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { handleSyncSession, handleDeleteSyncedSession } from '../syncSession';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { handleDeleteSyncedSession, handleSyncSession } from '../syncSession';
 
 const mocks = vi.hoisted(() => {
   const verifySupabaseJwt = vi.fn();

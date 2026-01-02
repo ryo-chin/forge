@@ -1,18 +1,18 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@infra/auth';
 import {
+  appendRunningSession as appendRunningSessionRequest,
+  clearRunningSession as clearRunningSessionRequest,
+  deleteSessionRow as deleteSessionRowRequest,
   getGoogleSyncBaseUrl,
   isGoogleSyncClientEnabled,
   syncSession as syncSessionRequest,
-  appendRunningSession as appendRunningSessionRequest,
   updateRunningSession as updateRunningSessionRequest,
-  clearRunningSession as clearRunningSessionRequest,
-  deleteSessionRow as deleteSessionRowRequest,
 } from '@infra/google';
 import { getSupabaseClient } from '@infra/supabase';
-import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
+import { useMutation } from '@tanstack/react-query';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GoogleSyncRequestBody } from '../../domain/googleSyncTypes.ts';
+import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 
 export type SyncStateStatus = 'idle' | 'syncing' | 'success' | 'error' | 'disabled';
 

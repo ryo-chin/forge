@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   handleGetSettings,
-  handleUpdateSettings,
-  handleListSpreadsheets,
   handleListSheets,
+  handleListSpreadsheets,
+  handleUpdateSettings,
 } from '../settings';
 
 const env = {

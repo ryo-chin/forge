@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
 import { getSupabaseClient } from './client.ts';
 
 type AuthStatus = 'disabled' | 'loading' | 'authenticated' | 'unauthenticated';

@@ -1,23 +1,22 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
-  getConnectionByUser,
   getColumnMappingByConnection,
+  getConnectionByUser,
   SupabaseRepositoryError,
 } from '../repositories/googleConnections';
-import { ensureValidAccessToken } from './oauth';
-import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '../http/response';
-import { GoogleSheetsClient, GoogleSheetsApiError } from '../services/googleSheetsClient';
+import { GoogleSheetsApiError, GoogleSheetsClient } from '../services/googleSheetsClient';
 import type {
   ColumnMapping,
-  RunningSessionStartRequest,
-  RunningSessionUpdateRequest,
   RunningSessionCancelRequest,
   RunningSessionDraftPayload,
+  RunningSessionStartRequest,
+  RunningSessionUpdateRequest,
 } from '../types';
 import {
   columnKeyToIndex,
@@ -25,6 +24,7 @@ import {
   requiresHeaderLookup,
   resolveColumnLetter,
 } from '../utils/googleSheets';
+import { ensureValidAccessToken } from './oauth';
 
 class HttpResponseError extends Error {
   readonly response: Response;

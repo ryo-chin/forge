@@ -1,5 +1,5 @@
+import type React from 'react';
 import type { TimeTrackerSession } from '../../domain/types.ts';
-import React from 'react';
 
 /* ===========================
  * 純粋ユーティリティ（副作用なし）
@@ -17,7 +17,9 @@ export function buildProjectSuggestions(
     if (t) seen.add(t);
   };
   add(project);
-  sessions.forEach((s) => add(s.project));
+  for (const s of sessions) {
+    add(s.project);
+  }
   return Array.from(seen).slice(0, limit);
 }
 
@@ -58,7 +60,8 @@ export function onEnterOrMetaEnter(
     if (e.key !== 'Enter' || isImeComposingEnter(e)) return;
     if (opts.preventDefault) e.preventDefault();
     const useMeta = (e.metaKey || e.ctrlKey) && handlers.onMetaEnter;
-    (useMeta ? handlers.onMetaEnter! : handlers.onEnter)(e);
+    const handler = useMeta ? handlers.onMetaEnter : handlers.onEnter;
+    if (handler) handler(e);
   };
 }
 

@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
 import { AuthStatusBar } from '@features/logiin';
+import type React from 'react';
+import { useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 
 type NavListProps = {
   onSelect?: () => void;

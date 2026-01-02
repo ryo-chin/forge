@@ -1,18 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
 import { createNudgeLabel, formatTimer } from '../../../../lib/time.ts';
 import type { TimeTrackerSession } from '../../domain/types.ts';
-
 import {
+  attachClickAwayAndEsc,
+  attachGlobalFocusShortcut,
   buildProjectSuggestions,
   filterSuggestions,
+  focusSearchOnOpen,
   onEnterKey,
   onEnterOrMetaEnter,
   onEnterPickFirstElseSubmit,
-  attachGlobalFocusShortcut,
-  attachClickAwayAndEsc,
-  focusSearchOnOpen,
 } from './logic.ts';
-import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
 
 type ComposerStopResult = {
   nextInputValue: string;
@@ -230,7 +230,6 @@ export const Composer: React.FC<ComposerProps> = ({
           ref={inputRef}
           className="time-tracker__input"
           type="text"
-          autoFocus
           placeholder="何をやる？"
           value={displayInputValue}
           onChange={(e) => {

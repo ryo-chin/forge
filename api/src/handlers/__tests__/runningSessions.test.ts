@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  handleRunningSessionCancel,
   handleRunningSessionStart,
   handleRunningSessionUpdate,
-  handleRunningSessionCancel,
 } from '../runningSessions';
 
 const mocks = vi.hoisted(() => {

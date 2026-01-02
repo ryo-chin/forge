@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "deploy": "pnpm run build && npx wrangler deploy",
     "format": "biome format --write .",
-    "format:check": "biome format .",
+    "format:check": "biome check .",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "vitest",

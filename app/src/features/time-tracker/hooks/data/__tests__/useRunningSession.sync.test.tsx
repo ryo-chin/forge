@@ -1,8 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useRunningSession } from '../useRunningSession';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TimeTrackerDataSource } from '../../../../../infra/repository/TimeTracker';
 import type { RunningSessionState } from '../../../domain/types';
+import { useRunningSession } from '../useRunningSession';
 
 // モック用のデータソース
 const createMockDataSource = (
