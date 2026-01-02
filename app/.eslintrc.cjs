@@ -25,7 +25,7 @@ module.exports = {
       node: true,
     },
   },
-  ignorePatterns: ['dist', 'node_modules'],
+  ignorePatterns: ['dist', 'node_modules', 'tests/factories', 'tests/mocks'],
   rules: {
     'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 
@@ -79,6 +79,8 @@ module.exports = {
           '**/infra/**',
           // ui層内部の依存を許可
           '**/ui/**',
+          // テストユーティリティの依存を許可
+          '**/tests/**',
           'react-dom/client',
           '@testing-library/jest-dom/vitest',
           'vitest/config',
