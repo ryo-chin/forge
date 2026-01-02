@@ -1,5 +1,5 @@
+import { formatTimer } from '@lib/time.ts';
 import type React from 'react';
-import { formatTimer } from '../../../../lib/time.ts';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 import { describeHistorySession } from './logic.ts';
 

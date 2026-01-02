@@ -1,7 +1,7 @@
+import { trapTabFocus } from '@lib/accessibility/focus.ts';
+import { createNudgeLabel, formatTimer } from '@lib/time.ts';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
-import { createNudgeLabel, formatTimer } from '../../../../lib/time.ts';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 import {
   attachClickAwayAndEsc,

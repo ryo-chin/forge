@@ -1,4 +1,4 @@
-import { AuthStatusBar } from '@features/logiin';
+import { AuthStatusBar } from '@features/login';
 import type React from 'react';
 import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
