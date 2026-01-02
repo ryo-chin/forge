@@ -1,6 +1,6 @@
 ---
 name: issue-builder
-description: ユーザーの曖昧な要望・意図から、AIが自律実装可能な精度の高いIssueを構築する。使用タイミング: 「Issue作って」「Issue化して」と言われた時、既存Issueのコンテキストを強化したい時、曖昧な要望を具体化したい時、Sub Agentが自律実装できるIssueを準備したい時
+description: ユーザーの曖昧な要望・意図から、AIが自律実装可能な精度の高いIssueを構築する。「Issue作って」「Issue化して」と言われた時、既存Issueを改善・編集したい時、曖昧な要望を具体化したい時、Sub Agentが自律実装できるIssueを準備したい時に使用
 ---
 
 # Issue Builder
