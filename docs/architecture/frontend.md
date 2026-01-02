@@ -182,13 +182,59 @@ type RunningSessionState =
 
 ### テスト戦略
 
-> 司法: `app/tests/e2e/` のE2Eテスト
+> 司法: `app/tests/e2e/` のE2Eテスト、`app/vitest.config.ts` のカバレッジ設定
 
-**ユニットテスト**:
+**Running Session同期のテスト**:
 - `googleSheetsRunningSync.test.ts`: Google Sheets API呼び出しのモック検証
 - `useGoogleSpreadsheetSync.running.test.tsx`: フック動作の検証
 - `useRunningSession.sync.test.tsx`: Supabase同期の検証
 
-**E2Eテスト**:
-- `running-session-sync.spec.ts`: マルチデバイス同期のシミュレーション
-- `google-sheets-sync.spec.ts`: Google Sheets API モックとの統合
+---
+
+## テスト戦略
+
+> 司法（SSoT）: `app/vitest.config.ts`（カバレッジ設定）、`app/tests/e2e/`（E2Eテスト）
+
+### テストレイヤー
+
+| レイヤー | 対象 | テスト種別 | カバレッジ目標 |
+|---------|------|-----------|--------------|
+| E2E | ユーザーシナリオ（クリティカルパス） | Playwright | - |
+| 統合テスト | hooks/data + infra層の境界 | Vitest + モック | 中程度 |
+| ユニットテスト | domain層の純粋関数、lib/のユーティリティ | Vitest | 80%以上 |
+
+### テストファイル配置
+
+- **E2Eテスト**: `app/tests/e2e/*.spec.ts` - 機能仕様のSSoT
+- **ユニットテスト**: 対象ファイルと同階層に `*.test.ts` または `__tests__/` 配下
+- **テストヘルパー**: `app/tests/helpers/` - ファクトリ、モック、レンダリングラッパー
+
+### テストヘルパー
+
+`@test-helpers` エイリアスで以下を利用可能:
+
+```typescript
+import {
+  createSession,
+  createSessionDraft,
+  createHookWrapper,
+  renderWithProviders,
+} from '@test-helpers';
+```
+
+- `factories.ts`: テストデータ生成（`createSession`, `createSessionDraft`等）
+- `mocks.ts`: infra層のモック（localStorage, Google Sheets API, 認証）
+- `renderWithProviders.tsx`: React Testing Library用ラッパー
+
+### 命名規則
+
+- テストケース名・E2Eシナリオ名は**日本語で記述**
+- ユーザー視点の挙動が一読して分かるようにする
+
+### カバレッジ
+
+`pnpm --filter forge-app test:coverage` でカバレッジレポートを生成。
+
+閾値は `app/vitest.config.ts` で設定:
+- `domain/**/*.ts`: statements 80%, branches 70%, functions 80%, lines 80%
+- `lib/**/*.ts`: 同上
