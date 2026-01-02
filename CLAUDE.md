@@ -36,3 +36,10 @@
 - **パッケージマネージャー**: pnpm（monorepo構成）
 - **フォーマット・基本Lint**: Biome
 - **カスタムLint**: ESLint（プロジェクト固有ルールのみ）
+
+## テスト実行
+
+- **ユニットテスト**: `pnpm --filter forge-app test:run`（watchモードなし）
+- **E2Eテスト**: `pnpm --filter forge-app test:e2e`
+
+注意: `pnpm test` はwatchモードで起動するため、CI/スクリプトでは `test:run` を使用すること

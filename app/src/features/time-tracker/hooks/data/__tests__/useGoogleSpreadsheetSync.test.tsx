@@ -11,31 +11,26 @@ const mocks = vi.hoisted(() => {
   const deleteSessionRowMock = vi.fn();
   const isEnabledMock = vi.fn(() => true);
   const getBaseUrlMock = vi.fn(() => 'https://worker.example.com');
-  const getSessionMock = vi.fn();
+  const getAccessTokenMock = vi.fn(() => Promise.resolve('supabase-access-token'));
   return {
     syncSessionMock,
     clearRunningSessionMock,
     deleteSessionRowMock,
     isEnabledMock,
     getBaseUrlMock,
-    getSessionMock,
+    getAccessTokenMock,
   };
 });
 
-vi.mock('@infra/google', () => ({
+vi.mock('@infra/repository/GoogleSheets', () => ({
   syncSession: mocks.syncSessionMock,
   clearRunningSession: mocks.clearRunningSessionMock,
   deleteSessionRow: mocks.deleteSessionRowMock,
-  isGoogleSyncClientEnabled: mocks.isEnabledMock,
-  getGoogleSyncBaseUrl: mocks.getBaseUrlMock,
 }));
 
-vi.mock('@infra/supabase', () => ({
-  getSupabaseClient: () => ({
-    auth: {
-      getSession: mocks.getSessionMock,
-    },
-  }),
+vi.mock('@infra/config', () => ({
+  isGoogleSyncEnabled: mocks.isEnabledMock,
+  getGoogleSyncApiBaseUrl: mocks.getBaseUrlMock,
 }));
 
 vi.mock('@infra/auth', () => ({
@@ -43,6 +38,7 @@ vi.mock('@infra/auth', () => ({
     status: 'authenticated',
     user: { id: 'user-1' },
   }),
+  getAccessToken: mocks.getAccessTokenMock,
 }));
 
 const createWrapper = () => {
@@ -77,14 +73,7 @@ describe('useGoogleSpreadsheetSync', () => {
       attemptedAt: new Date().toISOString(),
       retryCount: 0,
     });
-    mocks.getSessionMock.mockResolvedValue({
-      data: {
-        session: {
-          access_token: 'supabase-access-token',
-        },
-      },
-      error: null,
-    });
+    mocks.getAccessTokenMock.mockResolvedValue('supabase-access-token');
     mocks.clearRunningSessionMock.mockResolvedValue({ status: 'ok' });
     mocks.deleteSessionRowMock.mockResolvedValue({ status: 'ok' });
   });

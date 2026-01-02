@@ -11,32 +11,27 @@ const mocks = vi.hoisted(() => {
   const listSpreadsheets = vi.fn();
   const listSheets = vi.fn();
   const startOAuth = vi.fn();
+  const getAccessToken = vi.fn(() => Promise.resolve('test-token'));
   return {
     fetchSettings,
     updateSettings,
     listSpreadsheets,
     listSheets,
     startOAuth,
+    getAccessToken,
   };
 });
 
-vi.mock('@infra/google', () => ({
+vi.mock('@infra/repository/GoogleSheets', () => ({
   fetchSettings: mocks.fetchSettings,
   updateSettings: mocks.updateSettings,
   listSpreadsheets: mocks.listSpreadsheets,
   listSheets: mocks.listSheets,
   startOAuth: mocks.startOAuth,
-  isGoogleSyncClientEnabled: () => true,
 }));
 
-const getSessionMock = vi.fn();
-
-vi.mock('@infra/supabase', () => ({
-  getSupabaseClient: () => ({
-    auth: {
-      getSession: getSessionMock,
-    },
-  }),
+vi.mock('@infra/config', () => ({
+  isGoogleSyncEnabled: () => true,
 }));
 
 vi.mock('@infra/auth', () => ({
@@ -44,6 +39,7 @@ vi.mock('@infra/auth', () => ({
     status: 'authenticated',
     user: { id: 'user-1' },
   }),
+  getAccessToken: mocks.getAccessToken,
 }));
 
 const createWrapper = () => {
@@ -104,14 +100,7 @@ describe('useGoogleSpreadsheetOptions', () => {
     mocks.startOAuth.mockResolvedValue({
       authorizationUrl: 'https://accounts.google.com/o/oauth2/auth?foo=bar',
     });
-    getSessionMock.mockResolvedValue({
-      data: {
-        session: {
-          access_token: 'supabase-access-token',
-        },
-      },
-      error: null,
-    });
+    mocks.getAccessToken.mockResolvedValue('supabase-access-token');
   });
 
   it('fetches settings on mount', async () => {
@@ -122,7 +111,7 @@ describe('useGoogleSpreadsheetOptions', () => {
 
     await waitFor(() => {
       expect(mocks.fetchSettings).toHaveBeenCalledWith('supabase-access-token');
-      expect(getSessionMock).toHaveBeenCalled();
+      expect(mocks.getAccessToken).toHaveBeenCalled();
     });
 
     const refreshed = await act(async () => result.current.settings.refetch());

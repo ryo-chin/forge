@@ -1,14 +1,14 @@
-import { useAuth } from '@infra/auth';
-import type { OAuthStartResponse, UpdateGoogleSettingsPayload } from '@infra/google';
+import { getAccessToken, useAuth } from '@infra/auth';
+import { isGoogleSyncEnabled } from '@infra/config';
 import {
   fetchSettings,
-  isGoogleSyncClientEnabled,
   listSheets,
   listSpreadsheets,
   startOAuth,
   updateSettings,
-} from '@infra/google';
-import { getSupabaseClient } from '@infra/supabase';
+  type OAuthStartResponse,
+  type UpdateGoogleSettingsPayload,
+} from '@infra/repository/GoogleSheets';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
 import type {
@@ -61,25 +61,12 @@ const persistSheetsConfig = (settings: GoogleSyncSettings | null) => {
   }
 };
 
-const getAccessToken = async (): Promise<string> => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    throw error;
-  }
-  const token = data?.session?.access_token;
-  if (!token) {
-    throw new Error('Supabase access token is not available');
-  }
-  return token;
-};
-
 export const useGoogleSpreadsheetOptions = () => {
   const { status: authStatus } = useAuth();
   const queryClient = useQueryClient();
 
   const isEnabled = useMemo(
-    () => isGoogleSyncClientEnabled() && authStatus === 'authenticated',
+    () => isGoogleSyncEnabled() && authStatus === 'authenticated',
     [authStatus],
   );
 
