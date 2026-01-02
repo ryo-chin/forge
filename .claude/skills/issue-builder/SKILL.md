@@ -1,5 +1,5 @@
 ---
-name: issue-context-builder
+name: issue-builder
 description: |
   ユーザーの曖昧な要望・意図から、AIが自律実装可能な精度の高いIssueを構築する。
   使用タイミング: (1) 「Issue作って」「Issue化して」と言われた時、
@@ -7,11 +7,13 @@ description: |
   (4) Sub Agentが自律実装できるIssueを準備したい時
 ---
 
-# Issue Context Builder
+# Issue Builder
 
 曖昧な要望から、AIが自律実装可能な精度の高いIssueを構築する。
 
-## 原則（参照: [ai-driven-principles.md](references/ai-driven-principles.md)）
+## 原則
+
+詳細は [docs/guides/ai-driven-development.md](../../docs/guides/ai-driven-development.md) を参照。
 
 - **Issueの質 = アウトプットの質**
 - **過度なコンテキストは混同を招く**（過去の経緯、ボツ案は入れない）
@@ -23,8 +25,6 @@ description: |
 
 ### Step 1: 入力の分類
 
-ユーザーの入力を分類する:
-
 | 入力タイプ | 例 | 次のステップ |
 |-----------|---|-------------|
 | 曖昧な要望 | 「ログインを安全にしたい」 | Step 2へ |
@@ -33,16 +33,7 @@ description: |
 
 ### Step 2: 要望の具体化
 
-曖昧な要望の場合、AskUserQuestionで具体化する:
-
-```
-header: "目的の確認"
-question: "[要望]について、具体的に何を解決したいですか？"
-options:
-  - label: "[推測される具体的な問題1]"
-  - label: "[推測される具体的な問題2]"
-  - label: "[推測される具体的な問題3]"
-```
+曖昧な要望の場合、AskUserQuestionで具体化する。
 
 ### Step 3: コンテキスト収集
 
@@ -53,16 +44,7 @@ options:
 3. **適用ガードレール**: ESLint、型定義、テスト要件を確認
 4. **依存関係**: 影響を受けるモジュールを特定
 
-収集後、AskUserQuestionで確認:
-
-```
-header: "コンテキスト確認"
-question: "以下のコンテキストで合っていますか？"
-options:
-  - label: "この内容でOK"
-  - label: "追加情報がある"
-  - label: "修正が必要"
-```
+収集後、AskUserQuestionで確認。
 
 ### Step 4: Issue構造化
 
@@ -79,14 +61,12 @@ options:
 
 ## 制約/前提条件
 
-- [ ] [ガードレール1: ESLintルール等]
-- [ ] [ガードレール2: 型定義等]
-- [ ] [ガードレール3: テスト要件等]
+- [ ] [ガードレール1]
+- [ ] [ガードレール2]
 
 ## 関連ファイル
 
-- `path/to/file1.ts`: [役割]
-- `path/to/file2.ts`: [役割]
+- `path/to/file.ts`: [役割]
 
 ## 実装ヒント
 
@@ -95,20 +75,9 @@ options:
 
 ### Step 5: 確認とIssue作成
 
-生成したIssue本文を表示し、AskUserQuestionで確認:
+AskUserQuestionで確認後、`gh issue create`でIssueを作成。
 
-```
-header: "Issue作成"
-question: "このIssueを作成しますか？"
-options:
-  - label: "作成する"
-  - label: "修正してから作成"
-  - label: "キャンセル"
-```
-
-「作成する」の場合、`gh issue create`でIssueを作成。
-
-## アンチパターン（避けるべきこと）
+## アンチパターン
 
 - 過去の議論・経緯を詰め込む
 - ボツになった案を含める
