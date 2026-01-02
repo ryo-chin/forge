@@ -215,14 +215,14 @@ const matchRoute = (
   return wrapWithOutlet(route.element, child);
 };
 
-export function Routes({ children }: { children?: ReactNode }): JSX.Element | null {
+export function Routes({ children }: { children?: ReactNode }): ReactNode {
   const { location } = useRouterContext();
   const routes = useMemo(() => createRoutesFromChildren(children), [children]);
   const element = useMemo(
     () => matchRoutes(routes, splitPath(location.pathname), []),
     [routes, location.pathname],
   );
-  return element ? <>{element}</> : null;
+  return element ?? null;
 }
 
 export function Route(_props: RouteProps): null {
@@ -230,9 +230,9 @@ export function Route(_props: RouteProps): null {
   return null;
 }
 
-export function Outlet(): JSX.Element | null {
+export function Outlet(): ReactNode {
   const element = useContext(OutletContext);
-  return element ? <>{element}</> : null;
+  return element ?? null;
 }
 
 export function Navigate({ to, replace }: { to: string; replace?: boolean }): null {

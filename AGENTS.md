@@ -7,7 +7,7 @@
 
 ## プロトタイプ実装ルール
 - プロトタイプ用ブランチ名には必ず `prototype` を含め、`prototype/<branch-name>/` ディレクトリを作成してブランチ名と一致させること。
-- 各プロトタイプは Cloudflare 上で完結するよう依存関係をディレクトリ内に閉じ込め、`npm install` / `npm run build` だけで成果物を生成できる状態を維持すること。
+- 各プロトタイプは Cloudflare 上で完結するよう依存関係をディレクトリ内に閉じ込め、`pnpm install` / `pnpm build` だけで成果物を生成できる状態を維持すること。
 - GitHub Actions から `BRANCH_NAME_RAW` と `SANITIZED_BRANCH` の環境変数が渡される。必要に応じてビルドや `wrangler.toml` 内で参照すること。
 - プロトタイプ固有の開発/起動手順は `prototype/<branch-name>/README.md` に明記すること。
 
@@ -18,4 +18,10 @@
 - `wrangler deploy` はビルド済みアセットを Workers の静的配信としてアップロードする。必要に応じて `[vars]` や `[kv_namespaces]` などを追加すること。
 
 ### その他
-- ローカル開発用の `npm run dev` などは任意で用意して良い。Wrangler や Vite などの開発サーバーを利用して構わない。
+- ローカル開発用の `pnpm dev` などは任意で用意して良い。Wrangler や Vite などの開発サーバーを利用して構わない。
+
+## 開発ツール
+
+- **パッケージマネージャー**: pnpm（monorepo構成）
+- **フォーマット・基本Lint**: Biome
+- **カスタムLint**: ESLint（プロジェクト固有ルールのみ）

@@ -8,34 +8,39 @@ Time Tracker with Google Spreadsheet integration
 
 ```bash
 # プロジェクト全体のセットアップ
-npm install
+pnpm install
 
-# Lintの実行（プロジェクト全体）
-npm run lint
+# フォーマット・Lintの実行（プロジェクト全体）
+pnpm format:check   # Biome (format + lint)
+pnpm lint           # ESLint (カスタムルールのみ)
 
 # 各サブプロジェクトの起動
-cd app && npm run dev           # Frontend
-cd workers/google-sync && npm run dev  # Worker
+cd app && pnpm dev           # Frontend
+cd api && pnpm dev           # API Worker
 ```
 
 ### サブプロジェクト
 
 - **Frontend**: [app/README.md](/app/README.md)
-- **Google Sync Worker**: [workers/google-sync/README.md](/api/google-sync/README.md)
+- **API Worker**: [api/README.md](/api/README.md)
 
 ### コード品質
 
 ```bash
 # プロジェクト全体
-npm run lint          # ESLint実行（app + worker）
-npm run lint:fix      # ESLint自動修正（app + worker）
+pnpm format:check     # Biome (format + 基本lint)
+pnpm format           # Biome 自動修正
+pnpm lint             # ESLint (カスタムルール: import制限等)
+pnpm lint:fix         # ESLint 自動修正
 
 # サブプロジェクト別
-npm run lint:app      # Frontend のみ
-npm run lint:worker   # Worker のみ
+pnpm lint:app         # Frontend のみ
+pnpm lint:worker      # API Worker のみ
 ```
 
-**注意**: ESLint設定は各サブプロジェクト（`app/.eslintrc.cjs`, `workers/google-sync/.eslintrc.cjs`）で独立して管理されています。
+**ツール構成:**
+- **Biome**: フォーマット + 基本的なlint（推奨ルール）
+- **ESLint**: プロジェクト固有のカスタムルール（`import/no-internal-modules`、`react-hooks`等）
 
 ## Deploy
 [deploy.md](/docs/deploy.md)
