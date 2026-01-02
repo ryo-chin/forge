@@ -1,12 +1,7 @@
 import React, { type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-} from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
 import { TimeTrackerPage } from '@features/time-tracker';
 import { SettingsPage } from '@features/settings';
@@ -26,11 +21,7 @@ type AuthGuardProps = {
   children: ReactNode;
 };
 
-function RequireAuth({
-  requiresSupabaseAuth,
-  status,
-  children,
-}: AuthGuardProps): JSX.Element {
+function RequireAuth({ requiresSupabaseAuth, status, children }: AuthGuardProps): JSX.Element {
   if (!requiresSupabaseAuth) {
     return <>{children}</>;
   }
@@ -46,11 +37,7 @@ function RequireAuth({
   return <>{children}</>;
 }
 
-function RequireGuest({
-  requiresSupabaseAuth,
-  status,
-  children,
-}: AuthGuardProps): JSX.Element {
+function RequireGuest({ requiresSupabaseAuth, status, children }: AuthGuardProps): JSX.Element {
   if (!requiresSupabaseAuth) {
     return <Navigate to="/time-tracker" replace />;
   }
@@ -77,10 +64,7 @@ function AppRoutes(): JSX.Element {
       <Route
         path="/login"
         element={
-          <RequireGuest
-            requiresSupabaseAuth={requiresSupabaseAuth}
-            status={status}
-          >
+          <RequireGuest requiresSupabaseAuth={requiresSupabaseAuth} status={status}>
             <LoginPage onSignIn={signIn} />
           </RequireGuest>
         }
@@ -88,10 +72,7 @@ function AppRoutes(): JSX.Element {
       <Route
         path="/"
         element={
-          <RequireAuth
-            requiresSupabaseAuth={requiresSupabaseAuth}
-            status={status}
-          >
+          <RequireAuth requiresSupabaseAuth={requiresSupabaseAuth} status={status}>
             <AppLayout />
           </RequireAuth>
         }

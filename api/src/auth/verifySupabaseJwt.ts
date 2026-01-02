@@ -29,10 +29,7 @@ export const extractBearerToken = (request: Request): string | null => {
   return null;
 };
 
-export const verifySupabaseJwt = async (
-  token: string,
-  env: Env,
-): Promise<SupabaseAuthResult> => {
+export const verifySupabaseJwt = async (token: string, env: Env): Promise<SupabaseAuthResult> => {
   if (!token) {
     throw new SupabaseAuthError('Missing bearer token', 401);
   }

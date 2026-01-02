@@ -1,4 +1,4 @@
-import type { TimeTrackerSession } from "../../domain/types.ts";
+import type { TimeTrackerSession } from '../../domain/types.ts';
 import React from 'react';
 
 /* ===========================
@@ -9,11 +9,11 @@ import React from 'react';
 export function buildProjectSuggestions(
   project: string,
   sessions: TimeTrackerSession[],
-  limit = 12
+  limit = 12,
 ): string[] {
   const seen = new Set<string>();
   const add = (v?: string | null) => {
-    const t = (v ?? "").trim();
+    const t = (v ?? '').trim();
     if (t) seen.add(t);
   };
   add(project);
@@ -29,7 +29,7 @@ export function filterSuggestions(candidates: string[], query: string): string[]
 
 /** IME合成中のEnterを検知（Enter判定の内部補助） */
 function isImeComposingEnter(e: React.KeyboardEvent<HTMLElement>) {
-  if (e.key !== "Enter") return false;
+  if (e.key !== 'Enter') return false;
   const ne = e.nativeEvent as { isComposing?: boolean; keyCode?: number };
   return ne.isComposing === true || ne.keyCode === 229;
 }
@@ -37,7 +37,7 @@ function isImeComposingEnter(e: React.KeyboardEvent<HTMLElement>) {
 /** Enterで実行（IME中は無視、必要ならpreventDefault） */
 export function onEnterKey(
   run: () => void,
-  opts: { preventDefault?: boolean } = { preventDefault: true }
+  opts: { preventDefault?: boolean } = { preventDefault: true },
 ) {
   return (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'Enter' || isImeComposingEnter(e)) return;
@@ -48,11 +48,14 @@ export function onEnterKey(
 
 /** Enter / ⌘(Ctrl)+Enter を切り分けて実行 */
 export function onEnterOrMetaEnter(
-  handlers: { onEnter: (e: React.KeyboardEvent<HTMLElement>) => void; onMetaEnter?: (e: React.KeyboardEvent<HTMLElement>) => void },
-  opts: { preventDefault?: boolean } = { preventDefault: true }
+  handlers: {
+    onEnter: (e: React.KeyboardEvent<HTMLElement>) => void;
+    onMetaEnter?: (e: React.KeyboardEvent<HTMLElement>) => void;
+  },
+  opts: { preventDefault?: boolean } = { preventDefault: true },
 ) {
   return (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key !== "Enter" || isImeComposingEnter(e)) return;
+    if (e.key !== 'Enter' || isImeComposingEnter(e)) return;
     if (opts.preventDefault) e.preventDefault();
     const useMeta = (e.metaKey || e.ctrlKey) && handlers.onMetaEnter;
     (useMeta ? handlers.onMetaEnter! : handlers.onEnter)(e);
@@ -64,16 +67,15 @@ export function onEnterPickFirstElseSubmit<T>(
   getCandidates: () => readonly T[],
   pick: (t: T) => void,
   submit: () => void,
-  opts: { preventDefault?: boolean } = { preventDefault: true }
+  opts: { preventDefault?: boolean } = { preventDefault: true },
 ) {
   return (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key !== "Enter" || isImeComposingEnter(e)) return;
+    if (e.key !== 'Enter' || isImeComposingEnter(e)) return;
     if (opts.preventDefault) e.preventDefault();
     const list = getCandidates();
     list && list.length > 0 ? pick(list[0]) : submit();
   };
 }
-
 
 /* ===========================
  * attach 系（副作用を外出しした関数）
@@ -82,13 +84,13 @@ export function onEnterPickFirstElseSubmit<T>(
 /** ⌘/Ctrl+K で任意要素にフォーカス */
 export function attachGlobalFocusShortcut(focus: () => void) {
   const onKey = (e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       focus();
     }
   };
-  window.addEventListener("keydown", onKey);
-  return () => window.removeEventListener("keydown", onKey);
+  window.addEventListener('keydown', onKey);
+  return () => window.removeEventListener('keydown', onKey);
 }
 
 /** クリックアウェイと Esc で閉じる。閉じたらトリガへフォーカス */
@@ -106,15 +108,15 @@ export function attachClickAwayAndEsc(opts: {
     }
   };
   const onEsc = (ev: KeyboardEvent) => {
-    if (ev.key === "Escape") {
+    if (ev.key === 'Escape') {
       opts.onTriggerd();
     }
   };
-  window.addEventListener("mousedown", onClick);
-  window.addEventListener("keydown", onEsc);
+  window.addEventListener('mousedown', onClick);
+  window.addEventListener('keydown', onEsc);
   return () => {
-    window.removeEventListener("mousedown", onClick);
-    window.removeEventListener("keydown", onEsc);
+    window.removeEventListener('mousedown', onClick);
+    window.removeEventListener('keydown', onEsc);
   };
 }
 

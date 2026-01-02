@@ -58,7 +58,9 @@
   font-weight: 600;
   padding: 0.65rem 1.2rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .settings-section__primary-button:disabled {

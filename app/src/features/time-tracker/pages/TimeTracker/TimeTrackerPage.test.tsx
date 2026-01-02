@@ -46,21 +46,19 @@ beforeEach(() => {
   syncRunningSessionUpdateMock.mockReset();
   syncRunningSessionCancelMock.mockReset();
   deleteSessionRowMock.mockReset();
-  vi
-    .spyOn(googleSyncHooks, 'useGoogleSpreadsheetSync')
-    .mockImplementation(() => ({
-      state: {
-        status: 'idle',
-        lastSessionId: null,
-        lastSyncedAt: null,
-        error: null,
-      },
-      syncSession: syncSessionMock,
-      syncRunningSessionStart: syncRunningSessionStartMock,
-      syncRunningSessionUpdate: syncRunningSessionUpdateMock,
-      syncRunningSessionCancel: syncRunningSessionCancelMock,
-      deleteSessionRow: deleteSessionRowMock,
-    }));
+  vi.spyOn(googleSyncHooks, 'useGoogleSpreadsheetSync').mockImplementation(() => ({
+    state: {
+      status: 'idle',
+      lastSessionId: null,
+      lastSyncedAt: null,
+      error: null,
+    },
+    syncSession: syncSessionMock,
+    syncRunningSessionStart: syncRunningSessionStartMock,
+    syncRunningSessionUpdate: syncRunningSessionUpdateMock,
+    syncRunningSessionCancel: syncRunningSessionCancelMock,
+    deleteSessionRow: deleteSessionRowMock,
+  }));
 });
 
 afterEach(() => {
@@ -261,9 +259,7 @@ describe('TimeTrackerRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }));
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: '詳細編集' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '詳細編集' })).toBeInTheDocument();
     });
   });
 
@@ -316,7 +312,9 @@ describe('TimeTrackerRoot', () => {
     fireEvent.change(projectInput, { target: { value: 'daily-practice' } });
     fireEvent.click(screen.getByRole('button', { name: '＋ 「daily-practice」を作成' }));
 
-    expect(screen.getByRole('button', { name: 'プロジェクト: daily-practice' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'プロジェクト: daily-practice' }),
+    ).toBeInTheDocument();
 
     const taskInput = screen.getByPlaceholderText('何をやる？');
     fireEvent.change(taskInput, { target: { value: 'コード練習' } });
@@ -433,10 +431,7 @@ describe('TimeTrackerRoot', () => {
       durationSeconds: 60,
       project: 'archive',
     };
-    window.localStorage.setItem(
-      STORAGE_KEY_SESSIONS,
-      JSON.stringify([storedSession]),
-    );
+    window.localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify([storedSession]));
 
     renderTimeTrackerPage();
 

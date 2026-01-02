@@ -19,9 +19,7 @@ describe('SyncStatusBanner', () => {
     const { container } = renderBanner(buildState({ status: 'idle' }));
     expect(container).toBeEmptyDOMElement();
 
-    const { container: disabledContainer } = renderBanner(
-      buildState({ status: 'disabled' }),
-    );
+    const { container: disabledContainer } = renderBanner(buildState({ status: 'disabled' }));
     expect(disabledContainer).toBeEmptyDOMElement();
   });
 
@@ -34,12 +32,8 @@ describe('SyncStatusBanner', () => {
       }),
     );
 
-    expect(
-      screen.getByText('Googleスプレッドシートに同期しました'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/session-1/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Googleスプレッドシートに同期しました')).toBeInTheDocument();
+    expect(screen.getByText(/session-1/)).toBeInTheDocument();
   });
 
   it('shows error message and retry action when status is error', () => {
@@ -52,9 +46,7 @@ describe('SyncStatusBanner', () => {
       onRetry,
     );
 
-    expect(
-      screen.getByText('Googleスプレッドシートへの同期に失敗しました'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Googleスプレッドシートへの同期に失敗しました')).toBeInTheDocument();
     expect(screen.getByText('Failed to append row')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '再試行' }));

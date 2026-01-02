@@ -4,10 +4,7 @@ import type {
   TimeTrackerSession,
 } from '../../../features/time-tracker/domain/types.ts';
 import { getSupabaseClient } from '@infra/supabase';
-import type {
-  CreateDataSourceOptions,
-  TimeTrackerDataSource,
-} from './types.ts';
+import type { CreateDataSourceOptions, TimeTrackerDataSource } from './types.ts';
 
 const SESSIONS_TABLE = 'time_tracker_sessions';
 const RUNNING_STATE_TABLE = 'time_tracker_running_states';
@@ -51,10 +48,7 @@ const mapRowToSession = (row: SessionRow): TimeTrackerSession => {
   return session;
 };
 
-const mapSessionToRow = (
-  session: TimeTrackerSession,
-  userId: string,
-) => ({
+const mapSessionToRow = (session: TimeTrackerSession, userId: string) => ({
   id: session.id,
   user_id: userId,
   title: session.title,
@@ -66,9 +60,7 @@ const mapSessionToRow = (
   notes: session.notes ?? null,
 });
 
-const mapRowToRunningState = (
-  row: RunningStateRow | null,
-): RunningSessionState | null => {
+const mapRowToRunningState = (row: RunningStateRow | null): RunningSessionState | null => {
   if (!row) return null;
 
   if (row.status !== 'running') {
@@ -95,10 +87,7 @@ const mapRowToRunningState = (
   };
 };
 
-const mapRunningStateToRow = (
-  state: RunningSessionState,
-  userId: string,
-) => ({
+const mapRunningStateToRow = (state: RunningSessionState, userId: string) => ({
   user_id: userId,
   status: state.status,
   elapsed_seconds: state.elapsedSeconds,
@@ -136,9 +125,7 @@ export const createSupabaseDataSource = (
       if (!userId) return [];
       const { data, error } = await supabase
         .from(SESSIONS_TABLE)
-        .select(
-          'id, title, started_at, ended_at, duration_seconds, tags, project, notes',
-        )
+        .select('id, title, started_at, ended_at, duration_seconds, tags, project, notes')
         .eq('user_id', userId)
         .order('started_at', { ascending: false });
       if (error) {
@@ -162,10 +149,7 @@ export const createSupabaseDataSource = (
       if (error && error.code !== 'PGRST116') {
         if (import.meta.env.MODE !== 'test') {
           // eslint-disable-next-line no-console
-          console.warn(
-            '[supabase] Failed to fetch running state',
-            error.message,
-          );
+          console.warn('[supabase] Failed to fetch running state', error.message);
         }
         return null;
       }
@@ -175,9 +159,7 @@ export const createSupabaseDataSource = (
       const userId = await resolveUserId();
       if (!userId) return;
 
-      const upsertRows = sessions.map((session) =>
-        mapSessionToRow(session, userId),
-      );
+      const upsertRows = sessions.map((session) => mapSessionToRow(session, userId));
 
       if (upsertRows.length > 0) {
         const { error: upsertError } = await supabase

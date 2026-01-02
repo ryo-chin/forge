@@ -1,18 +1,14 @@
 const STORAGE_KEY_SESSIONS = 'codex-time-tracker/sessions';
 const STORAGE_KEY_RUNNING = 'codex-time-tracker/running';
 
-export const loadStoredSessions = <T>(
-  parse: (value: unknown) => T | null,
-): T[] => {
+export const loadStoredSessions = <T>(parse: (value: unknown) => T | null): T[] => {
   if (typeof window === 'undefined') return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY_SESSIONS);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry) => parse(entry))
-      .filter((entry): entry is T => entry !== null);
+    return parsed.map((entry) => parse(entry)).filter((entry): entry is T => entry !== null);
   } catch (error) {
     console.warn('Failed to load stored sessions', error);
     return [];
@@ -25,10 +21,7 @@ export const saveSessions = <T>(sessions: T[]) => {
     if (sessions.length === 0) {
       window.localStorage.removeItem(STORAGE_KEY_SESSIONS);
     } else {
-      window.localStorage.setItem(
-        STORAGE_KEY_SESSIONS,
-        JSON.stringify(sessions),
-      );
+      window.localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(sessions));
     }
   } catch (error) {
     console.warn('Failed to persist sessions', error);
@@ -57,10 +50,7 @@ export const loadStoredRunningState = <Draft extends { startedAt: number }>(
     if (!parsed || parsed.status !== 'running') return null;
     const draft = parseDraft(parsed.draft);
     if (!draft) return null;
-    const elapsedSeconds = Math.max(
-      0,
-      Math.floor((now() - draft.startedAt) / 1000),
-    );
+    const elapsedSeconds = Math.max(0, Math.floor((now() - draft.startedAt) / 1000));
     return { draft, elapsedSeconds };
   } catch (error) {
     console.warn('Failed to load running session', error);

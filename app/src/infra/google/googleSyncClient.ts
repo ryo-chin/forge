@@ -1,8 +1,4 @@
-import {
-  buildGoogleSyncUrl,
-  getGoogleSyncApiBaseUrl,
-  isGoogleSyncEnabled,
-} from '@infra/config';
+import { buildGoogleSyncUrl, getGoogleSyncApiBaseUrl, isGoogleSyncEnabled } from '@infra/config';
 import type {
   ColumnMappingConfig,
   GoogleSyncLog,
@@ -53,21 +49,14 @@ const buildHeaders = (token: string): HeadersInit => ({
   'Content-Type': 'application/json',
 });
 
-const request = async <T>(
-  token: string,
-  path: string,
-  init: RequestInit = {},
-): Promise<T> => {
+const request = async <T>(token: string, path: string, init: RequestInit = {}): Promise<T> => {
   if (!isGoogleSyncEnabled()) {
     throw new GoogleSyncClientError('Google sync is disabled', 503);
   }
 
   const base = getGoogleSyncApiBaseUrl();
   if (!base) {
-    throw new GoogleSyncClientError(
-      'Google sync API base URL is not configured',
-      500,
-    );
+    throw new GoogleSyncClientError('Google sync API base URL is not configured', 500);
   }
 
   const url = buildGoogleSyncUrl(path);
@@ -93,17 +82,13 @@ const request = async <T>(
       detail = await response.text();
     }
     throw new GoogleSyncClientError(
-      `Google sync request failed (${response.status}) ${JSON.stringify(
-        detail,
-      )}`,
+      `Google sync request failed (${response.status}) ${JSON.stringify(detail)}`,
       response.status,
       detail,
     );
   }
 
-  if (
-    response.headers.get('content-type')?.includes('application/json') ?? false
-  ) {
+  if (response.headers.get('content-type')?.includes('application/json') ?? false) {
     return (await response.json()) as T;
   }
   const text = await response.text();
@@ -119,17 +104,12 @@ export const syncSession = (
     body: JSON.stringify(payload),
   });
 
-export const retrySync = (
-  token: string,
-  sessionId: string,
-): Promise<SyncRetryResponse> =>
+export const retrySync = (token: string, sessionId: string): Promise<SyncRetryResponse> =>
   request(token, `/integrations/google/sync/${sessionId}/retry`, {
     method: 'POST',
   });
 
-export const fetchSettings = (
-  token: string,
-): Promise<GoogleSyncSettings> =>
+export const fetchSettings = (token: string): Promise<GoogleSyncSettings> =>
   request(token, '/integrations/google/settings', {
     method: 'GET',
   });
@@ -171,10 +151,7 @@ export const listSheets = (
     method: 'GET',
   });
 
-export const startOAuth = (
-  token: string,
-  redirectPath: string,
-): Promise<OAuthStartResponse> =>
+export const startOAuth = (token: string, redirectPath: string): Promise<OAuthStartResponse> =>
   request(token, '/integrations/google/oauth/start', {
     method: 'POST',
     body: JSON.stringify({ redirectPath }),
@@ -212,10 +189,7 @@ export const clearRunningSession = (
     body: JSON.stringify({ id: sessionId }),
   });
 
-export const deleteSessionRow = (
-  token: string,
-  sessionId: string,
-): Promise<{ status: string }> =>
+export const deleteSessionRow = (token: string, sessionId: string): Promise<{ status: string }> =>
   request(token, '/integrations/google/sync/delete', {
     method: 'POST',
     body: JSON.stringify({ sessionId }),

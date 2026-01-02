@@ -1,14 +1,9 @@
 import React, { useMemo, type ReactNode } from 'react';
 import { useSupabaseAuth } from '@infra/supabase';
 import { isSupabaseDataSourceEnabled } from '@infra/config';
-import {
-  AuthContext,
-  fallbackAuthContext,
-  type AuthContextValue,
-} from './authContext.ts';
+import { AuthContext, fallbackAuthContext, type AuthContextValue } from './authContext.ts';
 
-const detectAuthProvider = () =>
-  isSupabaseDataSourceEnabled() ? 'supabase' : 'none';
+const detectAuthProvider = () => (isSupabaseDataSourceEnabled() ? 'supabase' : 'none');
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -31,14 +26,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       signIn: signInWithGoogle,
       signOut,
     };
-  }, [
-    provider,
-    supabaseEnabled,
-    signInWithGoogle,
-    signOut,
-    status,
-    user,
-  ]);
+  }, [provider, supabaseEnabled, signInWithGoogle, signOut, status, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

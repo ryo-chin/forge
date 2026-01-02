@@ -14,9 +14,7 @@ export const formatDateTime = (input: string): string => {
   )}:${pad(jstTime.getUTCSeconds())}`;
 };
 
-export const normalizeColumnKey = (
-  value: string | undefined | null,
-): string | null => {
+export const normalizeColumnKey = (value: string | undefined | null): string | null => {
   if (!value) return null;
   const trimmed = value.trim().toUpperCase();
   return /^[A-Z]+$/u.test(trimmed) ? trimmed : null;
@@ -49,15 +47,10 @@ export const resolveColumnLetter = (
   if (direct) return direct;
   if (!value || !headerRow) return null;
 
-  const index = headerRow.findIndex(
-    (cell) => String(cell).trim() === value.trim(),
-  );
+  const index = headerRow.findIndex((cell) => String(cell).trim() === value.trim());
   if (index === -1) return null;
   return indexToColumnKey(index);
 };
 
 export const requiresHeaderLookup = (mapping: ColumnMapping | null): boolean =>
-  !!mapping &&
-  Object.values(mapping).some(
-    (value) => value && !normalizeColumnKey(String(value)),
-  );
+  !!mapping && Object.values(mapping).some((value) => value && !normalizeColumnKey(String(value)));

@@ -38,13 +38,13 @@ export default function App() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isRunning && startTime) {
       interval = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime.getTime()) / 1000));
       }, 1000);
     }
-    
+
     return () => clearInterval(interval);
   }, [isRunning, startTime]);
 
@@ -53,12 +53,14 @@ export default function App() {
     const savedTasks = localStorage.getItem('taskHistory');
     if (savedTasks) {
       const parsed = JSON.parse(savedTasks);
-      setTaskHistory(parsed.map((entry: any) => ({
-        ...entry,
-        startTime: new Date(entry.startTime),
-        endTime: new Date(entry.endTime),
-        projectId: entry.projectId || 'default' // Migration for old entries
-      })));
+      setTaskHistory(
+        parsed.map((entry: any) => ({
+          ...entry,
+          startTime: new Date(entry.startTime),
+          endTime: new Date(entry.endTime),
+          projectId: entry.projectId || 'default', // Migration for old entries
+        })),
+      );
     }
 
     // Load projects
@@ -68,10 +70,10 @@ export default function App() {
       const projectsWithDates = parsed.map((project: any) => ({
         ...project,
         dailyBudget: project.dailyBudget || 480, // Migration for old projects
-        createdAt: new Date(project.createdAt)
+        createdAt: new Date(project.createdAt),
       }));
       setProjects(projectsWithDates);
-      
+
       // Set current project to first project or create default
       if (projectsWithDates.length > 0) {
         setCurrentProjectId(projectsWithDates[0].id);
@@ -89,7 +91,7 @@ export default function App() {
       name: 'General',
       color: 'blue',
       dailyBudget: 480, // 8 hours default
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     setProjects([defaultProject]);
     setCurrentProjectId('default');
@@ -98,7 +100,7 @@ export default function App() {
 
   const startTimer = () => {
     if (!currentTask.trim() || !currentProjectId) return;
-    
+
     const now = new Date();
     setStartTime(now);
     setElapsedTime(0);
@@ -107,18 +109,18 @@ export default function App() {
 
   const parseTaskAndTags = (input: string) => {
     const tagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
-    const tags = (input.match(tagRegex) || []).map(tag => tag.slice(1)); // Remove # prefix
+    const tags = (input.match(tagRegex) || []).map((tag) => tag.slice(1)); // Remove # prefix
     const task = input.replace(tagRegex, '').trim();
     return { task, tags };
   };
 
   const stopTimer = () => {
     if (!startTime || !currentTask.trim() || !currentProjectId) return;
-    
+
     const endTime = new Date();
     const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
     const { task, tags } = parseTaskAndTags(currentTask);
-    
+
     const newEntry: TaskEntry = {
       id: Date.now().toString(),
       task: task || currentTask, // Fallback to original if no task after tag removal
@@ -126,13 +128,13 @@ export default function App() {
       projectId: currentProjectId,
       duration,
       startTime,
-      endTime
+      endTime,
     };
-    
+
     const updatedHistory = [newEntry, ...taskHistory];
     setTaskHistory(updatedHistory);
     localStorage.setItem('taskHistory', JSON.stringify(updatedHistory));
-    
+
     setIsRunning(false);
     setStartTime(null);
     setElapsedTime(0);
@@ -161,8 +163,8 @@ export default function App() {
     localStorage.setItem('projects', JSON.stringify(updatedProjects));
   };
 
-  const currentProject = projects.find(p => p.id === currentProjectId);
-  const currentProjectTasks = taskHistory.filter(task => task.projectId === currentProjectId);
+  const currentProject = projects.find((p) => p.id === currentProjectId);
+  const currentProjectTasks = taskHistory.filter((task) => task.projectId === currentProjectId);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -219,11 +221,7 @@ export default function App() {
               </Button>
             ) : (
               <>
-                <Button
-                  onClick={stopTimer}
-                  size="lg"
-                  className="rounded-full px-8 h-12"
-                >
+                <Button onClick={stopTimer} size="lg" className="rounded-full px-8 h-12">
                   <Square className="w-4 h-4 mr-2" />
                   Stop
                 </Button>
@@ -248,17 +246,19 @@ export default function App() {
           </TabsList>
 
           <TabsContent value="history">
-            <TaskHistory 
+            <TaskHistory
               taskHistory={currentProjectTasks}
               projects={projects}
               onClearHistory={() => {
-                const updatedHistory = taskHistory.filter(task => task.projectId !== currentProjectId);
+                const updatedHistory = taskHistory.filter(
+                  (task) => task.projectId !== currentProjectId,
+                );
                 setTaskHistory(updatedHistory);
                 localStorage.setItem('taskHistory', JSON.stringify(updatedHistory));
               }}
               onTaskUpdate={(updatedTask) => {
-                const updatedHistory = taskHistory.map(task => 
-                  task.id === updatedTask.id ? updatedTask : task
+                const updatedHistory = taskHistory.map((task) =>
+                  task.id === updatedTask.id ? updatedTask : task,
                 );
                 setTaskHistory(updatedHistory);
                 localStorage.setItem('taskHistory', JSON.stringify(updatedHistory));
@@ -267,10 +267,7 @@ export default function App() {
           </TabsContent>
 
           <TabsContent value="stats">
-            <ProjectStats
-              projects={projects}
-              taskHistory={taskHistory}
-            />
+            <ProjectStats projects={projects} taskHistory={taskHistory} />
           </TabsContent>
         </Tabs>
       </div>

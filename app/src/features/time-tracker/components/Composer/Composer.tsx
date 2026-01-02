@@ -59,10 +59,7 @@ export const Composer: React.FC<ComposerProps> = ({
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [projectQuery, setProjectQuery] = useState('');
 
-  const timerLabel = useMemo(
-    () => formatTimer(elapsedSeconds),
-    [elapsedSeconds],
-  );
+  const timerLabel = useMemo(() => formatTimer(elapsedSeconds), [elapsedSeconds]);
   const displayInputValue = isRunning ? (runningDraftTitle ?? '') : inputValue;
   const canStart = inputValue.trim().length > 0 && !isRunning;
   const primaryLabel = isRunning ? '停止' : '開始';
@@ -109,10 +106,7 @@ export const Composer: React.FC<ComposerProps> = ({
     setIsProjectMenuOpen(false);
   };
 
-  useEffect(
-    () => attachGlobalFocusShortcut(() => inputRef.current?.focus()),
-    [],
-  );
+  useEffect(() => attachGlobalFocusShortcut(() => inputRef.current?.focus()), []);
 
   useEffect(() => {
     if (!isProjectMenuOpen) return;
@@ -145,16 +139,12 @@ export const Composer: React.FC<ComposerProps> = ({
             aria-expanded={isProjectMenuOpen}
             aria-controls="time-tracker-project-menu"
             title="プロジェクトを選択"
-            aria-label={
-              project ? `プロジェクト: ${project}` : 'プロジェクトを選択'
-            }
+            aria-label={project ? `プロジェクト: ${project}` : 'プロジェクトを選択'}
           >
             <span className="time-tracker__project-icon" aria-hidden="true">
               ＃
             </span>
-            <span className="time-tracker__project-label">
-              {projectButtonLabel}
-            </span>
+            <span className="time-tracker__project-label">{projectButtonLabel}</span>
           </button>
 
           {isProjectMenuOpen ? (
@@ -167,8 +157,7 @@ export const Composer: React.FC<ComposerProps> = ({
               aria-modal="true"
               tabIndex={-1}
               onKeyDown={(e) => {
-                if (projectMenuRef.current)
-                  trapTabFocus(projectMenuRef.current, e);
+                if (projectMenuRef.current) trapTabFocus(projectMenuRef.current, e);
               }}
             >
               <label className="time-tracker__sr-only" htmlFor="project-search">
@@ -176,10 +165,7 @@ export const Composer: React.FC<ComposerProps> = ({
               </label>
 
               <div className="time-tracker__project-search">
-                <span
-                  className="time-tracker__project-search-icon"
-                  aria-hidden="true"
-                >
+                <span className="time-tracker__project-search-icon" aria-hidden="true">
                   🔍
                 </span>
                 <input
@@ -205,9 +191,7 @@ export const Composer: React.FC<ComposerProps> = ({
 
               {filteredProjectSuggestions.length > 0 ? (
                 <>
-                  <p className="time-tracker__project-section">
-                    最近使ったプロジェクト
-                  </p>
+                  <p className="time-tracker__project-section">最近使ったプロジェクト</p>
                   <ul className="time-tracker__project-list">
                     {filteredProjectSuggestions.map((candidate) => (
                       <li key={candidate}>
@@ -232,10 +216,7 @@ export const Composer: React.FC<ComposerProps> = ({
               )}
 
               <div className="time-tracker__project-actions">
-                <button
-                  type="button"
-                  onClick={() => handleProjectChange(projectQuery)}
-                >
+                <button type="button" onClick={() => handleProjectChange(projectQuery)}>
                   {projectQuery.trim().length > 0
                     ? `＋ 「${projectQuery.trim()}」を作成`
                     : 'プロジェクトを未設定にする'}

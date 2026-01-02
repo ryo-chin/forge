@@ -10,11 +10,7 @@ import { Composer } from '../../components/Composer';
 import { HistoryList } from '../../components/HistoryList';
 import { EditorModal } from '../../components/EditorModal';
 import { SyncStatusBanner } from '../../components/SyncStatusBanner';
-import {
-  isModalSaveDisabled,
-  buildUpdatedSession,
-  calculateDurationDelta,
-} from './logic.ts';
+import { isModalSaveDisabled, buildUpdatedSession, calculateDurationDelta } from './logic.ts';
 import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
 import { useAuth } from '../../../../infra/auth';
 import { useNavigate } from 'react-router-dom';
@@ -33,10 +29,7 @@ const buildDraftSignature = (draft: SessionDraft): string =>
     notes: draft.notes ?? '',
   });
 
-type ModalState =
-  | { type: 'running' }
-  | { type: 'history'; sessionId: string }
-  | null;
+type ModalState = { type: 'running' } | { type: 'history'; sessionId: string } | null;
 
 type HistoryDraft = {
   title: string;
@@ -57,11 +50,9 @@ export function TimeTrackerPage() {
   const { user } = useAuth();
   const viewport = useResponsiveLayout();
 
-  const {
-    sessions,
-    setSessions,
-    persistSessions,
-  } = useTimeTrackerSessions({ userId: user?.id ?? null });
+  const { sessions, setSessions, persistSessions } = useTimeTrackerSessions({
+    userId: user?.id ?? null,
+  });
   const {
     state: runningState,
     start,
@@ -89,21 +80,16 @@ export function TimeTrackerPage() {
   const [modalState, setModalState] = useState<ModalState>(null);
 
   // 履歴編集の元スナップショット（キャンセルで戻す）
-  const [historyEditSnapshot, setHistoryEditSnapshot] =
-    useState<HistoryEditSnapshot>(null);
+  const [historyEditSnapshot, setHistoryEditSnapshot] = useState<HistoryEditSnapshot>(null);
   const [historyDraft, setHistoryDraft] = useState<HistoryDraft | null>(null);
 
   // Composer の「未走行時の表示用プロジェクト」（次回開始に使いたい場合に限り保持）
   // ※ドメインではなく UI 補助なので、ここはローカルstateでOK
   const initialComposerProject =
-    runningState.status === 'running' ? runningState.draft.project ?? '' : '';
-  const [composerProject, setComposerProject] = useState(
-    initialComposerProject,
-  );
+    runningState.status === 'running' ? (runningState.draft.project ?? '') : '';
+  const [composerProject, setComposerProject] = useState(initialComposerProject);
   const composerProjectForDisplay =
-    runningState.status === 'running'
-      ? runningState.draft.project ?? ''
-      : composerProject;
+    runningState.status === 'running' ? (runningState.draft.project ?? '') : composerProject;
   const isRunning = runningState.status === 'running';
   const elapsedSeconds = runningState.elapsedSeconds;
   const runningDraftTitle = isRunning ? runningState.draft.title : null;
@@ -270,13 +256,7 @@ export function TimeTrackerPage() {
       nextInputValue: nextTitle,
       nextProject,
     };
-  }, [
-    composerProject,
-    modalState,
-    reset,
-    runningState,
-    syncRunningSessionCancel,
-  ]);
+  }, [composerProject, modalState, reset, runningState, syncRunningSessionCancel]);
 
   const handleComposerAdjustDuration = useCallback(
     (deltaSeconds: number) => {
@@ -315,9 +295,7 @@ export function TimeTrackerPage() {
   const closeModal = useCallback(() => {
     // 履歴編集のキャンセル時は元スナップショットに戻す
     if (modalState?.type === 'history' && historyEditSnapshot) {
-      const targetIndex = sessions.findIndex(
-        (s) => s.id === historyEditSnapshot.id,
-      );
+      const targetIndex = sessions.findIndex((s) => s.id === historyEditSnapshot.id);
       if (targetIndex !== -1) {
         const nextSessions = setSessions((prev) => {
           const next = [...prev];
@@ -330,13 +308,7 @@ export function TimeTrackerPage() {
     setHistoryEditSnapshot(null);
     setHistoryDraft(null);
     setModalState(null);
-  }, [
-    historyEditSnapshot,
-    modalState,
-    persistSessions,
-    sessions,
-    setSessions,
-  ]);
+  }, [historyEditSnapshot, modalState, persistSessions, sessions, setSessions]);
 
   // ==== 履歴の削除/Undo ====
   const handleDeleteHistory = useCallback(
@@ -368,10 +340,7 @@ export function TimeTrackerPage() {
             // 永続化失敗時はシート削除をスキップ
           });
       }
-      if (
-        modalState?.type === 'history' &&
-        modalState.sessionId === sessionId
-      ) {
+      if (modalState?.type === 'history' && modalState.sessionId === sessionId) {
         setHistoryEditSnapshot(null);
         setHistoryDraft(null);
         setModalState(null);
@@ -428,9 +397,7 @@ export function TimeTrackerPage() {
       });
 
       if (nextSessions !== sessions) {
-        const updatedSession = nextSessions.find(
-          (session) => session.id === modalState.sessionId,
-        );
+        const updatedSession = nextSessions.find((session) => session.id === modalState.sessionId);
 
         const persistPromise = persistSessions(nextSessions);
         if (updatedSession) {
@@ -533,9 +500,7 @@ export function TimeTrackerPage() {
 
   const lastSyncedSession = useMemo(() => {
     if (!syncState.lastSessionId) return null;
-    return (
-      sessions.find((session) => session.id === syncState.lastSessionId) ?? null
-    );
+    return sessions.find((session) => session.id === syncState.lastSessionId) ?? null;
   }, [sessions, syncState.lastSessionId]);
 
   const handleRetrySync = useCallback(() => {
@@ -607,10 +572,7 @@ export function TimeTrackerPage() {
   return (
     <main className={rootClassName}>
       <div className="time-tracker__panel">
-        <section
-          className="time-tracker__intro"
-          aria-labelledby="time-tracker-heading"
-        >
+        <section className="time-tracker__intro" aria-labelledby="time-tracker-heading">
           <div className="time-tracker__intro-top">
             <h1 id="time-tracker-heading">Time Tracker</h1>
           </div>
@@ -632,11 +594,7 @@ export function TimeTrackerPage() {
 
         <SyncStatusBanner
           state={syncState}
-          onRetry={
-            syncState.status === 'error' && lastSyncedSession
-              ? handleRetrySync
-              : undefined
-          }
+          onRetry={syncState.status === 'error' && lastSyncedSession ? handleRetrySync : undefined}
         />
 
         <Composer

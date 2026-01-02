@@ -20,10 +20,7 @@ export const getSupabaseClient = (): SupabaseClient => {
   }
 
   const missingKeys: RequiredEnvKey[] = [];
-  const config: Record<RequiredEnvKey, string> = {} as Record<
-    RequiredEnvKey,
-    string
-  >;
+  const config: Record<RequiredEnvKey, string> = {} as Record<RequiredEnvKey, string>;
 
   for (const key of REQUIRED_ENV_VARS) {
     const value = readEnv(key);
@@ -35,9 +32,7 @@ export const getSupabaseClient = (): SupabaseClient => {
   }
 
   if (missingKeys.length > 0) {
-    throw new Error(
-      `[supabase] Missing environment variables: ${missingKeys.join(', ')}`,
-    );
+    throw new Error(`[supabase] Missing environment variables: ${missingKeys.join(', ')}`);
   }
 
   client = createClient(config.VITE_SUPABASE_URL, config.VITE_SUPABASE_ANON_KEY, {

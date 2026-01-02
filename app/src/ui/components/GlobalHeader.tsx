@@ -31,13 +31,9 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             ☰
           </button>
         ) : null}
-        {leftSlot ? (
-          <div className="global-header__slot">{leftSlot}</div>
-        ) : null}
+        {leftSlot ? <div className="global-header__slot">{leftSlot}</div> : null}
       </div>
-      <div className="global-header__section global-header__section--right">
-        {rightSlot}
-      </div>
+      <div className="global-header__section global-header__section--right">{rightSlot}</div>
     </header>
   );
 };

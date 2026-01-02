@@ -13,8 +13,7 @@
   padding: 6rem 1.5rem;
   background: #f5f7fb;
   color: #0f172a;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   overflow-x: hidden;
 }
 
@@ -102,7 +101,9 @@
   gap: 0.4rem;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__settings-button:hover {
@@ -145,7 +146,9 @@
   padding: 0.45rem 0.85rem;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__project-button:hover {
@@ -176,7 +179,6 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-
 
 .time-tracker__project-search {
   position: relative;
@@ -235,7 +237,9 @@
   color: #1f2937;
   padding: 0.45rem 0.75rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__project-list-item:hover,
@@ -273,7 +277,9 @@
   padding: 0.45rem 0.85rem;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__project-actions button:hover {
@@ -303,7 +309,9 @@
   font-weight: 600;
   padding: 0.75rem 1.75rem;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
 
@@ -359,8 +367,9 @@
   border-radius: 0.5rem;
   border: 1px solid #d0d7e2;
   background: #eef1f6;
-  font-family: 'SFMono-Regular', ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   font-size: 0.85rem;
   color: #4b5563;
 }
@@ -407,7 +416,9 @@
   font-size: 0.95rem;
   padding: 0.45rem 1.25rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__details-toggle:not(:disabled):hover {
@@ -436,7 +447,9 @@
   padding: 0.45rem 1rem;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__nudges button:hover {
@@ -465,7 +478,9 @@
   color: #111827;
   background: #f9fafc;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .time-tracker__field input:focus,
@@ -552,7 +567,9 @@
   padding: 0.4rem 0.9rem;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__history-button:hover {
@@ -590,7 +607,9 @@
   padding: 0.45rem 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .time-tracker__undo button:hover {
@@ -672,26 +691,28 @@
   padding: 0.5rem 1.2rem;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
-.time-tracker__modal-actions button[type='button'] {
+.time-tracker__modal-actions button[type="button"] {
   background: #e2e8f0;
   color: #475569;
 }
 
-.time-tracker__modal-actions button[type='button']:hover {
+.time-tracker__modal-actions button[type="button"]:hover {
   background: #cbd5f5;
   transform: translateY(-1px);
 }
 
-.time-tracker__modal-actions button[type='submit'] {
+.time-tracker__modal-actions button[type="submit"] {
   background: #2563eb;
   color: #ffffff;
   font-weight: 600;
 }
 
-.time-tracker__modal-actions button[type='submit']:hover {
+.time-tracker__modal-actions button[type="submit"]:hover {
   background: #1d4ed8;
   transform: translateY(-1px);
 }

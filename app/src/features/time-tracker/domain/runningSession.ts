@@ -1,8 +1,4 @@
-import type {
-  RunningSessionState,
-  SessionDraft,
-  TimeTrackerSession,
-} from './types.ts';
+import type { RunningSessionState, SessionDraft, TimeTrackerSession } from './types.ts';
 
 // Action
 export type RunningSessionAction =
@@ -37,9 +33,7 @@ export const runningSessionReducer = (
       const title = action.payload.title.trim();
       if (!title) return state; // 二重防御
       const trimmedProject =
-        typeof action.payload.project === 'string'
-          ? action.payload.project.trim()
-          : undefined;
+        typeof action.payload.project === 'string' ? action.payload.project.trim() : undefined;
       const draft: SessionDraft = {
         id:
           action.payload.id && action.payload.id.trim().length > 0
@@ -56,10 +50,7 @@ export const runningSessionReducer = (
     case 'TICK': {
       if (state.status !== 'running') return state;
       const { nowMs } = action.payload;
-      const elapsedSeconds = Math.max(
-        0,
-        Math.floor((nowMs - state.draft.startedAt) / 1000),
-      );
+      const elapsedSeconds = Math.max(0, Math.floor((nowMs - state.draft.startedAt) / 1000));
       if (elapsedSeconds === state.elapsedSeconds) return state;
       return { ...state, elapsedSeconds };
     }
@@ -80,10 +71,7 @@ export const runningSessionReducer = (
       const { deltaSeconds, nowMs } = action.payload;
       if (deltaSeconds === 0) return state;
 
-      const baseSeconds = Math.max(
-        0,
-        Math.floor((nowMs - state.draft.startedAt) / 1000),
-      );
+      const baseSeconds = Math.max(0, Math.floor((nowMs - state.draft.startedAt) / 1000));
       const adjustedSeconds = Math.max(0, baseSeconds + deltaSeconds);
       if (adjustedSeconds === baseSeconds) return state;
 
@@ -111,13 +99,10 @@ export const createSessionFromDraft = (
   draft: SessionDraft,
   stoppedAtMs: number,
 ): TimeTrackerSession => {
-  const durationSeconds = Math.max(
-    1,
-    Math.floor((stoppedAtMs - draft.startedAt) / 1000),
-  );
+  const durationSeconds = Math.max(1, Math.floor((stoppedAtMs - draft.startedAt) / 1000));
 
   const session: TimeTrackerSession = {
-    id: draft.id,  // Running時と同じIDを使用
+    id: draft.id, // Running時と同じIDを使用
     title: draft.title.trim(),
     startedAt: draft.startedAt,
     endedAt: stoppedAtMs,

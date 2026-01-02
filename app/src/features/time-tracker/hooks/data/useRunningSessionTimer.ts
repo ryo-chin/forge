@@ -17,8 +17,7 @@ export const useRunningSessionTimer = ({
   now,
   tickIntervalMs,
 }: RunningSessionTimerOptions): void => {
-  const runningStartedAt =
-    state.status === 'running' ? state.draft.startedAt : null;
+  const runningStartedAt = state.status === 'running' ? state.draft.startedAt : null;
 
   useEffect(() => {
     if (state.status !== 'running') {

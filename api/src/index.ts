@@ -1,10 +1,6 @@
 import type { Env } from './env';
 import { handleSyncSession, handleDeleteSyncedSession } from './handlers/syncSession';
-import {
-  handleOauthStart,
-  handleOauthCallback,
-  handleOauthRevoke,
-} from './handlers/oauth';
+import { handleOauthStart, handleOauthCallback, handleOauthRevoke } from './handlers/oauth';
 import {
   handleGetSettings,
   handleUpdateSettings,

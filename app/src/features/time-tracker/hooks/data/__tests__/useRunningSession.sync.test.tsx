@@ -50,9 +50,7 @@ describe('useRunningSession - Supabase Sync', () => {
     );
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
-    const { result } = renderHook(() =>
-      useRunningSession({ userId: 'user-1' }),
-    );
+    const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
 
     await waitFor(() => {
       expect(result.current.state.status).toBe('running');
@@ -71,9 +69,7 @@ describe('useRunningSession - Supabase Sync', () => {
     );
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
-    const { result } = renderHook(() =>
-      useRunningSession({ userId: 'user-1' }),
-    );
+    const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
 
     // セッション開始
     await act(async () => {
@@ -84,8 +80,7 @@ describe('useRunningSession - Supabase Sync', () => {
       expect(mockDataSource.persistRunningState).toHaveBeenCalledTimes(1);
     });
 
-    const persistedState =
-      vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
+    const persistedState = vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
     expect(persistedState.status).toBe('running');
     expect(persistedState.draft?.title).toBe('New Session');
     expect(persistedState.draft?.id).toBeDefined();
@@ -99,9 +94,7 @@ describe('useRunningSession - Supabase Sync', () => {
     );
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
-    const { result } = renderHook(() =>
-      useRunningSession({ userId: 'user-1' }),
-    );
+    const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
 
     // セッション開始
     await act(async () => {
@@ -123,8 +116,7 @@ describe('useRunningSession - Supabase Sync', () => {
       expect(mockDataSource.persistRunningState).toHaveBeenCalled();
     });
 
-    const persistedState =
-      vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
+    const persistedState = vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
     expect(persistedState.draft?.project).toBe('Test Project');
   });
 
@@ -136,9 +128,7 @@ describe('useRunningSession - Supabase Sync', () => {
     );
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
-    const { result } = renderHook(() =>
-      useRunningSession({ userId: 'user-1' }),
-    );
+    const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
 
     await act(async () => {
       result.current.start('Manual Persist Session');
@@ -165,9 +155,7 @@ describe('useRunningSession - Supabase Sync', () => {
     );
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
-    const { result } = renderHook(() =>
-      useRunningSession({ userId: 'user-1' }),
-    );
+    const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
 
     await act(async () => {
       result.current.start('Original Title');
@@ -183,8 +171,7 @@ describe('useRunningSession - Supabase Sync', () => {
       expect(mockDataSource.persistRunningState).toHaveBeenCalled();
     });
 
-    const persistedState =
-      vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
+    const persistedState = vi.mocked(mockDataSource.persistRunningState).mock.calls[0][0];
     expect(persistedState.status).toBe('running');
     expect(persistedState.draft?.title).toBe('Updated Title');
   });
@@ -210,9 +197,7 @@ describe('useRunningSession - Supabase Sync', () => {
     );
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
-    const { result } = renderHook(() =>
-      useRunningSession({ userId: 'user-1' }),
-    );
+    const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
 
     await waitFor(() => {
       expect(result.current.state.status).toBe('running');

@@ -4,19 +4,17 @@ import {
   saveRunningState,
   saveSessions,
 } from '@infra/localstorage';
-import { parseRunningDraft, parseSession } from '../../../features/time-tracker/domain/sessionParsers.ts';
+import {
+  parseRunningDraft,
+  parseSession,
+} from '../../../features/time-tracker/domain/sessionParsers.ts';
 import type {
   RunningSessionState,
   TimeTrackerSession,
 } from '../../../features/time-tracker/domain/types.ts';
-import type {
-  CreateDataSourceOptions,
-  TimeTrackerDataSource,
-} from './types.ts';
+import type { CreateDataSourceOptions, TimeTrackerDataSource } from './types.ts';
 
-const computeRunningState = (
-  now: () => number,
-): RunningSessionState | null => {
+const computeRunningState = (now: () => number): RunningSessionState | null => {
   const stored = loadStoredRunningState(parseRunningDraft, now);
   if (!stored) {
     return null;
@@ -28,8 +26,7 @@ const computeRunningState = (
   };
 };
 
-const readSessions = (): TimeTrackerSession[] =>
-  loadStoredSessions(parseSession);
+const readSessions = (): TimeTrackerSession[] => loadStoredSessions(parseSession);
 
 export const createLocalStorageDataSource = (
   options: CreateDataSourceOptions = {},

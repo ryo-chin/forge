@@ -9,11 +9,7 @@ type HistoryListProps = {
   onDelete: (sessionId: string) => void;
 };
 
-export const HistoryList: React.FC<HistoryListProps> = ({
-  sessions,
-  onEdit,
-  onDelete,
-}) => {
+export const HistoryList: React.FC<HistoryListProps> = ({ sessions, onEdit, onDelete }) => {
   if (sessions.length === 0) return null;
 
   return (
@@ -40,9 +36,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
               <div className="time-tracker__history-meta">
                 {session.project ? <span>#{session.project}</span> : null}
                 {session.tags?.length ? (
-                  <span>
-                    {session.tags.map((tag) => `#${tag}`).join(' ')}
-                  </span>
+                  <span>{session.tags.map((tag) => `#${tag}`).join(' ')}</span>
                 ) : null}
                 {session.skill ? <span>@{session.skill}</span> : null}
               </div>

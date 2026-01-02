@@ -51,10 +51,10 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [isRunning, startedAt]);
 
-  const canStart = useMemo(() => inputValue.trim().length > 0 && !isRunning, [
-    inputValue,
-    isRunning,
-  ]);
+  const canStart = useMemo(
+    () => inputValue.trim().length > 0 && !isRunning,
+    [inputValue, isRunning],
+  );
 
   const handleStart = () => {
     if (!canStart) return;
@@ -113,20 +113,10 @@ export default function App() {
           disabled={isRunning}
         />
         <div className="controls" role="group" aria-label="タイマー操作">
-          <button
-            type="button"
-            className="primary"
-            onClick={handleStart}
-            disabled={!canStart}
-          >
+          <button type="button" className="primary" onClick={handleStart} disabled={!canStart}>
             スタート
           </button>
-          <button
-            type="button"
-            className="secondary"
-            onClick={handleStop}
-            disabled={!isRunning}
-          >
+          <button type="button" className="secondary" onClick={handleStop} disabled={!isRunning}>
             ストップ
           </button>
         </div>

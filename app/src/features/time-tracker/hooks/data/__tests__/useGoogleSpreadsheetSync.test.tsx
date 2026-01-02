@@ -112,9 +112,7 @@ describe('useGoogleSpreadsheetSync', () => {
       }),
     );
 
-    await waitFor(() =>
-      expect(result.current.state.status).toBe('success'),
-    );
+    await waitFor(() => expect(result.current.state.status).toBe('success'));
     expect(result.current.state.lastSessionId).toBe('session-1');
     expect(result.current.state.error).toBeNull();
   });
@@ -132,9 +130,7 @@ describe('useGoogleSpreadsheetSync', () => {
       await result.current.syncSession(buildSession());
     });
 
-    await waitFor(() =>
-      expect(result.current.state.status).toBe('error'),
-    );
+    await waitFor(() => expect(result.current.state.status).toBe('error'));
     expect(result.current.state.error).toBe('append failed');
   });
 });

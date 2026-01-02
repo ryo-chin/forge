@@ -1,10 +1,7 @@
 import React from 'react';
 
 /** ダイアログ内のTabでフォーカスをループさせる */
-export function trapTabFocus(
-  container: HTMLElement,
-  e: React.KeyboardEvent<HTMLDivElement>,
-) {
+export function trapTabFocus(container: HTMLElement, e: React.KeyboardEvent<HTMLDivElement>) {
   if (e.key !== 'Tab') return;
   const focusable = Array.from(
     container.querySelectorAll<HTMLElement>(

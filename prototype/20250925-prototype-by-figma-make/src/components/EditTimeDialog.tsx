@@ -32,7 +32,7 @@ export function EditTimeDialog({ task, isOpen, onClose, onSave }: EditTimeDialog
     if (task && isOpen) {
       const start = new Date(task.startTime);
       const end = new Date(task.endTime);
-      
+
       setStartDate(start.toISOString().split('T')[0]);
       setStartTime(start.toTimeString().slice(0, 5));
       setEndDate(end.toISOString().split('T')[0]);
@@ -57,7 +57,7 @@ export function EditTimeDialog({ task, isOpen, onClose, onSave }: EditTimeDialog
       ...task,
       startTime: newStartTime,
       endTime: newEndTime,
-      duration: newDuration
+      duration: newDuration,
     };
 
     onSave(updatedTask);
@@ -72,12 +72,12 @@ export function EditTimeDialog({ task, isOpen, onClose, onSave }: EditTimeDialog
 
   const getCurrentDuration = (): number => {
     if (!startDate || !startTime || !endDate || !endTime) return 0;
-    
+
     const start = new Date(`${startDate}T${startTime}`);
     const end = new Date(`${endDate}T${endTime}`);
-    
+
     if (start >= end) return 0;
-    
+
     return Math.floor((end.getTime() - start.getTime()) / 1000);
   };
 
@@ -92,7 +92,7 @@ export function EditTimeDialog({ task, isOpen, onClose, onSave }: EditTimeDialog
             Edit Time Entry
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="p-3 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground mb-1">Task</p>
@@ -105,19 +105,11 @@ export function EditTimeDialog({ task, isOpen, onClose, onSave }: EditTimeDialog
                 <Calendar className="w-4 h-4" />
                 Start Date
               </Label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Start Time</Label>
-              <Input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-              />
+              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
             </div>
           </div>
 
@@ -127,19 +119,11 @@ export function EditTimeDialog({ task, isOpen, onClose, onSave }: EditTimeDialog
                 <Calendar className="w-4 h-4" />
                 End Date
               </Label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>End Time</Label>
-              <Input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
+              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </div>
           </div>
 

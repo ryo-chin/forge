@@ -4,9 +4,14 @@
   "private": true,
   "description": "Time Tracker with Google Spreadsheet integration",
   "scripts": {
-    "lint": "npm run lint --prefix app && npm run lint --prefix api/google-sync",
-    "lint:fix": "npm run lint:fix --prefix app && npm run lint:fix --prefix api/google-sync",
-    "lint:app": "npm run lint --prefix app",
-    "lint:worker": "npm run lint --prefix api/google-sync"
+    "format": "biome format --write .",
+    "format:check": "biome check .",
+    "lint": "pnpm --filter forge-app lint && pnpm --filter api lint",
+    "lint:fix": "pnpm --filter forge-app lint:fix && pnpm --filter api lint:fix",
+    "lint:app": "pnpm --filter forge-app lint",
+    "lint:worker": "pnpm --filter api lint"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.10"
   }
 }

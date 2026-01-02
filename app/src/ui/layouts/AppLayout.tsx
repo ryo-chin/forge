@@ -38,11 +38,7 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
       </div>
-      <AppNavigation
-        variant="overlay"
-        open={isNavOverlayOpen}
-        onOpenChange={setNavOverlayOpen}
-      />
+      <AppNavigation variant="overlay" open={isNavOverlayOpen} onOpenChange={setNavOverlayOpen} />
     </>
   );
 };

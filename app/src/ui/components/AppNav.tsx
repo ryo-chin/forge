@@ -19,10 +19,7 @@ const AppNavList: React.FC<NavListProps> = ({ onSelect }) => {
         to="/time-tracker"
         end
         className={({ isActive }) =>
-          [
-            'app-shell__nav-item',
-            isActive ? 'app-shell__nav-item--active' : null,
-          ]
+          ['app-shell__nav-item', isActive ? 'app-shell__nav-item--active' : null]
             .filter(Boolean)
             .join(' ')
         }
@@ -34,10 +31,7 @@ const AppNavList: React.FC<NavListProps> = ({ onSelect }) => {
         to="/settings"
         end
         className={({ isActive }) =>
-          [
-            'app-shell__nav-item',
-            isActive ? 'app-shell__nav-item--active' : null,
-          ]
+          ['app-shell__nav-item', isActive ? 'app-shell__nav-item--active' : null]
             .filter(Boolean)
             .join(' ')
         }

@@ -190,11 +190,14 @@ test.describe('Runningセッション - 複数ブラウザコンテキスト', (
 
     // デバイスBにセッション情報をコピー（実際のSupabase同期をシミュレート）
     await pageB.goto('/');
-    await pageB.evaluate(({ key, data }) => {
-      if (data) {
-        localStorage.setItem(key, data);
-      }
-    }, { key: RUNNING_STATE_KEY, data: sessionDataA });
+    await pageB.evaluate(
+      ({ key, data }) => {
+        if (data) {
+          localStorage.setItem(key, data);
+        }
+      },
+      { key: RUNNING_STATE_KEY, data: sessionDataA },
+    );
 
     // デバイスBでリロードして同期を確認
     await pageB.reload();
@@ -243,11 +246,14 @@ test.describe('Runningセッション - 複数ブラウザコンテキスト', (
     }, RUNNING_STATE_KEY);
 
     await pageB.goto('/');
-    await pageB.evaluate(({ key, data }) => {
-      if (data) {
-        localStorage.setItem(key, data);
-      }
-    }, { key: RUNNING_STATE_KEY, data: sessionData });
+    await pageB.evaluate(
+      ({ key, data }) => {
+        if (data) {
+          localStorage.setItem(key, data);
+        }
+      },
+      { key: RUNNING_STATE_KEY, data: sessionData },
+    );
     await pageB.reload();
 
     // デバイスBでセッション停止

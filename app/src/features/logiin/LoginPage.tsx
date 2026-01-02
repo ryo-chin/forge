@@ -9,11 +9,7 @@ export function LoginPage({ onSignIn }: LoginPageProps) {
         <header className="time-tracker__header">
           <h1>Forge</h1>
         </header>
-        <button
-          type="button"
-          className="time-tracker__action"
-          onClick={onSignIn}
-        >
+        <button type="button" className="time-tracker__action" onClick={onSignIn}>
           Google でログイン
         </button>
       </div>

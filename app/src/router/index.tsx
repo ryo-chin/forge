@@ -54,11 +54,7 @@ const getWindowPathname = (): string => {
   return normalizePath(window.location.pathname);
 };
 
-export function BrowserRouter({
-  children,
-}: {
-  children?: ReactNode;
-}): JSX.Element {
+export function BrowserRouter({ children }: { children?: ReactNode }): JSX.Element {
   const [location, setLocation] = useState<Location>(() => ({
     pathname: getWindowPathname(),
   }));
@@ -76,31 +72,23 @@ export function BrowserRouter({
     };
   }, []);
 
-  const navigate = useCallback<RouterContextValue['navigate']>(
-    (to, options = {}) => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-      const target = normalizePath(to);
-      const replace = options.replace === true;
-      if (replace) {
-        window.history.replaceState(null, '', target);
-      } else {
-        window.history.pushState(null, '', target);
-      }
-      setLocation({ pathname: target });
-    },
-    [],
-  );
+  const navigate = useCallback<RouterContextValue['navigate']>((to, options = {}) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const target = normalizePath(to);
+    const replace = options.replace === true;
+    if (replace) {
+      window.history.replaceState(null, '', target);
+    } else {
+      window.history.pushState(null, '', target);
+    }
+    setLocation({ pathname: target });
+  }, []);
 
-  const value = useMemo<RouterContextValue>(
-    () => ({ location, navigate }),
-    [location, navigate],
-  );
+  const value = useMemo<RouterContextValue>(() => ({ location, navigate }), [location, navigate]);
 
-  return (
-    <RouterContext.Provider value={value}>{children}</RouterContext.Provider>
-  );
+  return <RouterContext.Provider value={value}>{children}</RouterContext.Provider>;
 }
 
 const useRouterContext = (): RouterContextValue => {
@@ -112,8 +100,7 @@ const useRouterContext = (): RouterContextValue => {
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useNavigate = (): RouterContextValue['navigate'] =>
-  useRouterContext().navigate;
+export const useNavigate = (): RouterContextValue['navigate'] => useRouterContext().navigate;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useLocation = (): Location => useRouterContext().location;
@@ -151,10 +138,7 @@ const createRoutesFromChildren = (children?: ReactNode): RouteObject[] => {
   return routes;
 };
 
-const segmentsStartWith = (
-  segments: string[],
-  prefix: string[],
-): boolean => {
+const segmentsStartWith = (segments: string[], prefix: string[]): boolean => {
   if (segments.length < prefix.length) {
     return false;
   }
@@ -166,18 +150,11 @@ const segmentsStartWith = (
   return true;
 };
 
-const wrapWithOutlet = (
-  element?: ReactNode,
-  child?: ReactNode | null,
-): ReactNode => {
+const wrapWithOutlet = (element?: ReactNode, child?: ReactNode | null): ReactNode => {
   if (child == null) {
     return element ?? null;
   }
-  return (
-    <OutletContext.Provider value={child}>
-      {element ?? null}
-    </OutletContext.Provider>
-  );
+  return <OutletContext.Provider value={child}>{element ?? null}</OutletContext.Provider>;
 };
 
 const matchRoutes = (
@@ -208,17 +185,13 @@ const matchRoute = (
   baseSegments: string[],
 ): ReactNode | null => {
   if (route.path === '*') {
-    const child = route.children
-      ? matchRoutes(route.children, segments, segments)
-      : null;
+    const child = route.children ? matchRoutes(route.children, segments, segments) : null;
     return wrapWithOutlet(route.element, child);
   }
 
   if (route.index) {
     if (segments.length === baseSegments.length) {
-      const child = route.children
-        ? matchRoutes(route.children, segments, baseSegments)
-        : null;
+      const child = route.children ? matchRoutes(route.children, segments, baseSegments) : null;
       return wrapWithOutlet(route.element, child);
     }
     return null;
@@ -233,9 +206,7 @@ const matchRoute = (
     return null;
   }
 
-  const child = route.children
-    ? matchRoutes(route.children, segments, targetSegments)
-    : null;
+  const child = route.children ? matchRoutes(route.children, segments, targetSegments) : null;
 
   if (route.children && child == null && segments.length > targetSegments.length) {
     return null;
@@ -244,11 +215,7 @@ const matchRoute = (
   return wrapWithOutlet(route.element, child);
 };
 
-export function Routes({
-  children,
-}: {
-  children?: ReactNode;
-}): JSX.Element | null {
+export function Routes({ children }: { children?: ReactNode }): JSX.Element | null {
   const { location } = useRouterContext();
   const routes = useMemo(() => createRoutesFromChildren(children), [children]);
   const element = useMemo(
@@ -268,13 +235,7 @@ export function Outlet(): JSX.Element | null {
   return element ? <>{element}</> : null;
 }
 
-export function Navigate({
-  to,
-  replace,
-}: {
-  to: string;
-  replace?: boolean;
-}): null {
+export function Navigate({ to, replace }: { to: string; replace?: boolean }): null {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -308,8 +269,7 @@ export function NavLink({
   const isExactMatch = location.pathname === target;
   const isActive = end ? isExactMatch : isExactMatch || location.pathname.startsWith(`${target}/`);
 
-  const computedClassName =
-    typeof className === 'function' ? className({ isActive }) : className;
+  const computedClassName = typeof className === 'function' ? className({ isActive }) : className;
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onClick) {

@@ -11,17 +11,8 @@ import {
   saveColumnMapping,
   SupabaseRepositoryError,
 } from '../repositories/googleConnections';
-import {
-  GoogleSheetsClient,
-  GoogleSheetsApiError,
-} from '../services/googleSheetsClient';
-import {
-  jsonResponse,
-  badRequest,
-  unauthorized,
-  conflict,
-  serverError,
-} from '../http/response';
+import { GoogleSheetsClient, GoogleSheetsApiError } from '../services/googleSheetsClient';
+import { jsonResponse, badRequest, unauthorized, conflict, serverError } from '../http/response';
 import { ensureValidAccessToken } from './oauth';
 
 type ConnectionRow = Awaited<ReturnType<typeof getConnectionByUser>>;
@@ -34,10 +25,7 @@ const mapColumnMapping = (mapping: NonNullable<MappingRow>) => ({
   optionalColumns: mapping.optional_columns,
 });
 
-const mapSettingsResponse = (
-  connection: ConnectionRow,
-  mapping: MappingRow,
-) => {
+const mapSettingsResponse = (connection: ConnectionRow, mapping: MappingRow) => {
   if (!connection) {
     return {
       connectionStatus: 'revoked',
@@ -72,10 +60,7 @@ const ensureBearer = (request: Request): string | null => {
   return token;
 };
 
-export const handleGetSettings = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleGetSettings = async (request: Request, env: Env): Promise<Response> => {
   const token = ensureBearer(request);
   if (!token) {
     return unauthorized('Bearer token is required');
@@ -123,7 +108,9 @@ type UpdateSettingsPayload = {
   columnMapping?: unknown;
 };
 
-const parseUpdatePayload = async (request: Request): Promise<{
+const parseUpdatePayload = async (
+  request: Request,
+): Promise<{
   spreadsheetId: string;
   sheetId: number;
   sheetTitle: string;
@@ -133,9 +120,7 @@ const parseUpdatePayload = async (request: Request): Promise<{
   try {
     payload = (await request.json()) as UpdateSettingsPayload;
   } catch (error) {
-    throw new Error(
-      error instanceof Error ? error.message : 'Invalid request body',
-    );
+    throw new Error(error instanceof Error ? error.message : 'Invalid request body');
   }
 
   const spreadsheetId = payload.spreadsheetId;
@@ -170,10 +155,7 @@ const parseUpdatePayload = async (request: Request): Promise<{
   };
 };
 
-export const handleUpdateSettings = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleUpdateSettings = async (request: Request, env: Env): Promise<Response> => {
   const token = ensureBearer(request);
   if (!token) {
     return unauthorized('Bearer token is required');
@@ -210,10 +192,7 @@ export const handleUpdateSettings = async (
     return conflict('connection_missing', 'Google spreadsheet connection not found');
   }
   if (connection.status !== 'active') {
-    return conflict(
-      'connection_inactive',
-      'Google spreadsheet connection is not active',
-    );
+    return conflict('connection_inactive', 'Google spreadsheet connection is not active');
   }
 
   let updatedConnection: ConnectionRow = connection;
@@ -268,10 +247,7 @@ const ensureActiveConnection = async (env: Env, userId: string) => {
     }
     if (connection.status !== 'active') {
       return {
-        error: conflict(
-          'connection_inactive',
-          'Google spreadsheet connection is not active',
-        ),
+        error: conflict('connection_inactive', 'Google spreadsheet connection is not active'),
         connection: null,
       } as const;
     }
@@ -287,10 +263,7 @@ const ensureActiveConnection = async (env: Env, userId: string) => {
   }
 };
 
-export const handleListSpreadsheets = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleListSpreadsheets = async (request: Request, env: Env): Promise<Response> => {
   const token = ensureBearer(request);
   if (!token) {
     return unauthorized('Bearer token is required');
@@ -316,10 +289,7 @@ export const handleListSpreadsheets = async (
   try {
     accessToken = await ensureValidAccessToken(env, connection);
   } catch (err) {
-    return serverError(
-      err instanceof Error ? err.message : 'Failed to refresh access token',
-      401,
-    );
+    return serverError(err instanceof Error ? err.message : 'Failed to refresh access token', 401);
   }
 
   const client = GoogleSheetsClient.fromAccessToken(accessToken);
@@ -330,8 +300,7 @@ export const handleListSpreadsheets = async (
     return jsonResponse(result ?? { items: [] });
   } catch (err) {
     if (err instanceof GoogleSheetsApiError) {
-      const status =
-        err.status === 401 ? 401 : err.status >= 500 ? 502 : err.status;
+      const status = err.status === 401 ? 401 : err.status >= 500 ? 502 : err.status;
       return serverError(err.message, status);
     }
     throw err;
@@ -348,10 +317,7 @@ const parseSpreadsheetIdFromPath = (request: Request): string | null => {
   return decodeURIComponent(segments[3] ?? '');
 };
 
-export const handleListSheets = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleListSheets = async (request: Request, env: Env): Promise<Response> => {
   const token = ensureBearer(request);
   if (!token) {
     return unauthorized('Bearer token is required');
@@ -382,10 +348,7 @@ export const handleListSheets = async (
   try {
     accessToken = await ensureValidAccessToken(env, connection);
   } catch (err) {
-    return serverError(
-      err instanceof Error ? err.message : 'Failed to refresh access token',
-      401,
-    );
+    return serverError(err instanceof Error ? err.message : 'Failed to refresh access token', 401);
   }
 
   const client = GoogleSheetsClient.fromAccessToken(accessToken);
@@ -395,8 +358,7 @@ export const handleListSheets = async (
     return jsonResponse({ items: sheets ?? [] });
   } catch (err) {
     if (err instanceof GoogleSheetsApiError) {
-      const status =
-        err.status === 401 ? 401 : err.status >= 500 ? 502 : err.status;
+      const status = err.status === 401 ? 401 : err.status >= 500 ? 502 : err.status;
       return serverError(err.message, status);
     }
     throw err;

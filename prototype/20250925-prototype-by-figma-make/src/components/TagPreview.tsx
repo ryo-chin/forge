@@ -9,7 +9,7 @@ interface TagPreviewProps {
 export function TagPreview({ input }: TagPreviewProps) {
   const parseTaskAndTags = (input: string) => {
     const tagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
-    const tags = (input.match(tagRegex) || []).map(tag => tag.slice(1)); // Remove # prefix
+    const tags = (input.match(tagRegex) || []).map((tag) => tag.slice(1)); // Remove # prefix
     const task = input.replace(tagRegex, '').trim();
     return { task, tags };
   };
@@ -25,7 +25,7 @@ export function TagPreview({ input }: TagPreviewProps) {
       'bg-yellow-100 text-yellow-800',
       'bg-red-100 text-red-800',
     ];
-    
+
     let hash = 0;
     for (let i = 0; i < tag.length; i++) {
       hash = tag.charCodeAt(i) + ((hash << 5) - hash);

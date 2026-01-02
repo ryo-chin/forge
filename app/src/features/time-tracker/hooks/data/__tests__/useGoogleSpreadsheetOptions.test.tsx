@@ -58,9 +58,7 @@ const createWrapper = () => {
   );
 };
 
-const mockSettings = (
-  overrides: Partial<GoogleSyncSettings> = {},
-): GoogleSyncSettings => ({
+const mockSettings = (overrides: Partial<GoogleSyncSettings> = {}): GoogleSyncSettings => ({
   connectionStatus: 'active',
   spreadsheet: {
     id: 'spreadsheet-1',
@@ -182,17 +180,11 @@ describe('useGoogleSpreadsheetOptions', () => {
     });
 
     const spreadsheets = await result.current.fetchSpreadsheets('Tracker');
-    expect(mocks.listSpreadsheets).toHaveBeenCalledWith(
-      'supabase-access-token',
-      'Tracker',
-    );
+    expect(mocks.listSpreadsheets).toHaveBeenCalledWith('supabase-access-token', 'Tracker');
     expect(spreadsheets.items).toHaveLength(1);
 
     const sheets = await result.current.fetchSheets('spreadsheet-1');
-    expect(mocks.listSheets).toHaveBeenCalledWith(
-      'supabase-access-token',
-      'spreadsheet-1',
-    );
+    expect(mocks.listSheets).toHaveBeenCalledWith('supabase-access-token', 'spreadsheet-1');
     expect(sheets.items[0]?.title).toBe('Sheet1');
   });
 
@@ -203,10 +195,7 @@ describe('useGoogleSpreadsheetOptions', () => {
     });
 
     const response = await result.current.startOAuth('/app/dashboard');
-    expect(mocks.startOAuth).toHaveBeenCalledWith(
-      'supabase-access-token',
-      '/app/dashboard',
-    );
+    expect(mocks.startOAuth).toHaveBeenCalledWith('supabase-access-token', '/app/dashboard');
     expect(response.authorizationUrl).toContain('https://accounts.google.com');
   });
 });

@@ -8,10 +8,7 @@ import {
   startOAuth,
   isGoogleSyncClientEnabled,
 } from '@infra/google';
-import type {
-  UpdateGoogleSettingsPayload,
-  OAuthStartResponse,
-} from '@infra/google';
+import type { UpdateGoogleSettingsPayload, OAuthStartResponse } from '@infra/google';
 import type {
   GoogleSyncSettings,
   SheetOption,
@@ -107,8 +104,7 @@ export const useGoogleSpreadsheetOptions = () => {
   });
 
   const updateSelection = useCallback(
-    async (payload: UpdateSelectionPayload) =>
-      updateSettingsMutation.mutateAsync(payload),
+    async (payload: UpdateSelectionPayload) => updateSettingsMutation.mutateAsync(payload),
     [updateSettingsMutation],
   );
 
@@ -120,21 +116,15 @@ export const useGoogleSpreadsheetOptions = () => {
     [],
   );
 
-  const fetchSheetsFn = useCallback(
-    async (spreadsheetId: string): Promise<FetchSheetsResult> => {
-      const token = await getAccessToken();
-      return listSheets(token, spreadsheetId);
-    },
-    [],
-  );
+  const fetchSheetsFn = useCallback(async (spreadsheetId: string): Promise<FetchSheetsResult> => {
+    const token = await getAccessToken();
+    return listSheets(token, spreadsheetId);
+  }, []);
 
-  const startOAuthFlow = useCallback(
-    async (redirectPath: string): Promise<OAuthStartResponse> => {
-      const token = await getAccessToken();
-      return startOAuth(token, redirectPath);
-    },
-    [],
-  );
+  const startOAuthFlow = useCallback(async (redirectPath: string): Promise<OAuthStartResponse> => {
+    const token = await getAccessToken();
+    return startOAuth(token, redirectPath);
+  }, []);
 
   useEffect(() => {
     persistSheetsConfig(settingsQuery.data ?? null);

@@ -12,7 +12,7 @@ export const formatTimer = (seconds: number) => {
 export const localDateTimeToMs = (v: string): number => {
   // input[type=datetime-local] の文字列はローカルタイムとして解釈される
   return new Date(v).getTime();
-}
+};
 
 export const formatDurationForAria = (seconds: number) => {
   if (seconds <= 0) return '0秒';

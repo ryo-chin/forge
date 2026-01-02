@@ -44,12 +44,7 @@ describe('GoogleSpreadsheetSettingsSection', () => {
   });
 
   it('renders section title', async () => {
-    render(
-      <GoogleSpreadsheetSettingsSection
-        {...defaultProps}
-        isConnected={false}
-      />,
-    );
+    render(<GoogleSpreadsheetSettingsSection {...defaultProps} isConnected={false} />);
 
     expect(
       await screen.findByRole('heading', { name: 'Google スプレッドシート連携' }),
@@ -57,12 +52,7 @@ describe('GoogleSpreadsheetSettingsSection', () => {
   });
 
   it('shows OAuth button when not connected', async () => {
-    render(
-      <GoogleSpreadsheetSettingsSection
-        {...defaultProps}
-        isConnected={false}
-      />,
-    );
+    render(<GoogleSpreadsheetSettingsSection {...defaultProps} isConnected={false} />);
 
     const oauthButton = screen.getByRole('button', {
       name: /Google アカウントと連携/i,
@@ -146,8 +136,6 @@ describe('GoogleSpreadsheetSettingsSection', () => {
       ).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByRole('button', { name: 'Google アカウントを再連携' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Google アカウントを再連携' })).toBeInTheDocument();
   });
 });
