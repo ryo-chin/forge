@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import './SettingsPage.css';
-import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
 import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
 import { isGoogleSyncClientEnabled } from '@infra/google';
+import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
 
 type FeedbackState = {
   type: 'success' | 'error';
@@ -10,14 +10,8 @@ type FeedbackState = {
 };
 
 export function SettingsPage(): JSX.Element {
-  const {
-    settings,
-    updateSelection,
-    isUpdating,
-    fetchSpreadsheets,
-    fetchSheets,
-    startOAuth,
-  } = useGoogleSpreadsheetOptions();
+  const { settings, updateSelection, isUpdating, fetchSpreadsheets, fetchSheets, startOAuth } =
+    useGoogleSpreadsheetOptions();
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   const handleSave = useCallback(
@@ -74,9 +68,7 @@ export function SettingsPage(): JSX.Element {
         <header className="settings-page__header">
           <div>
             <h1 className="settings-page__title">設定</h1>
-            <p className="settings-page__description">
-              Time Tracker の連携設定を管理します。
-            </p>
+            <p className="settings-page__description">Time Tracker の連携設定を管理します。</p>
           </div>
         </header>
 

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { handleSyncSession, handleDeleteSyncedSession } from '../syncSession';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { handleDeleteSyncedSession, handleSyncSession } from '../syncSession';
 
 const mocks = vi.hoisted(() => {
   const verifySupabaseJwt = vi.fn();
@@ -27,9 +27,7 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import('../../auth/verifySupabaseJwt')
-  >();
+  const actual = await importOriginal<typeof import('../../auth/verifySupabaseJwt')>();
   return {
     ...actual,
     verifySupabaseJwt: mocks.verifySupabaseJwt,
@@ -37,8 +35,7 @@ vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
 });
 
 vi.mock('../../repositories/googleConnections', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../repositories/googleConnections')>();
+  const actual = await importOriginal<typeof import('../../repositories/googleConnections')>();
   return {
     ...actual,
     getConnectionByUser: mocks.getConnectionByUser,
@@ -50,8 +47,7 @@ vi.mock('../../repositories/googleConnections', async (importOriginal) => {
 });
 
 vi.mock('../../services/googleSheetsClient', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../services/googleSheetsClient')>();
+  const actual = await importOriginal<typeof import('../../services/googleSheetsClient')>();
   return {
     ...actual,
     GoogleSheetsClient: {
@@ -108,10 +104,7 @@ describe('handleSyncSession', () => {
   });
 
   it('returns 401 when authorization header is missing', async () => {
-    const response = await handleSyncSession(
-      buildRequest({ session: {} }),
-      env,
-    );
+    const response = await handleSyncSession(buildRequest({ session: {} }), env);
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toMatchObject({
@@ -443,12 +436,7 @@ describe('handleDeleteSyncedSession', () => {
 
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toMatchObject({ status: 'ok' });
-    expect(mocks.deleteRows).toHaveBeenCalledWith(
-      'sheet-spreadsheet',
-      42,
-      0,
-      1,
-    );
+    expect(mocks.deleteRows).toHaveBeenCalledWith('sheet-spreadsheet', 42, 0, 1);
     expect(mocks.updateSyncLog).toHaveBeenCalledWith(
       env,
       'log-1',

@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
 import { ColumnMappingForm } from '@features/time-tracker/components/ColumnMappingForm';
 import type {
-  SpreadsheetOption,
   SheetOption,
+  SpreadsheetOption,
 } from '@features/time-tracker/domain/googleSyncTypes.ts';
 import { GoogleSyncClientError } from '@infra/google';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './GoogleSpreadsheetSettingsSection.css';
 
 type ColumnMapping = {
@@ -44,9 +45,7 @@ export type GoogleSpreadsheetSettingsSectionProps = {
 const REAUTH_MESSAGE =
   'Google アカウントとの連携が期限切れになりました。再度連携を行ってください。';
 
-export const GoogleSpreadsheetSettingsSection: React.FC<
-  GoogleSpreadsheetSettingsSectionProps
-> = ({
+export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSettingsSectionProps> = ({
   isConnected,
   currentSpreadsheetId,
   currentSheetId,
@@ -59,12 +58,10 @@ export const GoogleSpreadsheetSettingsSection: React.FC<
 }) => {
   const [spreadsheets, setSpreadsheets] = useState<SpreadsheetOption[]>([]);
   const [sheets, setSheets] = useState<SheetOption[]>([]);
-  const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<
-    string | undefined
-  >(currentSpreadsheetId);
-  const [selectedSheetId, setSelectedSheetId] = useState<number | undefined>(
-    currentSheetId,
+  const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string | undefined>(
+    currentSpreadsheetId,
   );
+  const [selectedSheetId, setSelectedSheetId] = useState<number | undefined>(currentSheetId);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping | undefined>(
     currentColumnMapping,
   );
@@ -73,22 +70,16 @@ export const GoogleSpreadsheetSettingsSection: React.FC<
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [reconnectMessage, setReconnectMessage] = useState<string | null>(null);
 
-  const handleAuthError = useCallback(
-    (error: unknown): boolean => {
-      if (
-        error instanceof GoogleSyncClientError &&
-        error.status === 401
-      ) {
-        setNeedsReconnect(true);
-        setReconnectMessage(REAUTH_MESSAGE);
-        setSpreadsheets([]);
-        setSheets([]);
-        return true;
-      }
-      return false;
-    },
-    [],
-  );
+  const handleAuthError = useCallback((error: unknown): boolean => {
+    if (error instanceof GoogleSyncClientError && error.status === 401) {
+      setNeedsReconnect(true);
+      setReconnectMessage(REAUTH_MESSAGE);
+      setSpreadsheets([]);
+      setSheets([]);
+      return true;
+    }
+    return false;
+  }, []);
 
   useEffect(() => {
     setSelectedSpreadsheetId(currentSpreadsheetId);
@@ -175,9 +166,7 @@ export const GoogleSpreadsheetSettingsSection: React.FC<
     }
   }, [isConnected]);
 
-  const handleSpreadsheetChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
+  const handleSpreadsheetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     setSelectedSpreadsheetId(value || undefined);
     setSelectedSheetId(undefined);
@@ -211,15 +200,12 @@ export const GoogleSpreadsheetSettingsSection: React.FC<
     });
   };
 
-  const saveDisabled =
-    !selectedSpreadsheetId || selectedSheetId === undefined || isSaving;
+  const saveDisabled = !selectedSpreadsheetId || selectedSheetId === undefined || isSaving;
 
   const showReconnectPrompt = needsReconnect || !isConnected;
-  const oauthButtonLabel = needsReconnect
-    ? 'Google アカウントを再連携'
-    : 'Google アカウントと連携';
+  const oauthButtonLabel = needsReconnect ? 'Google アカウントを再連携' : 'Google アカウントと連携';
   const promptMessage = needsReconnect
-    ? reconnectMessage ?? REAUTH_MESSAGE
+    ? (reconnectMessage ?? REAUTH_MESSAGE)
     : 'Google アカウントと連携して、スプレッドシートへの同期を有効にします。';
 
   return (
@@ -242,7 +228,11 @@ export const GoogleSpreadsheetSettingsSection: React.FC<
         <div className="settings-section__body">
           <p>{promptMessage}</p>
           <div className="settings-section__actions">
-            <button type="button" onClick={onStartOAuth} className="settings-section__primary-button">
+            <button
+              type="button"
+              onClick={onStartOAuth}
+              className="settings-section__primary-button"
+            >
               {oauthButtonLabel}
             </button>
           </div>
@@ -290,10 +280,7 @@ export const GoogleSpreadsheetSettingsSection: React.FC<
           </div>
 
           {selectedSpreadsheetId && selectedSheetId !== undefined ? (
-            <ColumnMappingForm
-              currentMapping={columnMapping}
-              onChange={setColumnMapping}
-            />
+            <ColumnMappingForm currentMapping={columnMapping} onChange={setColumnMapping} />
           ) : null}
 
           <div className="settings-section__actions">

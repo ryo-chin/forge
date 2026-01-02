@@ -1,10 +1,6 @@
 import type { SessionDraft, TimeTrackerSession } from './types.ts';
 
-const INTENSITY_VALUES = new Set<SessionDraft['intensity']>([
-  'low',
-  'medium',
-  'high',
-]);
+const INTENSITY_VALUES = new Set<SessionDraft['intensity']>(['low', 'medium', 'high']);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;

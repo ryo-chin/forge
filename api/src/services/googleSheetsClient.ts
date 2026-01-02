@@ -50,10 +50,7 @@ export class GoogleSheetsClient {
     return new GoogleSheetsClient(accessToken);
   }
 
-  private async request<T>(
-    input: string | URL,
-    init: RequestInit = {},
-  ): Promise<T> {
+  private async request<T>(input: string | URL, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${this.accessToken}`);
     headers.set('Content-Type', 'application/json');
@@ -67,9 +64,7 @@ export class GoogleSheetsClient {
         detail = await response.text();
       }
       throw new GoogleSheetsApiError(
-        `Google API request failed (${response.status}) ${JSON.stringify(
-          detail,
-        )}`,
+        `Google API request failed (${response.status}) ${JSON.stringify(detail)}`,
         response.status,
       );
     }
@@ -77,9 +72,7 @@ export class GoogleSheetsClient {
     if (response.status === 204) {
       return undefined as T;
     }
-    if (
-      response.headers.get('content-type')?.includes('application/json') ?? false
-    ) {
+    if (response.headers.get('content-type')?.includes('application/json') ?? false) {
       return (await response.json()) as T;
     }
     const text = await response.text();
@@ -93,18 +86,9 @@ export class GoogleSheetsClient {
     options: AppendRowOptions = {},
   ): Promise<AppendRowResponse> {
     const range = encodeURIComponent(`${sheetTitle}!A1`);
-    const url = new URL(
-      `${spreadsheetId}/values/${range}:append`,
-      `${SHEETS_BASE_URL}/`,
-    );
-    url.searchParams.set(
-      'valueInputOption',
-      options.valueInputOption ?? 'USER_ENTERED',
-    );
-    url.searchParams.set(
-      'insertDataOption',
-      options.insertDataOption ?? 'INSERT_ROWS',
-    );
+    const url = new URL(`${spreadsheetId}/values/${range}:append`, `${SHEETS_BASE_URL}/`);
+    url.searchParams.set('valueInputOption', options.valueInputOption ?? 'USER_ENTERED');
+    url.searchParams.set('insertDataOption', options.insertDataOption ?? 'INSERT_ROWS');
 
     return this.request<AppendRowResponse>(url, {
       method: 'POST',
@@ -119,10 +103,7 @@ export class GoogleSheetsClient {
     range: string,
   ): Promise<{ values?: (string | number)[][] }> {
     const encodedRange = encodeURIComponent(range);
-    const url = new URL(
-      `${spreadsheetId}/values/${encodedRange}`,
-      `${SHEETS_BASE_URL}/`,
-    );
+    const url = new URL(`${spreadsheetId}/values/${encodedRange}`, `${SHEETS_BASE_URL}/`);
 
     return this.request<{ values?: (string | number)[][] }>(url);
   }
@@ -166,10 +147,7 @@ export class GoogleSheetsClient {
     pageToken: string | undefined = undefined,
   ): Promise<{ items: SpreadsheetSummary[]; nextPageToken?: string }> {
     const url = new URL(DRIVE_FILES_URL);
-    const conditions = [
-      "mimeType='application/vnd.google-apps.spreadsheet'",
-      'trashed=false',
-    ];
+    const conditions = ["mimeType='application/vnd.google-apps.spreadsheet'", 'trashed=false'];
     if (query) {
       const sanitized = query.replace(/['"]/g, '').trim();
       if (sanitized.length > 0) {
@@ -219,10 +197,7 @@ export class GoogleSheetsClient {
     }>,
     valueInputOption: 'RAW' | 'USER_ENTERED' = 'USER_ENTERED',
   ): Promise<void> {
-    const url = new URL(
-      `${spreadsheetId}/values:batchUpdate`,
-      `${SHEETS_BASE_URL}/`,
-    );
+    const url = new URL(`${spreadsheetId}/values:batchUpdate`, `${SHEETS_BASE_URL}/`);
 
     await this.request(url, {
       method: 'POST',

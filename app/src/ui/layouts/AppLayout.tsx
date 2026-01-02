@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
 import { AuthStatusBar } from '@features/logiin';
-import { GlobalHeader } from '../components/GlobalHeader';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { AppNavigation } from '../components/AppNav';
+import { GlobalHeader } from '../components/GlobalHeader';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 export const AppLayout: React.FC = () => {
@@ -38,11 +39,7 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
       </div>
-      <AppNavigation
-        variant="overlay"
-        open={isNavOverlayOpen}
-        onOpenChange={setNavOverlayOpen}
-      />
+      <AppNavigation variant="overlay" open={isNavOverlayOpen} onOpenChange={setNavOverlayOpen} />
     </>
   );
 };

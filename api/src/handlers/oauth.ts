@@ -1,21 +1,16 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
   getConnectionByUser,
-  upsertConnection,
-  updateAccessToken,
   SupabaseRepositoryError,
+  updateAccessToken,
+  upsertConnection,
 } from '../repositories/googleConnections';
-import {
-  jsonResponse,
-  badRequest,
-  unauthorized,
-  serverError,
-} from '../http/response';
 
 type OauthStatePayload = {
   userId: string;
@@ -23,8 +18,7 @@ type OauthStatePayload = {
   nonce: string;
 };
 
-const GOOGLE_AUTH_ENDPOINT =
-  'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const GOOGLE_REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
 
@@ -58,8 +52,7 @@ const fromBase64Url = (value: string): string => {
   return Buffer.from(value, 'base64url').toString('utf8');
 };
 
-const encodeState = (payload: OauthStatePayload): string =>
-  toBase64Url(JSON.stringify(payload));
+const encodeState = (payload: OauthStatePayload): string => toBase64Url(JSON.stringify(payload));
 
 const decodeState = (value: string): OauthStatePayload => {
   try {
@@ -75,9 +68,7 @@ const decodeState = (value: string): OauthStatePayload => {
     }
     return parsed as OauthStatePayload;
   } catch (error) {
-    throw new Error(
-      error instanceof Error ? error.message : 'Invalid state payload',
-    );
+    throw new Error(error instanceof Error ? error.message : 'Invalid state payload');
   }
 };
 
@@ -87,11 +78,7 @@ const ensureEnv = (env: Env) => {
   }
 };
 
-const getAuthorizationUrl = (
-  env: Env,
-  state: OauthStatePayload,
-  redirectPath: string,
-): string => {
+const getAuthorizationUrl = (env: Env, state: OauthStatePayload, redirectPath: string): string => {
   const url = new URL(GOOGLE_AUTH_ENDPOINT);
   url.searchParams.set('client_id', env.GOOGLE_CLIENT_ID);
   url.searchParams.set('redirect_uri', env.GOOGLE_REDIRECT_URI);
@@ -137,7 +124,6 @@ const parseTokenResponse = async (response: Response) => {
   };
 };
 
-
 /**
  * リフレッシュトークンを使って新しいアクセストークンを取得
  */
@@ -172,12 +158,12 @@ export const refreshAccessToken = async (
   }
 
   const expiresAt = new Date(
-    Date.now() + (typeof tokenPayload.expires_in === 'number' ? tokenPayload.expires_in * 1000 : 3600000),
+    Date.now() +
+      (typeof tokenPayload.expires_in === 'number' ? tokenPayload.expires_in * 1000 : 3600000),
   ).toISOString();
 
   return { accessToken, expiresAt };
 };
-
 
 /**
  * アクセストークンが期限切れかチェックし、必要ならリフレッシュ
@@ -215,10 +201,7 @@ export const ensureValidAccessToken = async (
   return accessToken;
 };
 
-export const handleOauthStart = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleOauthStart = async (request: Request, env: Env): Promise<Response> => {
   const origin = request.headers.get('Origin');
   const token = extractBearerToken(request);
   if (!token) {
@@ -269,10 +252,7 @@ export const handleOauthStart = async (
   return jsonResponse({ authorizationUrl });
 };
 
-export const handleOauthCallback = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleOauthCallback = async (request: Request, env: Env): Promise<Response> => {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const stateValue = url.searchParams.get('state');
@@ -375,10 +355,7 @@ export const handleOauthCallback = async (
   });
 };
 
-export const handleOauthRevoke = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleOauthRevoke = async (request: Request, env: Env): Promise<Response> => {
   const token = extractBearerToken(request);
   if (!token) {
     return unauthorized('Bearer token is required');

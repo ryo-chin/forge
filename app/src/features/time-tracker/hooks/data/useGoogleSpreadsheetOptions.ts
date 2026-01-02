@@ -1,24 +1,21 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@infra/auth';
+import type { OAuthStartResponse, UpdateGoogleSettingsPayload } from '@infra/google';
 import {
   fetchSettings,
-  updateSettings,
-  listSpreadsheets,
-  listSheets,
-  startOAuth,
   isGoogleSyncClientEnabled,
+  listSheets,
+  listSpreadsheets,
+  startOAuth,
+  updateSettings,
 } from '@infra/google';
-import type {
-  UpdateGoogleSettingsPayload,
-  OAuthStartResponse,
-} from '@infra/google';
+import { getSupabaseClient } from '@infra/supabase';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo } from 'react';
 import type {
   GoogleSyncSettings,
   SheetOption,
   SpreadsheetOption,
 } from '../../domain/googleSyncTypes.ts';
-import { getSupabaseClient } from '@infra/supabase';
-import { useAuth } from '@infra/auth';
 
 type GoogleSheetsOptions = {
   spreadsheetId: string;
@@ -107,8 +104,7 @@ export const useGoogleSpreadsheetOptions = () => {
   });
 
   const updateSelection = useCallback(
-    async (payload: UpdateSelectionPayload) =>
-      updateSettingsMutation.mutateAsync(payload),
+    async (payload: UpdateSelectionPayload) => updateSettingsMutation.mutateAsync(payload),
     [updateSettingsMutation],
   );
 
@@ -120,21 +116,15 @@ export const useGoogleSpreadsheetOptions = () => {
     [],
   );
 
-  const fetchSheetsFn = useCallback(
-    async (spreadsheetId: string): Promise<FetchSheetsResult> => {
-      const token = await getAccessToken();
-      return listSheets(token, spreadsheetId);
-    },
-    [],
-  );
+  const fetchSheetsFn = useCallback(async (spreadsheetId: string): Promise<FetchSheetsResult> => {
+    const token = await getAccessToken();
+    return listSheets(token, spreadsheetId);
+  }, []);
 
-  const startOAuthFlow = useCallback(
-    async (redirectPath: string): Promise<OAuthStartResponse> => {
-      const token = await getAccessToken();
-      return startOAuth(token, redirectPath);
-    },
-    [],
-  );
+  const startOAuthFlow = useCallback(async (redirectPath: string): Promise<OAuthStartResponse> => {
+    const token = await getAccessToken();
+    return startOAuth(token, redirectPath);
+  }, []);
 
   useEffect(() => {
     persistSheetsConfig(settingsQuery.data ?? null);

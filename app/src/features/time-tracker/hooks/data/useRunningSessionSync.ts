@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
+import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 import { initialRunningSessionState } from '../../domain/runningSession.ts';
 import type { RunningSessionState } from '../../domain/types.ts';
-import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 
 type UseRunningSessionSyncOptions = {
   dataSource: TimeTrackerDataSource;
@@ -48,8 +48,7 @@ const persistState = async (
   signatureRef: React.MutableRefObject<string>,
   options: PersistOptions,
 ): Promise<void> => {
-  const targetState =
-    state.status === 'running' ? state : initialRunningSessionState;
+  const targetState = state.status === 'running' ? state : initialRunningSessionState;
   const signature = serializeState(targetState);
   const { force = false } = options;
 
@@ -152,12 +151,7 @@ export const useRunningSessionSync = ({
       }
 
       const targetState = options.stateOverride ?? latestStateRef.current;
-      await persistState(
-        dataSource,
-        targetState,
-        persistSignatureRef,
-        options,
-      );
+      await persistState(dataSource, targetState, persistSignatureRef, options);
     },
     [dataSource, isSupabaseMode, syncEnabled],
   );
@@ -172,7 +166,6 @@ export const useRunningSessionSync = ({
   }, [syncEnabled, state, dataSource, isSupabaseMode]);
 
   return {
-    persistNow: (options) =>
-      persistLatestState({ force: true, ...options }),
+    persistNow: (options) => persistLatestState({ force: true, ...options }),
   };
 };

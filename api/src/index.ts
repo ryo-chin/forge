@@ -1,22 +1,18 @@
 import type { Env } from './env';
-import { handleSyncSession, handleDeleteSyncedSession } from './handlers/syncSession';
+import { handleOauthCallback, handleOauthRevoke, handleOauthStart } from './handlers/oauth';
 import {
-  handleOauthStart,
-  handleOauthCallback,
-  handleOauthRevoke,
-} from './handlers/oauth';
-import {
-  handleGetSettings,
-  handleUpdateSettings,
-  handleListSpreadsheets,
-  handleListSheets,
-} from './handlers/settings';
-import { handleOptions } from './http/response';
-import {
+  handleRunningSessionCancel,
   handleRunningSessionStart,
   handleRunningSessionUpdate,
-  handleRunningSessionCancel,
 } from './handlers/runningSessions';
+import {
+  handleGetSettings,
+  handleListSheets,
+  handleListSpreadsheets,
+  handleUpdateSettings,
+} from './handlers/settings';
+import { handleDeleteSyncedSession, handleSyncSession } from './handlers/syncSession';
+import { handleOptions } from './http/response';
 
 const ROUTES = {
   SYNC: '/integrations/google/sync',

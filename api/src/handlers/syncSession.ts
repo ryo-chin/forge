@@ -1,41 +1,27 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
   createSyncLog,
   findSyncLog,
   getColumnMappingByConnection,
   getConnectionByUser,
-  updateSyncLog,
   SupabaseRepositoryError,
+  updateSyncLog,
 } from '../repositories/googleConnections';
-import {
-  GoogleSheetsApiError,
-  GoogleSheetsClient,
-} from '../services/googleSheetsClient';
-import type {
-  ColumnMapping,
-  SyncLogPayload,
-  SyncRequestBody,
-  SyncSessionPayload,
-} from '../types';
-import {
-  jsonResponse,
-  badRequest,
-  unauthorized,
-  conflict,
-  serverError,
-} from '../http/response';
-import { ensureValidAccessToken } from './oauth';
+import { GoogleSheetsApiError, GoogleSheetsClient } from '../services/googleSheetsClient';
+import type { ColumnMapping, SyncLogPayload, SyncRequestBody, SyncSessionPayload } from '../types';
 import {
   columnKeyToIndex,
   formatDateTime,
   requiresHeaderLookup,
   resolveColumnLetter,
 } from '../utils/googleSheets';
+import { ensureValidAccessToken } from './oauth';
 
 type SyncDeleteRequestBody = {
   sessionId: string;
@@ -55,19 +41,18 @@ const normalizeSessionPayload = (session: SyncSessionPayload) => ({
   intensity: session.intensity ?? '',
 });
 
-const defaultColumnOrder: Array<keyof ReturnType<typeof normalizeSessionPayload>> =
-  [
-    'status',
-    'title',
-    'startedAt',
-    'endedAt',
-    'durationSeconds',
-    'project',
-    'notes',
-    'tags',
-    'skill',
-    'intensity',
-  ];
+const defaultColumnOrder: Array<keyof ReturnType<typeof normalizeSessionPayload>> = [
+  'status',
+  'title',
+  'startedAt',
+  'endedAt',
+  'durationSeconds',
+  'project',
+  'notes',
+  'tags',
+  'skill',
+  'intensity',
+];
 
 /**
  * 列記号（A, B, C, ...）を0始まりの数値インデックスに変換
@@ -202,9 +187,7 @@ const parseRequestBody = async (request: Request): Promise<SyncRequestBody> => {
     }
     return parsed;
   } catch (error) {
-    throw new Error(
-      error instanceof Error ? error.message : 'Invalid request body',
-    );
+    throw new Error(error instanceof Error ? error.message : 'Invalid request body');
   }
 };
 
@@ -221,18 +204,12 @@ const validateSessionPayload = (session: SyncSessionPayload) => {
   if (!session.endedAt || typeof session.endedAt !== 'string') {
     throw new Error('session.endedAt is required');
   }
-  if (
-    typeof session.durationSeconds !== 'number' ||
-    Number.isNaN(session.durationSeconds)
-  ) {
+  if (typeof session.durationSeconds !== 'number' || Number.isNaN(session.durationSeconds)) {
     throw new Error('session.durationSeconds must be a number');
   }
 };
 
-export const handleSyncSession = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleSyncSession = async (request: Request, env: Env): Promise<Response> => {
   const token = extractBearerToken(request);
   if (!token) {
     return unauthorized('Bearer token is required');
@@ -277,10 +254,7 @@ export const handleSyncSession = async (
     return conflict('connection_inactive', 'Google spreadsheet connection is not active');
   }
   if (!connection.spreadsheet_id || !connection.sheet_title) {
-    return conflict(
-      'selection_missing',
-      'Spreadsheet or sheet selection is not configured',
-    );
+    return conflict('selection_missing', 'Spreadsheet or sheet selection is not configured');
   }
 
   let mappingRow;
@@ -371,11 +345,7 @@ export const handleSyncSession = async (
       );
 
       if (updates.length > 0) {
-        await client.batchUpdateValues(
-          connection.spreadsheet_id,
-          updates,
-          'USER_ENTERED',
-        );
+        await client.batchUpdateValues(connection.spreadsheet_id, updates, 'USER_ENTERED');
       }
     } else {
       appendResult = (await client.appendRow(
@@ -408,8 +378,7 @@ export const handleSyncSession = async (
 
     return jsonResponse(mapLogPayload(updated), 202);
   } catch (error) {
-    const failureReason =
-      error instanceof Error ? error.message : 'Unknown error';
+    const failureReason = error instanceof Error ? error.message : 'Unknown error';
     try {
       await updateSyncLog(env, syncLog.id, {
         status: 'failed',
@@ -435,17 +404,12 @@ export const handleSyncSession = async (
   }
 };
 
-export const handleDeleteSyncedSession = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleDeleteSyncedSession = async (request: Request, env: Env): Promise<Response> => {
   let body: SyncDeleteRequestBody;
   try {
     body = (await request.json()) as SyncDeleteRequestBody;
   } catch (error) {
-    return badRequest(
-      error instanceof Error ? error.message : 'Invalid request body',
-    );
+    return badRequest(error instanceof Error ? error.message : 'Invalid request body');
   }
 
   if (!body || typeof body.sessionId !== 'string' || body.sessionId.trim().length === 0) {
@@ -566,10 +530,7 @@ export const handleDeleteSyncedSession = async (
       }
     } catch (error) {
       if (error instanceof SupabaseRepositoryError) {
-        return serverError(
-          error.message,
-          error.status >= 500 ? 502 : error.status,
-        );
+        return serverError(error.message, error.status >= 500 ? 502 : error.status);
       }
       throw error;
     }

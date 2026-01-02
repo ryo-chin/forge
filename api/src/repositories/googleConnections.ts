@@ -92,18 +92,11 @@ const REST_PREFIX = '/rest/v1';
 
 const ensureConfig = (env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new SupabaseRepositoryError(
-      'Supabase REST configuration is missing',
-      500,
-    );
+    throw new SupabaseRepositoryError('Supabase REST configuration is missing', 500);
   }
 };
 
-const resolveRestUrl = (
-  env: Env,
-  path: string,
-  searchParams?: Record<string, string>,
-): URL => {
+const resolveRestUrl = (env: Env, path: string, searchParams?: Record<string, string>): URL => {
   const url = new URL(`${REST_PREFIX}/${path}`, env.SUPABASE_URL);
   if (searchParams) {
     for (const [key, value] of Object.entries(searchParams)) {
@@ -120,7 +113,7 @@ const restHeaders = (env: Env, prefer?: string): HeadersInit => {
     'Content-Type': 'application/json',
   };
   if (prefer) {
-    headers['Prefer'] = prefer;
+    headers.Prefer = prefer;
   }
   return headers;
 };
@@ -221,26 +214,20 @@ export const upsertConnection = async (
   return rows[0];
 };
 
-
 export const updateAccessToken = async (
   env: Env,
   connectionId: string,
   accessToken: string,
   expiresAt: string,
 ): Promise<void> => {
-  await request(
-    env,
-    'PATCH',
-    'google_spreadsheet_connections',
-    {
-      searchParams: { id: `eq.${connectionId}` },
-      body: {
-        access_token: accessToken,
-        access_token_expires_at: expiresAt,
-        updated_at: new Date().toISOString(),
-      },
+  await request(env, 'PATCH', 'google_spreadsheet_connections', {
+    searchParams: { id: `eq.${connectionId}` },
+    body: {
+      access_token: accessToken,
+      access_token_expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
     },
-  );
+  });
 };
 
 export const updateConnectionSelection = async (
@@ -276,12 +263,13 @@ export const saveColumnMapping = async (
   const body = {
     connection_id: payload.connectionId,
     mappings: payload.mappings,
-    required_columns:
-      payload.requiredColumns ??
-      ['title', 'startedAt', 'endedAt', 'durationSeconds'],
-    optional_columns:
-      payload.optionalColumns ??
-      ['project', 'notes', 'tags', 'skill', 'intensity'],
+    required_columns: payload.requiredColumns ?? [
+      'title',
+      'startedAt',
+      'endedAt',
+      'durationSeconds',
+    ],
+    optional_columns: payload.optionalColumns ?? ['project', 'notes', 'tags', 'skill', 'intensity'],
     updated_at: new Date().toISOString(),
   };
 
@@ -335,41 +323,28 @@ export const createSyncLog = async (
   };
 
   if (!existing) {
-    const rows = await request<GoogleSyncLogRow[]>(
-      env,
-      'POST',
-      'google_sync_logs',
-      {
-        body,
-        searchParams: {
-          select: '*',
-        },
-        prefer: 'return=representation',
-      },
-    );
-    return rows[0];
-  }
-
-  const rows = await request<GoogleSyncLogRow[]>(
-    env,
-    'PATCH',
-    'google_sync_logs',
-    {
+    const rows = await request<GoogleSyncLogRow[]>(env, 'POST', 'google_sync_logs', {
       body,
       searchParams: {
-        connection_id: `eq.${payload.connectionId}`,
-        session_id: `eq.${payload.sessionId}`,
         select: '*',
       },
       prefer: 'return=representation',
+    });
+    return rows[0];
+  }
+
+  const rows = await request<GoogleSyncLogRow[]>(env, 'PATCH', 'google_sync_logs', {
+    body,
+    searchParams: {
+      connection_id: `eq.${payload.connectionId}`,
+      session_id: `eq.${payload.sessionId}`,
+      select: '*',
     },
-  );
+    prefer: 'return=representation',
+  });
 
   if (rows.length === 0) {
-    throw new SupabaseRepositoryError(
-      'Failed to upsert sync log',
-      409,
-    );
+    throw new SupabaseRepositoryError('Failed to upsert sync log', 409);
   }
 
   return rows[0];
@@ -391,22 +366,14 @@ export const updateSyncLog = async (
     body.retry_count = payload.retryCount;
   }
 
-  const rows = await request<GoogleSyncLogRow[]>(
-    env,
-    'PATCH',
-    'google_sync_logs',
-    {
-      body,
-      searchParams: { id: `eq.${logId}`, select: '*' },
-      prefer: 'return=representation',
-    },
-  );
+  const rows = await request<GoogleSyncLogRow[]>(env, 'PATCH', 'google_sync_logs', {
+    body,
+    searchParams: { id: `eq.${logId}`, select: '*' },
+    prefer: 'return=representation',
+  });
 
   if (rows.length === 0) {
-    throw new SupabaseRepositoryError(
-      `Sync log not found for id ${logId}`,
-      404,
-    );
+    throw new SupabaseRepositoryError(`Sync log not found for id ${logId}`, 404);
   }
 
   return rows[0];
@@ -417,18 +384,13 @@ export const findSyncLog = async (
   connectionId: string,
   sessionId: string,
 ): Promise<GoogleSyncLogRow | null> => {
-  const rows = await request<GoogleSyncLogRow[]>(
-    env,
-    'GET',
-    'google_sync_logs',
-    {
-      searchParams: {
-        connection_id: `eq.${connectionId}`,
-        session_id: `eq.${sessionId}`,
-        select: '*',
-        limit: '1',
-      },
+  const rows = await request<GoogleSyncLogRow[]>(env, 'GET', 'google_sync_logs', {
+    searchParams: {
+      connection_id: `eq.${connectionId}`,
+      session_id: `eq.${sessionId}`,
+      select: '*',
+      limit: '1',
     },
-  );
+  });
   return rows.length > 0 ? rows[0] : null;
 };

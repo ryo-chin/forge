@@ -14,10 +14,7 @@ test.describe('モバイルレイアウト', () => {
     const hasHorizontalScroll = await page.evaluate(() => {
       const doc = document.documentElement;
       const body = document.body;
-      return (
-        body.scrollWidth - doc.clientWidth > 1 ||
-        doc.scrollWidth - doc.clientWidth > 1
-      );
+      return body.scrollWidth - doc.clientWidth > 1 || doc.scrollWidth - doc.clientWidth > 1;
     });
     expect(hasHorizontalScroll).toBeFalsy();
 

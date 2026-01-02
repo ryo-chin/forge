@@ -1,4 +1,4 @@
-const SPA_FALLBACK_PATH = "/index.html";
+const SPA_FALLBACK_PATH = '/index.html';
 
 interface Env {
   ASSETS: AssetsFetcher;
@@ -24,7 +24,7 @@ const worker: ExportedHandler<Env> = {
 };
 
 function shouldServeSpaFallback(request: Request, url: URL, status: number): boolean {
-  if (request.method !== "GET") {
+  if (request.method !== 'GET') {
     return false;
   }
 
@@ -32,12 +32,12 @@ function shouldServeSpaFallback(request: Request, url: URL, status: number): boo
     return false;
   }
 
-  if (url.pathname.includes(".")) {
+  if (url.pathname.includes('.')) {
     return false;
   }
 
-  const acceptHeader = request.headers.get("Accept");
-  return acceptHeader !== null && acceptHeader.includes("text/html");
+  const acceptHeader = request.headers.get('Accept');
+  return acceptHeader?.includes('text/html') ?? false;
 }
 
 export default worker;

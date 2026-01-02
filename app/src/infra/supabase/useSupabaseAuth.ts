@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
 import { getSupabaseClient } from './client.ts';
 
 type AuthStatus = 'disabled' | 'loading' | 'authenticated' | 'unauthenticated';
@@ -16,9 +16,7 @@ const noopAsync = async () => {
 };
 
 export const useSupabaseAuth = (enabled: boolean): SupabaseAuthHook => {
-  const [status, setStatus] = useState<AuthStatus>(
-    enabled ? 'loading' : 'disabled',
-  );
+  const [status, setStatus] = useState<AuthStatus>(enabled ? 'loading' : 'disabled');
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -42,14 +40,12 @@ export const useSupabaseAuth = (enabled: boolean): SupabaseAuthHook => {
       }
     });
 
-    const { data: subscription } = client.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!active) return;
-        const nextUser = session?.user ?? null;
-        setUser(nextUser);
-        setStatus(nextUser ? 'authenticated' : 'unauthenticated');
-      },
-    );
+    const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+      setStatus(nextUser ? 'authenticated' : 'unauthenticated');
+    });
 
     return () => {
       active = false;

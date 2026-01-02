@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, renderHook } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SessionDraft } from '../../../domain/types';
 import { useGoogleSpreadsheetSync } from '../useGoogleSpreadsheetSync';
@@ -148,9 +148,7 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
     });
 
     const draft = buildRunningDraft();
-    const startResult = await act(async () =>
-      result.current.syncRunningSessionStart(draft),
-    );
+    const startResult = await act(async () => result.current.syncRunningSessionStart(draft));
 
     expect(startResult).toBeNull();
     expect(mocks.appendRunningSession).not.toHaveBeenCalled();
@@ -166,9 +164,7 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
     });
 
     const draft = buildRunningDraft();
-    const response = await act(async () =>
-      result.current.syncRunningSessionStart(draft),
-    );
+    const response = await act(async () => result.current.syncRunningSessionStart(draft));
 
     expect(response).toBeNull();
   });
@@ -183,10 +179,7 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
       await result.current.syncRunningSessionCancel('running-1');
     });
 
-    expect(mocks.clearRunningSession).toHaveBeenCalledWith(
-      'supabase-token',
-      'running-1',
-    );
+    expect(mocks.clearRunningSession).toHaveBeenCalledWith('supabase-token', 'running-1');
   });
 
   it('calls deleteSessionRow when deleting a session', async () => {
@@ -199,9 +192,6 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
       await result.current.deleteSessionRow('session-1');
     });
 
-    expect(mocks.deleteSessionRow).toHaveBeenCalledWith(
-      'supabase-token',
-      'session-1',
-    );
+    expect(mocks.deleteSessionRow).toHaveBeenCalledWith('supabase-token', 'session-1');
   });
 });

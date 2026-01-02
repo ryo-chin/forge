@@ -43,10 +43,7 @@ export function buildUpdatedSession(
     return null;
   }
   const clampedEnd = Math.max(parsedEnd, parsedStart);
-  const durationSeconds = Math.max(
-    1,
-    Math.floor((clampedEnd - parsedStart) / 1000),
-  );
+  const durationSeconds = Math.max(1, Math.floor((clampedEnd - parsedStart) / 1000));
 
   return {
     ...target,

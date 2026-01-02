@@ -20,10 +20,7 @@ const messageStyles: React.CSSProperties = {
   gap: 4,
 };
 
-export const SyncStatusBanner: React.FC<SyncStatusBannerProps> = ({
-  state,
-  onRetry,
-}) => {
+export const SyncStatusBanner: React.FC<SyncStatusBannerProps> = ({ state, onRetry }) => {
   if (state.status === 'idle' || state.status === 'disabled') {
     return null;
   }
@@ -40,9 +37,7 @@ export const SyncStatusBanner: React.FC<SyncStatusBannerProps> = ({
       >
         <div style={messageStyles}>
           <span>Googleスプレッドシートに同期しました</span>
-          {state.lastSessionId && (
-            <span>同期済みセッション: {state.lastSessionId}</span>
-          )}
+          {state.lastSessionId && <span>同期済みセッション: {state.lastSessionId}</span>}
         </div>
       </div>
     );

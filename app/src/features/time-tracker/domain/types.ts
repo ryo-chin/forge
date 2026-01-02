@@ -12,7 +12,7 @@ export type TimeTrackerSession = {
 };
 
 export type SessionDraft = {
-  id: string;       // 【追加】セッションの一意識別子（UUID、開始時に生成）
+  id: string; // 【追加】セッションの一意識別子（UUID、開始時に生成）
   title: string;
   startedAt: number;
   tags?: string[];

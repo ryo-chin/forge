@@ -33,17 +33,22 @@ const PROJECT_COLORS = [
   { name: 'Yellow', value: 'yellow', class: 'bg-yellow-500' },
 ];
 
-export function ProjectSelector({ projects, currentProjectId, onProjectChange, onProjectsUpdate }: ProjectSelectorProps) {
+export function ProjectSelector({
+  projects,
+  currentProjectId,
+  onProjectChange,
+  onProjectsUpdate,
+}: ProjectSelectorProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectColor, setNewProjectColor] = useState('blue');
   const [newProjectBudget, setNewProjectBudget] = useState('8.0'); // hours
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
-  const currentProject = projects.find(p => p.id === currentProjectId);
+  const currentProject = projects.find((p) => p.id === currentProjectId);
 
   const getColorClass = (color: string) => {
-    const colorData = PROJECT_COLORS.find(c => c.value === color);
+    const colorData = PROJECT_COLORS.find((c) => c.value === color);
     return colorData?.class || 'bg-blue-500';
   };
 
@@ -55,13 +60,13 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
       name: newProjectName.trim(),
       color: newProjectColor,
       dailyBudget: Math.round(parseFloat(newProjectBudget) * 60), // convert hours to minutes
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     const updatedProjects = [...projects, newProject];
     onProjectsUpdate(updatedProjects);
     onProjectChange(newProject.id);
-    
+
     setNewProjectName('');
     setNewProjectColor('blue');
     setNewProjectBudget('8.0');
@@ -79,15 +84,15 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
   const handleUpdateProject = () => {
     if (!editingProject || !newProjectName.trim()) return;
 
-    const updatedProjects = projects.map(p => 
-      p.id === editingProject.id 
-        ? { 
-            ...p, 
-            name: newProjectName.trim(), 
+    const updatedProjects = projects.map((p) =>
+      p.id === editingProject.id
+        ? {
+            ...p,
+            name: newProjectName.trim(),
             color: newProjectColor,
-            dailyBudget: Math.round(parseFloat(newProjectBudget) * 60)
+            dailyBudget: Math.round(parseFloat(newProjectBudget) * 60),
           }
-        : p
+        : p,
     );
 
     onProjectsUpdate(updatedProjects);
@@ -96,10 +101,10 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
 
   const handleDeleteProject = (projectId: string) => {
     if (projects.length <= 1) return; // Don't delete the last project
-    
-    const updatedProjects = projects.filter(p => p.id !== projectId);
+
+    const updatedProjects = projects.filter((p) => p.id !== projectId);
     onProjectsUpdate(updatedProjects);
-    
+
     // If deleting current project, switch to first remaining project
     if (projectId === currentProjectId) {
       onProjectChange(updatedProjects[0].id);
@@ -120,11 +125,13 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${getColorClass(currentProject?.color || 'blue')}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${getColorClass(currentProject?.color || 'blue')}`}
+              ></div>
               <Folder className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Project:</span>
             </div>
-            
+
             <Select value={currentProjectId} onValueChange={onProjectChange}>
               <SelectTrigger className="w-48">
                 <SelectValue />
@@ -151,9 +158,7 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>
-                  {editingProject ? 'Edit Project' : 'Create New Project'}
-                </DialogTitle>
+                <DialogTitle>{editingProject ? 'Edit Project' : 'Create New Project'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -169,7 +174,7 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
                     }}
                   />
                 </div>
-                
+
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Color</label>
                   <div className="grid grid-cols-4 gap-2">
@@ -179,8 +184,8 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
                         type="button"
                         onClick={() => setNewProjectColor(color.value)}
                         className={`p-3 rounded-lg border-2 transition-all ${
-                          newProjectColor === color.value 
-                            ? 'border-primary shadow-md' 
+                          newProjectColor === color.value
+                            ? 'border-primary shadow-md'
                             : 'border-border hover:border-muted-foreground'
                         }`}
                       >
@@ -194,7 +199,9 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
                 </div>
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Daily Budget (hours)</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Daily Budget (hours)
+                  </label>
                   <Input
                     type="number"
                     min="0.5"
@@ -262,7 +269,7 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
           {projects.slice(0, 4).map((project) => (
             <Badge
               key={project.id}
-              variant={project.id === currentProjectId ? "default" : "secondary"}
+              variant={project.id === currentProjectId ? 'default' : 'secondary'}
               className="cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => onProjectChange(project.id)}
             >
@@ -271,7 +278,11 @@ export function ProjectSelector({ projects, currentProjectId, onProjectChange, o
             </Badge>
           ))}
           {projects.length > 4 && (
-            <Badge variant="outline" className="cursor-pointer" onClick={() => setIsDialogOpen(true)}>
+            <Badge
+              variant="outline"
+              className="cursor-pointer"
+              onClick={() => setIsDialogOpen(true)}
+            >
               +{projects.length - 4} more
             </Badge>
           )}

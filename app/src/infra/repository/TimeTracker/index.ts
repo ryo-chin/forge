@@ -1,10 +1,7 @@
 import { detectTimeDataSourceMode } from '@infra/config';
 import { createLocalStorageDataSource } from './localStorageDataSource.ts';
-import type {
-  CreateDataSourceOptions,
-  TimeTrackerDataSource,
-} from './types.ts';
 import { createSupabaseDataSource } from './supabaseDataSource.ts';
+import type { CreateDataSourceOptions, TimeTrackerDataSource } from './types.ts';
 
 export const createTimeTrackerDataSource = (
   options: CreateDataSourceOptions = {},

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { focusModalOnOpen, attachEscapeClose } from './logic.ts';
+import type React from 'react';
+import { useEffect, useRef } from 'react';
 import { trapTabFocus } from '../../../../lib/accessibility/focus.ts';
+import { attachEscapeClose, focusModalOnOpen } from './logic.ts';
 
 export type EditorModalMode = 'running' | 'history';
 

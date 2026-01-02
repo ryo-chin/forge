@@ -1,25 +1,20 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@infra/auth';
 import {
+  appendRunningSession as appendRunningSessionRequest,
+  clearRunningSession as clearRunningSessionRequest,
+  deleteSessionRow as deleteSessionRowRequest,
   getGoogleSyncBaseUrl,
   isGoogleSyncClientEnabled,
   syncSession as syncSessionRequest,
-  appendRunningSession as appendRunningSessionRequest,
   updateRunningSession as updateRunningSessionRequest,
-  clearRunningSession as clearRunningSessionRequest,
-  deleteSessionRow as deleteSessionRowRequest,
 } from '@infra/google';
 import { getSupabaseClient } from '@infra/supabase';
-import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
+import { useMutation } from '@tanstack/react-query';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GoogleSyncRequestBody } from '../../domain/googleSyncTypes.ts';
+import type { SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 
-export type SyncStateStatus =
-  | 'idle'
-  | 'syncing'
-  | 'success'
-  | 'error'
-  | 'disabled';
+export type SyncStateStatus = 'idle' | 'syncing' | 'success' | 'error' | 'disabled';
 
 export type SyncState = {
   status: SyncStateStatus;
@@ -35,9 +30,7 @@ const initialState: SyncState = {
   error: null,
 };
 
-const toRequestBody = (
-  session: TimeTrackerSession,
-): GoogleSyncRequestBody => ({
+const toRequestBody = (session: TimeTrackerSession): GoogleSyncRequestBody => ({
   session: {
     id: session.id,
     title: session.title,
@@ -96,10 +89,7 @@ export const useGoogleSpreadsheetSync = () => {
   const mutation = useMutation({
     mutationFn: async (session: TimeTrackerSession) => {
       const accessToken = await resolveAccessToken();
-      const response = await syncSessionRequest(
-        accessToken,
-        toRequestBody(session),
-      );
+      const response = await syncSessionRequest(accessToken, toRequestBody(session));
       return {
         response,
         sessionId: session.id,
@@ -123,8 +113,7 @@ export const useGoogleSpreadsheetSync = () => {
       return response;
     },
     onError: (error: unknown) => {
-      const message =
-        error instanceof Error ? error.message : '同期に失敗しました';
+      const message = error instanceof Error ? error.message : '同期に失敗しました';
       setState((prev) => ({
         ...prev,
         status: 'error',

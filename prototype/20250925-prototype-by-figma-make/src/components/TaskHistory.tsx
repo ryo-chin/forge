@@ -29,13 +29,18 @@ interface TaskHistoryProps {
   onTaskUpdate: (updatedTask: TaskEntry) => void;
 }
 
-export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdate }: TaskHistoryProps) {
+export function TaskHistory({
+  taskHistory,
+  projects,
+  onClearHistory,
+  onTaskUpdate,
+}: TaskHistoryProps) {
   const [editingTask, setEditingTask] = useState<TaskEntry | null>(null);
   const formatDuration = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m ${secs}s`;
     }
@@ -46,10 +51,10 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
   };
 
   const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     });
   };
 
@@ -57,15 +62,15 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       });
     }
   };
@@ -87,7 +92,7 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
       'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
       'bg-red-100 text-red-800 hover:bg-red-200',
     ];
-    
+
     let hash = 0;
     for (let i = 0; i < tag.length; i++) {
       hash = tag.charCodeAt(i) + ((hash << 5) - hash);
@@ -100,7 +105,9 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
       <Card className="max-w-2xl mx-auto">
         <CardContent className="py-12 text-center">
           <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-          <p className="text-muted-foreground">No time entries yet. Start tracking your first task!</p>
+          <p className="text-muted-foreground">
+            No time entries yet. Start tracking your first task!
+          </p>
         </CardContent>
       </Card>
     );
@@ -114,7 +121,7 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
           Time Entries
           {projects.length > 0 && taskHistory.length > 0 && (
             <Badge variant="outline" className="ml-2">
-              {projects.find(p => p.id === taskHistory[0]?.projectId)?.name || 'Current Project'}
+              {projects.find((p) => p.id === taskHistory[0]?.projectId)?.name || 'Current Project'}
             </Badge>
           )}
         </CardTitle>
@@ -155,9 +162,7 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
                 </div>
               )}
               <div className="flex items-center gap-4 mt-2">
-                <span className="text-sm text-muted-foreground">
-                  {formatDate(entry.startTime)}
-                </span>
+                <span className="text-sm text-muted-foreground">{formatDate(entry.startTime)}</span>
                 <span className="text-sm text-muted-foreground">
                   {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
                 </span>
@@ -180,7 +185,7 @@ export function TaskHistory({ taskHistory, projects, onClearHistory, onTaskUpdat
           </div>
         ))}
       </CardContent>
-      
+
       <EditTimeDialog
         task={editingTask}
         isOpen={!!editingTask}

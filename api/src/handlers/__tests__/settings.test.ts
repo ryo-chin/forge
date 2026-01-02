@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   handleGetSettings,
-  handleUpdateSettings,
-  handleListSpreadsheets,
   handleListSheets,
+  handleListSpreadsheets,
+  handleUpdateSettings,
 } from '../settings';
 
 const env = {
@@ -66,8 +66,7 @@ vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
 });
 
 vi.mock('../../repositories/googleConnections', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../repositories/googleConnections')>();
+  const actual = await importOriginal<typeof import('../../repositories/googleConnections')>();
   return {
     ...actual,
     getConnectionByUser: mocks.getConnectionByUser,
@@ -78,8 +77,7 @@ vi.mock('../../repositories/googleConnections', async (importOriginal) => {
 });
 
 vi.mock('../../services/googleSheetsClient', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../services/googleSheetsClient')>();
+  const actual = await importOriginal<typeof import('../../services/googleSheetsClient')>();
   return {
     ...actual,
     GoogleSheetsClient: {
@@ -96,9 +94,9 @@ vi.mock('../oauth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../oauth')>();
   return {
     ...actual,
-    ensureValidAccessToken: vi.fn().mockImplementation(
-      async (_env, connection) => connection.access_token,
-    ),
+    ensureValidAccessToken: vi
+      .fn()
+      .mockImplementation(async (_env, connection) => connection.access_token),
   };
 });
 
@@ -289,10 +287,7 @@ describe('settings handlers', () => {
         nextPageToken: 'token',
       });
 
-      const response = await handleListSpreadsheets(
-        buildRequest({ query: { q: 'Sheet' } }),
-        env,
-      );
+      const response = await handleListSpreadsheets(buildRequest({ query: { q: 'Sheet' } }), env);
 
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toMatchObject({

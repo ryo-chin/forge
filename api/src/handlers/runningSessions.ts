@@ -1,32 +1,22 @@
-import type { Env } from '../env';
 import {
   extractBearerToken,
-  verifySupabaseJwt,
   SupabaseAuthError,
+  verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
+import type { Env } from '../env';
+import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '../http/response';
 import {
-  getConnectionByUser,
   getColumnMappingByConnection,
+  getConnectionByUser,
   SupabaseRepositoryError,
 } from '../repositories/googleConnections';
-import { ensureValidAccessToken } from './oauth';
-import {
-  badRequest,
-  conflict,
-  jsonResponse,
-  serverError,
-  unauthorized,
-} from '../http/response';
-import {
-  GoogleSheetsClient,
-  GoogleSheetsApiError,
-} from '../services/googleSheetsClient';
+import { GoogleSheetsApiError, GoogleSheetsClient } from '../services/googleSheetsClient';
 import type {
   ColumnMapping,
-  RunningSessionStartRequest,
-  RunningSessionUpdateRequest,
   RunningSessionCancelRequest,
   RunningSessionDraftPayload,
+  RunningSessionStartRequest,
+  RunningSessionUpdateRequest,
 } from '../types';
 import {
   columnKeyToIndex,
@@ -34,6 +24,7 @@ import {
   requiresHeaderLookup,
   resolveColumnLetter,
 } from '../utils/googleSheets';
+import { ensureValidAccessToken } from './oauth';
 
 class HttpResponseError extends Error {
   readonly response: Response;
@@ -96,19 +87,13 @@ const validateDraft = (draft: RunningSessionDraftPayload) => {
   }
 };
 
-const resolveConnectionContext = async (
-  env: Env,
-  userId: string,
-) => {
+const resolveConnectionContext = async (env: Env, userId: string) => {
   let connection;
   try {
     connection = await getConnectionByUser(env, userId);
   } catch (error) {
     if (error instanceof SupabaseRepositoryError) {
-      throw serverError(
-        error.message,
-        error.status >= 500 ? 502 : error.status,
-      );
+      throw serverError(error.message, error.status >= 500 ? 502 : error.status);
     }
     throw error;
   }
@@ -126,10 +111,7 @@ const resolveConnectionContext = async (
   const sheetTitle = connection.sheet_title;
   if (!spreadsheetId || !sheetTitle) {
     throw new HttpResponseError(
-      conflict(
-        'selection_missing',
-        'Spreadsheet or sheet selection is not configured',
-      ),
+      conflict('selection_missing', 'Spreadsheet or sheet selection is not configured'),
     );
   }
 
@@ -138,10 +120,7 @@ const resolveConnectionContext = async (
     mappingRow = await getColumnMappingByConnection(env, connection.id);
   } catch (error) {
     if (error instanceof SupabaseRepositoryError) {
-      throw serverError(
-        error.message,
-        error.status >= 500 ? 502 : error.status,
-      );
+      throw serverError(error.message, error.status >= 500 ? 502 : error.status);
     }
     throw error;
   }
@@ -152,17 +131,12 @@ const resolveConnectionContext = async (
       : null;
 
   if (!mappings) {
-    throw new HttpResponseError(
-      conflict('mapping_missing', 'Column mapping is not configured'),
-    );
+    throw new HttpResponseError(conflict('mapping_missing', 'Column mapping is not configured'));
   }
 
   if (!mappings.id || !mappings.id.trim() || !mappings.status || !mappings.status.trim()) {
     throw new HttpResponseError(
-      conflict(
-        'mapping_incomplete',
-        'ID and status columns must be configured for running sync',
-      ),
+      conflict('mapping_incomplete', 'ID and status columns must be configured for running sync'),
     );
   }
 
@@ -195,21 +169,13 @@ const parseJson = async <T>(request: Request): Promise<T> => {
   }
 };
 
-export const handleRunningSessionStart = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleRunningSessionStart = async (request: Request, env: Env): Promise<Response> => {
   try {
     const auth = await ensureAuthorized(request, env);
     const body = await parseJson<RunningSessionStartRequest>(request);
     validateDraft(body?.draft);
 
-    const {
-      connection,
-      spreadsheetId,
-      sheetTitle,
-      mappings,
-    } = await resolveConnectionContext(
+    const { connection, spreadsheetId, sheetTitle, mappings } = await resolveConnectionContext(
       env,
       auth.userId,
     );
@@ -220,10 +186,7 @@ export const handleRunningSessionStart = async (
     let headerRow: (string | number)[] | null = null;
     if (requiresHeaderLookup(mappings)) {
       try {
-        const header = await client.getRange(
-          spreadsheetId,
-          `${sheetTitle}!1:1`,
-        );
+        const header = await client.getRange(spreadsheetId, `${sheetTitle}!1:1`);
         headerRow = header.values?.[0] ?? null;
       } catch (error) {
         console.warn('Failed to load header row for running sync', error);
@@ -345,10 +308,7 @@ const buildClearData = (
   return updates;
 };
 
-export const handleRunningSessionUpdate = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleRunningSessionUpdate = async (request: Request, env: Env): Promise<Response> => {
   try {
     const auth = await ensureAuthorized(request, env);
     const body = await parseJson<RunningSessionUpdateRequest>(request);
@@ -359,17 +319,10 @@ export const handleRunningSessionUpdate = async (
       Number.isNaN(body.elapsedSeconds) ||
       body.elapsedSeconds < 0
     ) {
-      throw new HttpResponseError(
-        badRequest('elapsedSeconds must be a non-negative number'),
-      );
+      throw new HttpResponseError(badRequest('elapsedSeconds must be a non-negative number'));
     }
 
-    const {
-      connection,
-      spreadsheetId,
-      sheetTitle,
-      mappings,
-    } = await resolveConnectionContext(
+    const { connection, spreadsheetId, sheetTitle, mappings } = await resolveConnectionContext(
       env,
       auth.userId,
     );
@@ -380,10 +333,7 @@ export const handleRunningSessionUpdate = async (
     let headerRow: (string | number)[] | null = null;
     if (requiresHeaderLookup(mappings)) {
       try {
-        const header = await client.getRange(
-          spreadsheetId,
-          `${sheetTitle}!1:1`,
-        );
+        const header = await client.getRange(spreadsheetId, `${sheetTitle}!1:1`);
         headerRow = header.values?.[0] ?? null;
       } catch (error) {
         console.warn('Failed to load header row for running sync', error);
@@ -393,10 +343,7 @@ export const handleRunningSessionUpdate = async (
     const idColumn = resolveColumnLetter(mappings.id, headerRow);
     if (!idColumn) {
       throw new HttpResponseError(
-        conflict(
-          'mapping_incomplete',
-          'ID column must be configured for running sync',
-        ),
+        conflict('mapping_incomplete', 'ID column must be configured for running sync'),
       );
     }
 
@@ -442,10 +389,7 @@ export const handleRunningSessionUpdate = async (
   }
 };
 
-export const handleRunningSessionCancel = async (
-  request: Request,
-  env: Env,
-): Promise<Response> => {
+export const handleRunningSessionCancel = async (request: Request, env: Env): Promise<Response> => {
   try {
     const auth = await ensureAuthorized(request, env);
     const body = await parseJson<RunningSessionCancelRequest>(request);
@@ -454,12 +398,10 @@ export const handleRunningSessionCancel = async (
       throw new HttpResponseError(badRequest('id is required'));
     }
 
-    const {
-      connection,
-      spreadsheetId,
-      sheetTitle,
-      mappings,
-    } = await resolveConnectionContext(env, auth.userId);
+    const { connection, spreadsheetId, sheetTitle, mappings } = await resolveConnectionContext(
+      env,
+      auth.userId,
+    );
 
     const accessToken = await ensureValidAccessToken(env, connection);
     const client = GoogleSheetsClient.fromAccessToken(accessToken);
@@ -467,10 +409,7 @@ export const handleRunningSessionCancel = async (
     let headerRow: (string | number)[] | null = null;
     if (requiresHeaderLookup(mappings)) {
       try {
-        const header = await client.getRange(
-          spreadsheetId,
-          `${sheetTitle}!1:1`,
-        );
+        const header = await client.getRange(spreadsheetId, `${sheetTitle}!1:1`);
         headerRow = header.values?.[0] ?? null;
       } catch (error) {
         console.warn('Failed to load header row for running cancel', error);
@@ -480,20 +419,11 @@ export const handleRunningSessionCancel = async (
     const idColumn = resolveColumnLetter(mappings.id, headerRow);
     if (!idColumn) {
       throw new HttpResponseError(
-        conflict(
-          'mapping_incomplete',
-          'ID column must be configured for running sync',
-        ),
+        conflict('mapping_incomplete', 'ID column must be configured for running sync'),
       );
     }
 
-    const rowNumber = await findRowNumberById(
-      client,
-      spreadsheetId,
-      sheetTitle,
-      idColumn,
-      body.id,
-    );
+    const rowNumber = await findRowNumberById(client, spreadsheetId, sheetTitle, idColumn, body.id);
 
     if (!rowNumber) {
       return jsonResponse({ status: 'skipped' }, 202);

@@ -1,15 +1,12 @@
-import { useCallback, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo } from 'react';
+import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 import { createTimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 import type { TimeTrackerSession } from '../../domain/types.ts';
-import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 
 const defaultNow = () => Date.now();
 
-export const TIME_TRACKER_SESSIONS_QUERY_KEY = [
-  'time-tracker',
-  'sessions',
-] as const;
+export const TIME_TRACKER_SESSIONS_QUERY_KEY = ['time-tracker', 'sessions'] as const;
 
 type SessionsUpdater =
   | TimeTrackerSession[]
@@ -20,9 +17,7 @@ type UseTimeTrackerSessionsOptions = {
   userId?: string | null;
 };
 
-export const useTimeTrackerSessions = (
-  options: UseTimeTrackerSessionsOptions = {},
-) => {
+export const useTimeTrackerSessions = (options: UseTimeTrackerSessionsOptions = {}) => {
   const { now = defaultNow, userId = null } = options;
   const queryClient = useQueryClient();
 
@@ -65,10 +60,7 @@ export const useTimeTrackerSessions = (
     },
     onError: (_error, _sessions, context) => {
       if (context?.previousSessions) {
-        queryClient.setQueryData(
-          TIME_TRACKER_SESSIONS_QUERY_KEY,
-          context.previousSessions,
-        );
+        queryClient.setQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY, context.previousSessions);
       }
     },
     onSuccess: (sessions) => {
@@ -80,14 +72,10 @@ export const useTimeTrackerSessions = (
     (updater: SessionsUpdater) => {
       let nextValue: TimeTrackerSession[] | undefined;
       queryClient.setQueryData(TIME_TRACKER_SESSIONS_QUERY_KEY, (current) => {
-        const base =
-          (current as TimeTrackerSession[] | undefined) ??
-          dataSource.initialSessions;
+        const base = (current as TimeTrackerSession[] | undefined) ?? dataSource.initialSessions;
         nextValue =
           typeof updater === 'function'
-            ? (updater as (prev: TimeTrackerSession[]) => TimeTrackerSession[])(
-                base,
-              )
+            ? (updater as (prev: TimeTrackerSession[]) => TimeTrackerSession[])(base)
             : updater;
         return nextValue;
       });
@@ -109,13 +97,7 @@ export const useTimeTrackerSessions = (
         dataSource.initialSessions;
       await persistSessionsMutation.mutateAsync(target);
     },
-    [
-      dataSource.initialSessions,
-      dataSource.mode,
-      persistSessionsMutation,
-      queryClient,
-      userId,
-    ],
+    [dataSource.initialSessions, dataSource.mode, persistSessionsMutation, queryClient, userId],
   );
 
   return {

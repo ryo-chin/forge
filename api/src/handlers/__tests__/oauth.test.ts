@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  handleOauthStart,
-  handleOauthCallback,
-  handleOauthRevoke,
-} from '../oauth';
+import { handleOauthCallback, handleOauthRevoke, handleOauthStart } from '../oauth';
 
 const env = {
   SUPABASE_URL: 'https://supabase.test',
@@ -52,8 +48,7 @@ vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
 });
 
 vi.mock('../../repositories/googleConnections', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../repositories/googleConnections')>();
+  const actual = await importOriginal<typeof import('../../repositories/googleConnections')>();
   return {
     ...actual,
     upsertConnection: mocks.upsertConnection,
@@ -117,9 +112,11 @@ describe('oauth handlers', () => {
       expect(scopes).toContain('https://www.googleapis.com/auth/spreadsheets');
       const state = url.searchParams.get('state');
       expect(state).toBeTruthy();
-      const decoded = JSON.parse(
-        Buffer.from(state ?? '', 'base64url').toString('utf8'),
-      ) as { userId: string; redirectPath: string; nonce: string };
+      const decoded = JSON.parse(Buffer.from(state ?? '', 'base64url').toString('utf8')) as {
+        userId: string;
+        redirectPath: string;
+        nonce: string;
+      };
       expect(decoded.userId).toBe('user-1');
       expect(decoded.redirectPath).toBe('/app/dashboard');
       expect(typeof decoded.nonce).toBe('string');

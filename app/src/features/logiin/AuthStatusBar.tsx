@@ -1,5 +1,5 @@
-import React from 'react';
 import { useAuth } from '@infra/auth';
+import type React from 'react';
 
 const extractDisplayName = (
   name: string | undefined,
@@ -30,8 +30,7 @@ export const AuthStatusBar: React.FC = () => {
   }
 
   const supabaseUser = user ?? null;
-  const name =
-    (supabaseUser?.user_metadata as { name?: string } | null)?.name ?? undefined;
+  const name = (supabaseUser?.user_metadata as { name?: string } | null)?.name ?? undefined;
   const email = supabaseUser?.email;
   const { primary, secondary } = extractDisplayName(name, email);
   const avatarLabel = buildAvatarLabel(primary);
@@ -51,11 +50,7 @@ export const AuthStatusBar: React.FC = () => {
           </span>
         ) : null}
       </div>
-      <button
-        type="button"
-        className="app-sidebar__signout"
-        onClick={signOut}
-      >
+      <button type="button" className="app-sidebar__signout" onClick={signOut}>
         ログアウト
       </button>
     </div>

@@ -15,5 +15,4 @@ export const detectTimeDataSourceMode = (): 'local' | 'supabase' => {
   return 'local';
 };
 
-export const isSupabaseDataSourceEnabled = (): boolean =>
-  detectTimeDataSourceMode() === 'supabase';
+export const isSupabaseDataSourceEnabled = (): boolean => detectTimeDataSourceMode() === 'supabase';

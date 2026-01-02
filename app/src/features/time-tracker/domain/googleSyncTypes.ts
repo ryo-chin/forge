@@ -41,8 +41,8 @@ export type SheetOption = {
 
 export type ColumnMappingConfig = {
   mappings: {
-    id?: string;      // 【追加】セッションID列
-    status?: string;  // 【追加】ステータス列（"Running" | "Completed"）
+    id?: string; // 【追加】セッションID列
+    status?: string; // 【追加】ステータス列（"Running" | "Completed"）
     title: string;
     startedAt: string;
     endedAt: string;

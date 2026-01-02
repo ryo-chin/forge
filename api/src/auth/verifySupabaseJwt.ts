@@ -29,10 +29,7 @@ export const extractBearerToken = (request: Request): string | null => {
   return null;
 };
 
-export const verifySupabaseJwt = async (
-  token: string,
-  env: Env,
-): Promise<SupabaseAuthResult> => {
+export const verifySupabaseJwt = async (token: string, env: Env): Promise<SupabaseAuthResult> => {
   if (!token) {
     throw new SupabaseAuthError('Missing bearer token', 401);
   }
@@ -62,7 +59,7 @@ export const verifySupabaseJwt = async (
   }
 
   const payload = (await response.json()) as Record<string, unknown>;
-  const userId = typeof payload['id'] === 'string' ? payload['id'] : null;
+  const userId = typeof payload.id === 'string' ? payload.id : null;
 
   if (!userId) {
     throw new SupabaseAuthError('Supabase user response missing id', 500);
@@ -70,7 +67,7 @@ export const verifySupabaseJwt = async (
 
   return {
     userId,
-    email: typeof payload['email'] === 'string' ? payload['email'] : null,
+    email: typeof payload.email === 'string' ? payload.email : null,
     raw: payload,
   };
 };

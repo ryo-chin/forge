@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  handleRunningSessionCancel,
   handleRunningSessionStart,
   handleRunningSessionUpdate,
-  handleRunningSessionCancel,
 } from '../runningSessions';
 
 const mocks = vi.hoisted(() => {
@@ -25,9 +25,7 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import('../../auth/verifySupabaseJwt')
-  >();
+  const actual = await importOriginal<typeof import('../../auth/verifySupabaseJwt')>();
   return {
     ...actual,
     verifySupabaseJwt: mocks.verifySupabaseJwt,
@@ -35,8 +33,7 @@ vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
 });
 
 vi.mock('../../repositories/googleConnections', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../repositories/googleConnections')>();
+  const actual = await importOriginal<typeof import('../../repositories/googleConnections')>();
   return {
     ...actual,
     getConnectionByUser: mocks.getConnectionByUser,
@@ -53,8 +50,7 @@ vi.mock('../oauth', async (importOriginal) => {
 });
 
 vi.mock('../../services/googleSheetsClient', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../services/googleSheetsClient')>();
+  const actual = await importOriginal<typeof import('../../services/googleSheetsClient')>();
   return {
     ...actual,
     GoogleSheetsClient: {
@@ -170,9 +166,7 @@ describe('handleRunningSessionStart', () => {
     expect(response.status).toBe(202);
     expect(mocks.appendRow).toHaveBeenCalledTimes(1);
     const values = mocks.appendRow.mock.calls[0][2];
-    expect(values).toEqual(
-      expect.arrayContaining(['session-1', 'Running', 'Focus']),
-    );
+    expect(values).toEqual(expect.arrayContaining(['session-1', 'Running', 'Focus']));
   });
 });
 
@@ -186,10 +180,7 @@ describe('handleRunningSessionCancel', () => {
   });
 
   it('clears the running session row when found', async () => {
-    const response = await handleRunningSessionCancel(
-      buildCancelRequest({ id: 'session-1' }),
-      env,
-    );
+    const response = await handleRunningSessionCancel(buildCancelRequest({ id: 'session-1' }), env);
 
     expect(response.status).toBe(202);
     expect(mocks.batchUpdateValues).toHaveBeenCalledTimes(1);
@@ -205,10 +196,7 @@ describe('handleRunningSessionCancel', () => {
   it('returns skipped status when row is not found', async () => {
     mocks.getRange.mockResolvedValue({ values: [['session-x']] });
 
-    const response = await handleRunningSessionCancel(
-      buildCancelRequest({ id: 'session-1' }),
-      env,
-    );
+    const response = await handleRunningSessionCancel(buildCancelRequest({ id: 'session-1' }), env);
 
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toMatchObject({ status: 'skipped' });

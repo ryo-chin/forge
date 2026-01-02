@@ -4,11 +4,7 @@ import {
   initialRunningSessionState,
   runningSessionReducer,
 } from '../../domain/runningSession.ts';
-import type {
-  RunningSessionState,
-  SessionDraft,
-  TimeTrackerSession,
-} from '../../domain/types.ts';
+import type { RunningSessionState, SessionDraft, TimeTrackerSession } from '../../domain/types.ts';
 import { useRunningSessionTimer } from './useRunningSessionTimer.ts';
 
 type NowFn = () => number;
@@ -41,10 +37,7 @@ export const useRunningSessionState = (
     return initialRunningSessionState;
   }, [initialState]);
 
-  const [state, dispatch] = useReducer(
-    runningSessionReducer,
-    reducerInitialState,
-  );
+  const [state, dispatch] = useReducer(runningSessionReducer, reducerInitialState);
 
   useRunningSessionTimer({ state, dispatch, now, tickIntervalMs });
 
