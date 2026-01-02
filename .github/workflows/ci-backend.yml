@@ -3,10 +3,6 @@ name: CI - Backend
 
 on:
   push:
-    branches:
-      - '**'
-      - '!main'
-      - '!**prototype**'
     paths:
       - 'api/**'
       - 'pnpm-lock.yaml'
