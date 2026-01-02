@@ -3,7 +3,6 @@
 **Branch**: `004-running-session-running` | **Date**: 2025-10-19 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/004-running-session-running/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
@@ -88,7 +87,7 @@ TDDサイクルを厳守：
 ### VII. Documentation & Traceability ✅
 
 以下を更新:
-- `app/IMPLEMENTS.md`: Running状態同期の説明追加
+- `docs/architecture/frontend.md`: Running状態同期の説明追加
 - テストコード内のコメント
 - 必要に応じてADR追加（Google Sheets同期パターン）
 
@@ -100,12 +99,12 @@ TDDサイクルを厳守：
 
 ```
 specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+├── plan.md              # This file
+├── research.md          # Phase 0 output
+├── data-model.md        # Phase 1 output
+├── quickstart.md        # Phase 1 output
+├── contracts/           # Phase 1 output
+└── tasks.md             # Phase 2 output
 ```
 
 ### Source Code (repository root)
@@ -122,7 +121,7 @@ app/
 │   └── index.css
 ├── tests/
 │   └── e2e/
-├── IMPLEMENTS.md
+├── README.md
 └── package.json
 ```
 
@@ -168,7 +167,7 @@ app/
 
 **Status**: ⏳ Pending
 
-次のステップ: `/speckit.tasks` コマンドを実行してタスクリストを生成
+次のステップ: タスクリストを生成
 
 **タスク構成の想定**:
 - **P1（デバイス間同期）**:
@@ -253,6 +252,6 @@ P1とP2は独立して実装・テスト・デプロイ可能:
 **Constitution準拠**: ✅ すべての原則に準拠
 
 **Next Steps**:
-1. `/speckit.tasks` コマンドでタスクリスト生成
+1. タスクリスト生成
 2. P1から順に実装（TDD）
 3. すべてのテストがGreenになったらPR作成

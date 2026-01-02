@@ -3,7 +3,7 @@
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-10-12
 **Feature**: [spec.md](../spec.md)
-**Status**: ✅ PASSED - Ready for `/speckit.plan`
+**Status**: ✅ PASSED
 
 ## Content Quality
 
@@ -61,4 +61,4 @@ All checklist items passed successfully:
 
 ## Notes
 
-仕様書は完成し、すべての品質基準を満たしています。ユーザーの要件である「手動エクスポートではなく自動同期がメイン」という方針も反映されています。次のステップとして `/speckit.plan` を実行できます。
+仕様書は完成し、すべての品質基準を満たしています。ユーザーの要件である「手動エクスポートではなく自動同期がメイン」という方針も反映されています。

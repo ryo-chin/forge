@@ -31,4 +31,4 @@
 
 ## Notes
 
-- All checks completed on 2025-10-13. Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
+- All checks completed on 2025-10-13.

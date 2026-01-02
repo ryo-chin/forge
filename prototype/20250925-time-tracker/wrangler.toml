@@ -1,8 +1,0 @@
-name = "training-tracker-prototype"
-
-[assets]
-directory = "dist"
-
-[vars]
-BRANCH_NAME_RAW = "${BRANCH_NAME_RAW}"
-SANITIZED_BRANCH = "${SANITIZED_BRANCH}"
