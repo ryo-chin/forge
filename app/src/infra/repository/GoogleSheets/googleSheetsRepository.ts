@@ -5,25 +5,6 @@
  * 内部でinfra/google/googleSyncClientを使用する。
  */
 
-import {
-  appendRunningSession as appendRunningSessionClient,
-  clearRunningSession as clearRunningSessionClient,
-  deleteSessionRow as deleteSessionRowClient,
-  GoogleSyncClientError,
-  syncSession as syncSessionClient,
-  updateRunningSession as updateRunningSessionClient,
-  fetchSettings as fetchSettingsClient,
-  updateSettings as updateSettingsClient,
-  listSpreadsheets as listSpreadsheetsClient,
-  listSheets as listSheetsClient,
-  startOAuth as startOAuthClient,
-  revokeOAuth as revokeOAuthClient,
-  retrySync as retrySyncClient,
-  type OAuthStartResponse,
-  type UpdateGoogleSettingsPayload,
-  type SyncRetryResponse,
-} from '../../google/googleSyncClient.ts';
-
 import type {
   GoogleSyncLog,
   GoogleSyncRequestBody,
@@ -31,6 +12,24 @@ import type {
   SheetOption,
   SpreadsheetOption,
 } from '../../../features/time-tracker/domain/googleSyncTypes.ts';
+import {
+  appendRunningSession as appendRunningSessionClient,
+  clearRunningSession as clearRunningSessionClient,
+  deleteSessionRow as deleteSessionRowClient,
+  fetchSettings as fetchSettingsClient,
+  GoogleSyncClientError,
+  listSheets as listSheetsClient,
+  listSpreadsheets as listSpreadsheetsClient,
+  type OAuthStartResponse,
+  retrySync as retrySyncClient,
+  revokeOAuth as revokeOAuthClient,
+  type SyncRetryResponse,
+  startOAuth as startOAuthClient,
+  syncSession as syncSessionClient,
+  type UpdateGoogleSettingsPayload,
+  updateRunningSession as updateRunningSessionClient,
+  updateSettings as updateSettingsClient,
+} from '../../google/googleSyncClient.ts';
 
 // Re-export types and error class for features/ to use
 export { GoogleSyncClientError };

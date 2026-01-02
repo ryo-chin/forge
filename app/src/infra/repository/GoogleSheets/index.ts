@@ -1,24 +1,24 @@
 export {
-  // Types and Error
-  GoogleSyncClientError,
-  type OAuthStartResponse,
-  type UpdateGoogleSettingsPayload,
-  type SyncRetryResponse,
-  // Sync operations
-  syncSession,
-  retrySync,
-  deleteSessionRow,
   // Running session operations
   appendRunningSession,
-  updateRunningSession,
   clearRunningSession,
+  deleteSessionRow,
   // Settings operations
   fetchSettings,
-  updateSettings,
+  // Types and Error
+  GoogleSyncClientError,
+  listSheets,
   // Spreadsheet/Sheet listing
   listSpreadsheets,
-  listSheets,
+  type OAuthStartResponse,
+  retrySync,
+  revokeOAuth,
+  type SyncRetryResponse,
   // OAuth operations
   startOAuth,
-  revokeOAuth,
+  // Sync operations
+  syncSession,
+  type UpdateGoogleSettingsPayload,
+  updateRunningSession,
+  updateSettings,
 } from './googleSheetsRepository.ts';

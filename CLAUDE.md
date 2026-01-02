@@ -37,9 +37,14 @@
 - **フォーマット・基本Lint**: Biome
 - **カスタムLint**: ESLint（プロジェクト固有ルールのみ）
 
-## テスト実行
+## Push前のチェック
 
-- **ユニットテスト**: `pnpm --filter forge-app test:run`（watchモードなし）
-- **E2Eテスト**: `pnpm --filter forge-app test:e2e`
+コードをpushする前に、CIと同じチェックを必ずローカルで実行すること:
+
+```bash
+pnpm --filter forge-app format:check  # Biomeによるフォーマット・lint
+pnpm --filter forge-app lint          # ESLintによるカスタムルール
+pnpm --filter forge-app test:run      # ユニットテスト
+```
 
 注意: `pnpm test` はwatchモードで起動するため、CI/スクリプトでは `test:run` を使用すること
