@@ -13,70 +13,57 @@
 
 > 司法: `app/.eslintrc.cjs` の `import/no-internal-modules` ルール
 
-- `features/<feature-name>/` 配下で UI・ドメイン・データ取得を完結させる。`domain/` は計算やバリデーションなど副作用を持たないロジックのみ、`components/<Component>/` は UI とイベントを担い、再利用したい処理は同階層のサイドカーファイル（例: `logic.ts`, `*.hooks.ts`）へ切り出す。機能専用のクエリやミューテーションは `features/<feature>/hooks/data/` にまとめ、Presenter/Service レイヤーは導入しない。
+- `features/<feature-name>/` 配下で UI・ドメイン・データ取得を完結させる。`domain/` は計算やバリデーションなど副作用を持たないロジックのみ、`components/<Component>/` は UI とイベントを担い、再利用したい処理は同階層のサイドカーファイル（`logic.ts`）へ切り出す。機能専用のクエリやミューテーションは `features/<feature>/hooks/data/` にまとめ、Presenter/Service レイヤーは導入しない。
 - `components/<Component>/` ではフォーカス制御やキーボードショートカットなどの副作用を `useEffect` と `attach*` 系ヘルパーで閉じ込めつつ、親から受け取る props はデータとコールバックに限定する。
-- アプリ全体で共有するデータ取得は `hooks/data/` に配置し、TanStack Query などの依存を閉じ込める。Feature 側からはこのフックを介して `infra/` の実装にアクセスする。
 - UI ロジックの再利用フックは `hooks/` に置き、副作用の有無が分かる名前を付ける（例: `useIntersectionObserver.ts`）。状態管理と密結合なロジックは各機能配下に留める。
-- `hooks/data/` で取得した state は原則として機能のページ/ルートコンポーネント（例: `features/<feature>/pages/...`）で受け取り、子コンポーネントへ props として渡す。
+- `features/<feature>/hooks/data/` で取得した state は原則として機能のページ/ルートコンポーネント（例: `features/<feature>/pages/...`）で受け取り、子コンポーネントへ props として渡す。
   - 受け渡すことになるpropsはなるべく最小になるようにロジックをよく検討する。
-  - それでもprops が煩雑になる場合は、機能内に Context + Provider や `components/<Component>.hooks.ts` を用意してバケツリレーを緩和する。
+  - それでもprops が煩雑になる場合は、機能内に Context + Provider や `components/<Component>/logic.ts` を用意してバケツリレーを緩和する。
   - 例外的に子コンポーネントから直接 `hooks/data/` を参照する場合は、外部依存を明示し乱用を避ける。
 - 純粋関数やユーティリティは `lib/` へ集約し、副作用を持たないこととテスト併設を原則とする。
-- プラットフォーム固有の実装（API クライアント、ストレージなど）は `infra/<subsystem>/` に配置し、原則として `hooks/data/` 経由で利用する。ディレクトリ名は `api/`, `localstorage/` など手段を明示する。
+- プラットフォーム固有の実装（API クライアント、ストレージ、外部サービス連携など）は `infra/<subsystem>/` に配置し、`features/<feature>/hooks/data/` 経由で利用する。ディレクトリ名は `api/`, `localstorage/`, `supabase/`, `google/` など手段を明示する。
 - デザインシステムや共有 UI コンポーネントは `ui/` に配置し、各機能からはプレゼンテーション目的でのみ参照する。機能固有の状態は `ui/` へ持ち込まない。
 - 機能間の依存は最小限に留め、別機能を利用したい場合は `features/<feature>/index.ts` などで公開 API を経由する。
 
 ## ディレクトリ構成例
 
+> 以下は構造の概念を示す例示です。実際のファイル名は異なる場合があります。
+
 ```
 app
 └── src
-    ├── infra
-    │   ├── api
-    │   │   ├── httpClient.ts
-    │   │   └── sessionApi.ts
-    │   └── localstorage
-    │       └── sessionStorage.ts
-    ├── hooks
-    │   ├── data
-    │   │   └── useCurrentUser.ts
-    │   ├── useIntersectionObserver.ts
-    │   └── useEventListener.ts
-    ├── lib
+    ├── infra                    # プラットフォーム固有の実装
+    │   ├── api/                 # HTTP API クライアント
+    │   ├── auth/                # 認証関連
+    │   ├── config/              # 設定管理
+    │   ├── google/              # Google API 連携
+    │   ├── localstorage/        # ローカルストレージ
+    │   ├── repository/          # リポジトリ実装
+    │   └── supabase/            # Supabase 連携
+    ├── hooks                    # 共有UIロジックフック
+    │   └── useIntersectionObserver.ts
+    ├── lib                      # 純粋関数・ユーティリティ
     │   ├── formatDuration.ts
     │   └── date.ts
-    ├── ui
-    │   ├── components
-    │   │   ├── Button
-    │   │   │   ├── Button.tsx
-    │   │   │   └── Button.stories.tsx
-    │   │   └── Modal
-    │   │       ├── Modal.tsx
-    │   │       └── Modal.hooks.ts
-    │   └── tokens
-    │       ├── colors.ts
-    │       └── spacing.ts
-    └── features
-        └── time-tracker
+    ├── ui                       # 共有UIコンポーネント
+    │   ├── components/          # ボタン、モーダル等
+    │   ├── hooks/               # UI専用フック
+    │   ├── layouts/             # レイアウトコンポーネント
+    │   └── tokens/              # デザイントークン
+    └── features                 # 機能モジュール（login, settings, time-tracker 等）
+        └── <feature>/
             ├── components
-            │   ├── RunningTimer
-            │   │   ├── RunningTimer.tsx
-            │   │   ├── RunningTimer.hooks.ts
-            │   │   └── RunningTimer.test.tsx
-            │   └── HistoryList
-            │       ├── HistoryList.tsx
-            │       ├── HistoryList.hooks.ts
-            │       └── HistoryList.test.tsx
-            ├── domain
-            │   ├── session.ts
-            │   └── sessionReducer.ts
+            │   └── <Component>
+            │       ├── <Component>.tsx
+            │       ├── logic.ts         # サイドカー: ロジック抽出
+            │       └── <Component>.test.tsx
+            ├── domain               # 副作用を持たないロジック
+            │   └── types.ts
             ├── hooks
-            │   └── data
-            │       ├── useSessionQueries.ts
-            │       └── useSessionMutations.ts
+            │   └── data             # データ取得・更新フック
+            │       └── use<Feature>Data.ts
             ├── pages
-            │   ├── TimeTrackerPage.tsx
-            │   └── TimeTrackerPage.test.tsx
+            │   └── <Feature>Page.tsx
             └── index.ts
 ```
 
@@ -85,12 +72,7 @@ app
 ```mermaid
 graph LR
     subgraph Infra
-        IAPI[infra/api]
-        IStorage[infra/localstorage]
-    end
-
-    subgraph SharedData
-        HD[hooks/data]
+        I[infra/*]
     end
 
     subgraph SharedHooks
@@ -112,9 +94,7 @@ graph LR
         FPages[features/:feature/pages]
     end
 
-    IAPI --> HD
-    IStorage --> HD
-    HD --> FData
+    I --> FData
     L --> FDomain
     L --> FData
     H --> FComp
@@ -126,8 +106,8 @@ graph LR
 
 ## データアクセス規約
 
-- データ取得・更新の副作用は `hooks/data/` または `features/<feature>/hooks/data/` のカスタムフックに集約し、TanStack Query などのクライアントはそこで初期化・利用する。
-- テストでは `hooks/data/` 内のフックをモックし、UI／ドメインのテストからネットワークや永続化の詳細を隠蔽する。
+- データ取得・更新の副作用は `features/<feature>/hooks/data/` のカスタムフックに集約し、TanStack Query などのクライアントはそこで初期化・利用する。
+- テストでは `hooks/data/` 内のフックをモックし、UI/ドメインのテストからネットワークや永続化の詳細を隠蔽する。
 - 永続化レイヤーを差し替える場合は `hooks/data/` 内の実装を切り替えることで対応し、UI やドメインへの影響を最小限に抑える。
 - 状態初期化は reducer に閉じ込め、UI 側は必要な情報を payload で渡す（例: セッション開始時にタイトル・プロジェクトを渡し、ID 生成や正規化は reducer で行う）。
 - 外部サービスとの連携は Worker などサーバー側 API に委譲し、ブラウザから直接 SDK を呼び出さない。フロントは現状の draft／state をそのまま送るだけにして、フォーマット統一や列解決などの責務はサーバー側で担保する。
