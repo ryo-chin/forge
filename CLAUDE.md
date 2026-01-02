@@ -37,14 +37,3 @@
 - **フォーマット・基本Lint**: Biome
 - **カスタムLint**: ESLint（プロジェクト固有ルールのみ）
 
-## Push前のチェック
-
-コードをpushする前に、CIと同じチェックを必ずローカルで実行すること:
-
-```bash
-pnpm --filter forge-app format:check  # Biomeによるフォーマット・lint
-pnpm --filter forge-app lint          # ESLintによるカスタムルール
-pnpm --filter forge-app test:run      # ユニットテスト
-```
-
-注意: `pnpm test` はwatchモードで起動するため、CI/スクリプトでは `test:run` を使用すること
