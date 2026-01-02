@@ -3,13 +3,13 @@ import React, { type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
-import { AuthLoading, LoginPage } from '@features/logiin';
+import { AuthLoading, LoginPage } from '@features/login';
 import { SettingsPage } from '@features/settings';
 import { TimeTrackerPage } from '@features/time-tracker';
+import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { AuthProvider, useAuth } from '@infra/auth';
 import type { AuthContextValue } from '@infra/auth/authContext.ts';
-import { useTimeTrackerSessions } from './features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
-import { AppLayout } from './ui/layouts/AppLayout';
+import { AppLayout } from '@ui/layouts/AppLayout';
 
 const queryClient = new QueryClient();
 

@@ -1,7 +1,7 @@
+import type { TimeTrackerDataSource } from '@infra/repository/TimeTracker';
+import { createTimeTrackerDataSource } from '@infra/repository/TimeTracker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { TimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
-import { createTimeTrackerDataSource } from '../../../../infra/repository/TimeTracker';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 
 const defaultNow = () => Date.now();

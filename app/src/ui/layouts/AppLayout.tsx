@@ -1,10 +1,10 @@
-import { AuthStatusBar } from '@features/logiin';
+import { AuthStatusBar } from '@features/login';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { AppNavigation } from '../components/AppNav';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { AppNavigation } from './AppNav';
 
 export const AppLayout: React.FC = () => {
   const viewport = useResponsiveLayout();

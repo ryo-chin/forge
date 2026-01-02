@@ -1,4 +1,4 @@
-import { parseDateTimeLocal } from '../../../../lib/date.ts';
+import { parseDateTimeLocal } from '@lib/date.ts';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 
 /* ===========================

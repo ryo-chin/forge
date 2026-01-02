@@ -1,8 +1,8 @@
-import { useCallback, useMemo } from 'react';
 import {
   createTimeTrackerDataSource,
   type TimeTrackerDataSource,
-} from '../../../../infra/repository/TimeTracker';
+} from '@infra/repository/TimeTracker';
+import { useCallback, useMemo } from 'react';
 import type { RunningSessionState } from '../../domain/types.ts';
 import { type RunningSessionStateApi, useRunningSessionState } from './useRunningSessionState.ts';
 import { useRunningSessionSync } from './useRunningSessionSync.ts';

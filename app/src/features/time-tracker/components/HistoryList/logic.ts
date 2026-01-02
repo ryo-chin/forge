@@ -1,4 +1,4 @@
-import { formatDurationForAria } from '../../../../lib/time.ts';
+import { formatDurationForAria } from '@lib/time.ts';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 
 /* ===========================

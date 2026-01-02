@@ -1,10 +1,10 @@
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../index.css';
+import { useAuth } from '@infra/auth';
+import { formatDateTimeLocal } from '@lib/date.ts';
+import { useResponsiveLayout } from '@ui/hooks/useResponsiveLayout.ts';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../../infra/auth';
-import { formatDateTimeLocal } from '../../../../lib/date.ts';
-import { useResponsiveLayout } from '../../../../ui/hooks/useResponsiveLayout.ts';
 import { Composer } from '../../components/Composer';
 import { EditorModal } from '../../components/EditorModal';
 import { HistoryList } from '../../components/HistoryList';
