@@ -108,4 +108,4 @@ src/
 
 ## 詳細なセットアップ手順
 
-プロジェクトルートの `specs/001-app-features-time/quickstart.md` を参照してください。
+プロジェクトルートの `docs/specs/google-sheets-integration/quickstart.md` を参照してください。

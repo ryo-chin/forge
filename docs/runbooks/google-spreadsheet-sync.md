@@ -345,6 +345,6 @@ WHERE updated_at < NOW() - INTERVAL '6 months';
 
 ## 関連ドキュメント
 
-- [Quickstart Guide](../../specs/001-app-features-time/quickstart.md)
-- [API仕様](../../specs/001-app-features-time/contracts/)
-- [データモデル](../../specs/001-app-features-time/data-model.md)
+- [Quickstart Guide](../specs/google-sheets-integration/quickstart.md)
+- [API仕様](../specs/google-sheets-integration/contracts/)
+- [データモデル](../specs/google-sheets-integration/data-model.md)

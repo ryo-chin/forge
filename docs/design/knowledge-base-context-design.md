@@ -257,21 +257,23 @@ CLAUDE.mdは「司法への参照」と「司法化不可能なAI指示」のみ
 - 司法（Lint、テスト、型）が一次情報であることが明確
 - docs/ = 司法の人間向け表現という位置づけが明確
 
-### 4.2 Phase 2: 機能仕様の司法化（将来）
+### 4.2 Phase 2: 機能仕様の司法化
+
+**Status**: ✅ Completed (2026-01-02)
 
 **目標**: specs/の機能仕様をE2Eテスト（司法）に変換
 
-| タスク | 内容 | 司法化 |
-|--------|------|--------|
-| T8 | E2Eテストフィクスチャ整備 | 基盤 |
-| T9 | 001-time-tracker → E2Eテスト | 機能仕様 → 司法 |
-| T10 | 002-mobile-ui → E2Eテスト | 機能仕様 → 司法 |
-| T11 | 004-running-session → E2Eテスト | 機能仕様 → 司法 |
-| T12 | specs/_archive/へ移動 | 二次情報化 |
+**実施内容**:
+- 既存E2Eテストが主要機能をカバーしていることを確認
+- specs/を`docs/specs/`へ移動（人間向け説明として整理）
+  - `001-app-features-time` → `docs/specs/google-sheets-integration/`
+  - `002-sp-web-markup` → `docs/specs/mobile-optimization/`
+  - `004-running-session-running` → `docs/specs/running-session-sync/`
+- 空のディレクトリ（003-github-actions-ci）を削除
 
 **Phase 2完了時の状態**:
-- 機能仕様のSSOT = E2Eテスト
-- specs/ = E2Eテストが失敗した時の人間向け説明（二次情報）
+- 機能仕様のSSOT = E2Eテスト（`app/tests/e2e/`）
+- docs/specs/ = E2Eテストの人間向け説明（二次情報）
 
 ### 4.3 Phase 3: 原則主義の司法化（将来）
 
@@ -363,15 +365,17 @@ docs/（人間向け説明） ←── 司法から生成可能な二次情報
 
 **Phase 4以降で詳細化**: Storybook導入、コンポーネント単位の品質担保など
 
-### 6.3 現状との差分
+### 6.3 移行結果
 
-| 現状 | 移行後 |
-|------|--------|
-| AGENTS.md + CLAUDE.md | CLAUDE.md のみ |
-| app/IMPLEMENTS.md | docs/architecture/frontend.md |
-| specs/*.md | E2Eテスト + specs/_archive/ |
-| なし | guards/README.md（設計思想） |
-| .serena/ | 削除 |
+| 移行前 | 移行後 | Status |
+|--------|--------|--------|
+| AGENTS.md + CLAUDE.md | CLAUDE.md のみ | ✅ 完了 |
+| app/IMPLEMENTS.md | docs/architecture/frontend.md | ✅ 完了 |
+| api/IMPLEMENTS.md | docs/architecture/backend.md | ✅ 完了 |
+| specs/*.md | docs/specs/ + E2Eテスト（SSOT） | ✅ 完了 |
+| なし | guards/README.md（設計思想） | ✅ 完了 |
+| .serena/ | 削除 | ✅ 完了 |
+| prototype/ | 削除 | ✅ 完了 |
 
 ---
 
