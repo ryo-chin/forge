@@ -37,7 +37,7 @@ function shouldServeSpaFallback(request: Request, url: URL, status: number): boo
   }
 
   const acceptHeader = request.headers.get('Accept');
-  return acceptHeader?.includes('text/html');
+  return acceptHeader?.includes('text/html') ?? false;
 }
 
 export default worker;

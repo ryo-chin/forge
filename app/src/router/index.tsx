@@ -222,7 +222,7 @@ export function Routes({ children }: { children?: ReactNode }): JSX.Element | nu
     () => matchRoutes(routes, splitPath(location.pathname), []),
     [routes, location.pathname],
   );
-  return element ? element : null;
+  return element ? <>{element}</> : null;
 }
 
 export function Route(_props: RouteProps): null {
@@ -232,7 +232,7 @@ export function Route(_props: RouteProps): null {
 
 export function Outlet(): JSX.Element | null {
   const element = useContext(OutletContext);
-  return element ? element : null;
+  return element ? <>{element}</> : null;
 }
 
 export function Navigate({ to, replace }: { to: string; replace?: boolean }): null {
