@@ -1,16 +1,15 @@
-# トピックブランチの push 時に lint と test を自動実行
-name: feature branch CI
+# Frontend (app/) の CI
+name: CI - Frontend
 
 on:
   push:
-    branches:
-      - '**'
-      - '!main'
-      - '!**prototype**'
+    paths:
+      - 'app/**'
+      - 'pnpm-lock.yaml'
 
 jobs:
-  app-lint:
-    name: App - Lint
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +25,8 @@ jobs:
       - run: pnpm --filter forge-app format:check
         name: Check formatting with Biome
 
-  app-test:
-    name: App - Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,14 +38,14 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter forge-app test
+      - run: pnpm --filter forge-app test:run
 
-  app-build:
-    name: App - Build
+  build:
+    name: Build
     runs-on: ubuntu-latest
     needs:
-      - app-lint
-      - app-test
+      - lint
+      - test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -59,8 +58,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter forge-app build
 
-  app-e2e:
-    name: App - E2E Test
+  e2e:
+    name: E2E Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,35 +85,3 @@ jobs:
       - name: Install Playwright system dependencies
         run: pnpm --filter forge-app exec playwright install-deps
       - run: pnpm --filter forge-app test:e2e
-
-  api-lint:
-    name: API - Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter api lint
-      - run: pnpm --filter api format:check
-        name: Check formatting with Biome
-
-  api-test:
-    name: API - Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter api test

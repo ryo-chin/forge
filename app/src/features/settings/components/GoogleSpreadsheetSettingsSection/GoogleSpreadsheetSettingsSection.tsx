@@ -3,7 +3,7 @@ import type {
   SheetOption,
   SpreadsheetOption,
 } from '@features/time-tracker/domain/googleSyncTypes.ts';
-import { GoogleSyncClientError } from '@infra/google';
+import { GoogleSyncClientError } from '@infra/repository/GoogleSheets';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import './GoogleSpreadsheetSettingsSection.css';

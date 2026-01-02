@@ -1,14 +1,12 @@
-import { useAuth } from '@infra/auth';
+import { getAccessToken, useAuth } from '@infra/auth';
+import { getGoogleSyncApiBaseUrl, isGoogleSyncEnabled } from '@infra/config';
 import {
   appendRunningSession as appendRunningSessionRequest,
   clearRunningSession as clearRunningSessionRequest,
   deleteSessionRow as deleteSessionRowRequest,
-  getGoogleSyncBaseUrl,
-  isGoogleSyncClientEnabled,
   syncSession as syncSessionRequest,
   updateRunningSession as updateRunningSessionRequest,
-} from '@infra/google';
-import { getSupabaseClient } from '@infra/supabase';
+} from '@infra/repository/GoogleSheets';
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GoogleSyncRequestBody } from '../../domain/googleSyncTypes.ts';
@@ -63,24 +61,11 @@ export const useGoogleSpreadsheetSync = () => {
   const [state, setState] = useState<SyncState>(initialState);
   const updateDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const resolveAccessToken = useCallback(async (): Promise<string> => {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      throw error;
-    }
-    const accessToken = data?.session?.access_token;
-    if (!accessToken) {
-      throw new Error('Supabase access token is not available');
-    }
-    return accessToken;
-  }, []);
-
   const canSync = useMemo(() => {
-    if (!isGoogleSyncClientEnabled()) {
+    if (!isGoogleSyncEnabled()) {
       return false;
     }
-    if (!getGoogleSyncBaseUrl()) {
+    if (!getGoogleSyncApiBaseUrl()) {
       return false;
     }
     return authStatus === 'authenticated';
@@ -88,7 +73,7 @@ export const useGoogleSpreadsheetSync = () => {
 
   const mutation = useMutation({
     mutationFn: async (session: TimeTrackerSession) => {
-      const accessToken = await resolveAccessToken();
+      const accessToken = await getAccessToken();
       const response = await syncSessionRequest(accessToken, toRequestBody(session));
       return {
         response,
@@ -155,7 +140,7 @@ export const useGoogleSpreadsheetSync = () => {
         return null;
       }
       try {
-        const accessToken = await resolveAccessToken();
+        const accessToken = await getAccessToken();
         await appendRunningSessionRequest(accessToken, {
           id: draft.id,
           title: draft.title,
@@ -175,7 +160,7 @@ export const useGoogleSpreadsheetSync = () => {
         return null;
       }
     },
-    [canSync, resolveAccessToken],
+    [canSync],
   );
 
   /**
@@ -197,7 +182,7 @@ export const useGoogleSpreadsheetSync = () => {
       return new Promise<{ success: boolean } | null>((resolve) => {
         updateDebounceTimerRef.current = setTimeout(async () => {
           try {
-            const accessToken = await resolveAccessToken();
+            const accessToken = await getAccessToken();
             await updateRunningSessionRequest(accessToken, {
               draft: {
                 id: draft.id,
@@ -222,7 +207,7 @@ export const useGoogleSpreadsheetSync = () => {
         }, 1000);
       });
     },
-    [canSync, resolveAccessToken],
+    [canSync],
   );
 
   const syncRunningSessionCancel = useCallback(
@@ -238,7 +223,7 @@ export const useGoogleSpreadsheetSync = () => {
       }
 
       try {
-        const accessToken = await resolveAccessToken();
+        const accessToken = await getAccessToken();
         await clearRunningSessionRequest(accessToken, sessionId);
         return { success: true };
       } catch (error) {
@@ -249,7 +234,7 @@ export const useGoogleSpreadsheetSync = () => {
         return null;
       }
     },
-    [canSync, resolveAccessToken],
+    [canSync],
   );
 
   const deleteSessionRow = useCallback(
@@ -265,7 +250,7 @@ export const useGoogleSpreadsheetSync = () => {
       }
 
       try {
-        const accessToken = await resolveAccessToken();
+        const accessToken = await getAccessToken();
         await deleteSessionRowRequest(accessToken, sessionId);
         return { success: true };
       } catch (error) {
@@ -276,7 +261,7 @@ export const useGoogleSpreadsheetSync = () => {
         return null;
       }
     },
-    [canSync, resolveAccessToken],
+    [canSync],
   );
 
   return {

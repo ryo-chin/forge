@@ -31,8 +31,28 @@ module.exports = {
           '**/features/**/pages/**',
           '**/hooks/**',
           '**/lib/**',
+          // infra層内部の依存を許可
+          '**/infra/**',
           'react-dom/client',
           '@testing-library/jest-dom/vitest',
+        ],
+      },
+    ],
+    // Infra層の境界を強制: features/からsupabase/google/への直接アクセスを禁止
+    'import/no-restricted-paths': [
+      'error',
+      {
+        zones: [
+          {
+            target: './src/features/**/*',
+            from: './src/infra/supabase/**/*',
+            message: 'Use @infra/repository or @infra/auth instead of direct Supabase access',
+          },
+          {
+            target: './src/features/**/*',
+            from: './src/infra/google/**/*',
+            message: 'Use @infra/repository or @infra/config instead of direct Google API access',
+          },
         ],
       },
     ],

@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => {
   const syncSession = vi.fn();
   const isEnabled = vi.fn(() => true);
   const getBaseUrl = vi.fn(() => 'https://worker.example.com');
-  const getSession = vi.fn();
+  const getAccessToken = vi.fn(() => Promise.resolve('supabase-token'));
   return {
     appendRunningSession,
     updateRunningSession,
@@ -22,13 +22,11 @@ const mocks = vi.hoisted(() => {
     syncSession,
     isEnabled,
     getBaseUrl,
-    getSession,
+    getAccessToken,
   };
 });
 
-vi.mock('@infra/google', () => ({
-  isGoogleSyncClientEnabled: mocks.isEnabled,
-  getGoogleSyncBaseUrl: mocks.getBaseUrl,
+vi.mock('@infra/repository/GoogleSheets', () => ({
   appendRunningSession: mocks.appendRunningSession,
   updateRunningSession: mocks.updateRunningSession,
   clearRunningSession: mocks.clearRunningSession,
@@ -36,17 +34,15 @@ vi.mock('@infra/google', () => ({
   syncSession: mocks.syncSession,
 }));
 
-vi.mock('@infra/supabase', () => ({
-  getSupabaseClient: () => ({
-    auth: {
-      getSession: mocks.getSession,
-    },
-  }),
+vi.mock('@infra/config', () => ({
+  isGoogleSyncEnabled: mocks.isEnabled,
+  getGoogleSyncApiBaseUrl: mocks.getBaseUrl,
 }));
 
 const useAuthMock = vi.fn();
 vi.mock('@infra/auth', () => ({
   useAuth: () => useAuthMock(),
+  getAccessToken: mocks.getAccessToken,
 }));
 
 global.localStorage = {
@@ -88,10 +84,7 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
       user: { id: 'user-1' },
     });
 
-    mocks.getSession.mockResolvedValue({
-      data: { session: { access_token: 'supabase-token' } },
-      error: null,
-    });
+    mocks.getAccessToken.mockResolvedValue('supabase-token');
 
     vi.mocked(localStorage.getItem).mockReturnValue('{"configured":true}');
     mocks.appendRunningSession.mockResolvedValue({ status: 'ok' });

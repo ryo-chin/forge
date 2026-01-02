@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import './SettingsPage.css';
 import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
-import { isGoogleSyncClientEnabled } from '@infra/google';
+import { isGoogleSyncEnabled } from '@infra/config';
 import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
 
 type FeedbackState = {
@@ -54,7 +54,7 @@ export function SettingsPage(): JSX.Element {
     }
   }, [startOAuth]);
 
-  const isSyncAvailable = isGoogleSyncClientEnabled();
+  const isSyncAvailable = isGoogleSyncEnabled();
   const isLoading = settings.isLoading && !settings.data;
   const isError = settings.isError;
 
