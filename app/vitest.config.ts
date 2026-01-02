@@ -11,6 +11,7 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, 'src/lib'),
       '@ui': path.resolve(__dirname, 'src/ui'),
       '@features': path.resolve(__dirname, 'src/features'),
+      '@test-helpers': path.resolve(__dirname, 'tests/helpers'),
       'react-router-dom': path.resolve(__dirname, 'src/router'),
     },
   },
@@ -29,5 +30,32 @@ export default defineConfig({
       'tests/unit/**/*.test.{ts,tsx}',
     ],
     exclude: ['tests/e2e/**'],
+    // カバレッジ設定
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      include: [
+        'src/features/**/domain/**/*.ts',
+        'src/features/**/hooks/data/**/*.ts',
+        'src/lib/**/*.ts',
+      ],
+      exclude: ['**/*.test.{ts,tsx}', '**/__tests__/**', '**/types.ts', '**/index.ts'],
+      // domain/libは高カバレッジを目標とする
+      thresholds: {
+        'src/features/**/domain/**/*.ts': {
+          statements: 80,
+          branches: 70,
+          functions: 80,
+          lines: 80,
+        },
+        'src/lib/**/*.ts': {
+          statements: 80,
+          branches: 70,
+          functions: 80,
+          lines: 80,
+        },
+      },
+    },
   },
 });

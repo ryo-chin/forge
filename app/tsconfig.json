@@ -20,6 +20,8 @@
       "@lib/*": ["src/lib/*"],
       "@ui/*": ["src/ui/*"],
       "@features/*": ["src/features/*"],
+      "@test-helpers": ["tests/helpers"],
+      "@test-helpers/*": ["tests/helpers/*"],
       "react-router-dom": ["src/router"]
     },
     "types": ["vitest/globals", "vite/client"]
