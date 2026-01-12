@@ -6,6 +6,7 @@ on:
     paths:
       - 'app/**'
       - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-frontend.yml'
 
 jobs:
   lint:
@@ -38,7 +39,31 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter forge-app test:run
+      - run: pnpm --filter forge-app test:coverage
+      - name: Coverage summary
+        run: |
+          echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f app/coverage/coverage-summary.json ]; then
+            node -e "
+              const data = require('./app/coverage/coverage-summary.json');
+              const total = data.total;
+              console.log('| Metric | Coverage |');
+              console.log('|--------|----------|');
+              console.log('| Statements | ' + total.statements.pct + '% |');
+              console.log('| Branches | ' + total.branches.pct + '% |');
+              console.log('| Functions | ' + total.functions.pct + '% |');
+              console.log('| Lines | ' + total.lines.pct + '% |');
+            " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/coverage/
+          retention-days: 7
 
   build:
     name: Build
