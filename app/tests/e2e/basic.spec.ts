@@ -40,3 +40,40 @@ test('履歴のモーダル編集でタイトルを更新できる', async ({ pa
   await expect(page.getByText('アップデート済みタイトル', { exact: true })).toBeVisible();
   await expect(page.getByText('#focus')).toBeVisible();
 });
+
+test('履歴から同じタスクを再開始できる', async ({ page }) => {
+  await page.goto('/');
+
+  // タスクを開始して停止
+  await page.getByRole('button', { name: 'プロジェクトを選択' }).click();
+  await page.getByPlaceholder('プロジェクト、タスク、クライアントを検索').fill('my-project');
+  await page.keyboard.press('Meta+Enter');
+  await page.getByPlaceholder('何をやる？').fill('元のタスク');
+  await page.getByRole('button', { name: '開始' }).click();
+  await page.getByRole('button', { name: '停止' }).click();
+
+  // 履歴から再開始
+  await page.getByRole('button', { name: '「元のタスク」を再開始' }).click();
+
+  // 同じタイトルとプロジェクトで実行中になることを確認
+  await expect(page.getByText('計測中')).toBeVisible();
+  await expect(page.getByPlaceholder('何をやる？')).toHaveValue('元のタスク');
+  await expect(page.getByRole('button', { name: /プロジェクト: my-project/ })).toBeVisible();
+});
+
+test('実行中は再開始ボタンが無効になる', async ({ page }) => {
+  await page.goto('/');
+
+  // 最初のタスクを開始・停止
+  await page.getByPlaceholder('何をやる？').fill('最初のタスク');
+  await page.getByRole('button', { name: '開始' }).click();
+  await page.getByRole('button', { name: '停止' }).click();
+
+  // 新しいタスクを開始（実行中状態にする）
+  await page.getByPlaceholder('何をやる？').fill('実行中のタスク');
+  await page.getByRole('button', { name: '開始' }).click();
+
+  // 履歴の再開始ボタンが無効化されていることを確認
+  const restartButton = page.getByRole('button', { name: '「最初のタスク」を再開始' });
+  await expect(restartButton).toBeDisabled();
+});

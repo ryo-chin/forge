@@ -364,6 +364,43 @@ export function TimeTrackerPage() {
     });
   }, [persistSessions, setSessions]);
 
+  const handleRestartHistory = useCallback(
+    (session: TimeTrackerSession): boolean => {
+      if (isRunning) {
+        return false;
+      }
+
+      const ok = start(session.title, session.project ?? null);
+      if (!ok) {
+        return false;
+      }
+
+      const additionalFields: Partial<Omit<SessionDraft, 'startedAt'>> = {};
+      if (session.tags?.length) {
+        additionalFields.tags = [...session.tags];
+      }
+      if (session.skill) {
+        additionalFields.skill = session.skill;
+      }
+      if (session.intensity) {
+        additionalFields.intensity = session.intensity;
+      }
+      if (session.notes) {
+        additionalFields.notes = session.notes;
+      }
+
+      if (Object.keys(additionalFields).length > 0) {
+        updateDraft(additionalFields);
+      }
+
+      setComposerProject(session.project ?? '');
+      setUndoState(null);
+
+      return true;
+    },
+    [isRunning, start, updateDraft],
+  );
+
   // ==== モーダル保存 ====
   const handleModalSave = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -618,6 +655,8 @@ export function TimeTrackerPage() {
           sessions={displaySessions}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
+          onRestart={handleRestartHistory}
+          isRunning={isRunning}
         />
 
         {undoState ? (
