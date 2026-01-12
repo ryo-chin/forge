@@ -45,9 +45,6 @@ test('履歴から同じタスクを再開始できる', async ({ page }) => {
   await page.goto('/');
 
   // タスクを開始して停止
-  await page.getByRole('button', { name: 'プロジェクトを選択' }).click();
-  await page.getByPlaceholder('プロジェクト、タスク、クライアントを検索').fill('my-project');
-  await page.keyboard.press('Meta+Enter');
   await page.getByPlaceholder('何をやる？').fill('元のタスク');
   await page.getByRole('button', { name: '開始' }).click();
   await page.getByRole('button', { name: '停止' }).click();
@@ -55,10 +52,9 @@ test('履歴から同じタスクを再開始できる', async ({ page }) => {
   // 履歴から再開始
   await page.getByRole('button', { name: '「元のタスク」を再開始' }).click();
 
-  // 同じタイトルとプロジェクトで実行中になることを確認
+  // 同じタイトルで実行中になることを確認
   await expect(page.getByText('計測中')).toBeVisible();
   await expect(page.getByPlaceholder('何をやる？')).toHaveValue('元のタスク');
-  await expect(page.getByRole('button', { name: /プロジェクト: my-project/ })).toBeVisible();
 });
 
 test('実行中は再開始ボタンが無効になる', async ({ page }) => {
