@@ -19,14 +19,14 @@ test.describe('モバイルレイアウト', () => {
     expect(hasHorizontalScroll).toBeFalsy();
 
     await page.getByPlaceholder('何をやる？').fill('モバイル操作');
-    await page.getByRole('button', { name: '開始' }).click();
+    await page.getByRole('button', { name: '開始', exact: true }).click();
     await expect(page.getByRole('button', { name: '停止' })).toBeVisible();
 
     const scrollTopWhileRunning = await page.evaluate(() => window.scrollY);
     expect(scrollTopWhileRunning).toBeLessThan(5);
 
     await page.getByRole('button', { name: '停止' }).click();
-    await expect(page.getByRole('button', { name: '開始' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '開始', exact: true })).toBeVisible();
   });
 
   test('ハンバーガーメニューを開閉できる', async ({ page }) => {
