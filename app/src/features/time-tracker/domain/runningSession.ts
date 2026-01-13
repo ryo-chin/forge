@@ -9,6 +9,10 @@ export type RunningSessionAction =
         startedAt: number;
         project?: string | null;
         id?: string | null;
+        tags?: string[];
+        skill?: string;
+        intensity?: 'low' | 'medium' | 'high';
+        notes?: string;
       };
     }
   | { type: 'TICK'; payload: { nowMs: number } }
@@ -41,8 +45,11 @@ export const runningSessionReducer = (
             : crypto.randomUUID(),
         title,
         startedAt: action.payload.startedAt,
-        tags: [],
+        tags: action.payload.tags?.length ? [...action.payload.tags] : [],
         project: trimmedProject ? trimmedProject : undefined,
+        skill: action.payload.skill,
+        intensity: action.payload.intensity,
+        notes: action.payload.notes,
       };
       return { status: 'running', draft, elapsedSeconds: 0 };
     }
