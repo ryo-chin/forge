@@ -23,6 +23,32 @@ describe('runningSessionReducer', () => {
     expect(state.elapsedSeconds).toBe(0);
   });
 
+  it('START で追加のドラフト情報を引き継げる', () => {
+    const state = runningSessionReducer(initialRunningSessionState, {
+      type: 'START',
+      payload: {
+        id: 'test-id',
+        title: 'ギター練習',
+        startedAt: START_TIME,
+        draft: {
+          tags: ['music', 'daily'],
+          skill: 'guitar',
+          intensity: 'high',
+          notes: 'focus on rhythm',
+        },
+      },
+    });
+
+    if (state.status !== 'running') {
+      throw new Error('ランニング状態になっていません');
+    }
+
+    expect(state.draft.tags).toEqual(['music', 'daily']);
+    expect(state.draft.skill).toBe('guitar');
+    expect(state.draft.intensity).toBe('high');
+    expect(state.draft.notes).toBe('focus on rhythm');
+  });
+
   it('TICK アクションで経過秒が更新される', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',

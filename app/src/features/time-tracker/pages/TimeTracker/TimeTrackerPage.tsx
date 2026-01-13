@@ -370,11 +370,6 @@ export function TimeTrackerPage() {
         return false;
       }
 
-      const ok = start(session.title, session.project ?? null);
-      if (!ok) {
-        return false;
-      }
-
       const additionalFields: Partial<Omit<SessionDraft, 'startedAt'>> = {};
       if (session.tags?.length) {
         additionalFields.tags = [...session.tags];
@@ -389,8 +384,9 @@ export function TimeTrackerPage() {
         additionalFields.notes = session.notes;
       }
 
-      if (Object.keys(additionalFields).length > 0) {
-        updateDraft(additionalFields);
+      const ok = start(session.title, session.project ?? null, additionalFields);
+      if (!ok) {
+        return false;
       }
 
       setComposerProject(session.project ?? '');
@@ -398,7 +394,7 @@ export function TimeTrackerPage() {
 
       return true;
     },
-    [isRunning, start, updateDraft],
+    [isRunning, start],
   );
 
   // ==== モーダル保存 ====

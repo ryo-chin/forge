@@ -9,6 +9,7 @@ export type RunningSessionAction =
         startedAt: number;
         project?: string | null;
         id?: string | null;
+        draft?: Partial<Omit<SessionDraft, 'startedAt' | 'title' | 'project' | 'id'>>;
       };
     }
   | { type: 'TICK'; payload: { nowMs: number } }
@@ -34,6 +35,7 @@ export const runningSessionReducer = (
       if (!title) return state; // 二重防御
       const trimmedProject =
         typeof action.payload.project === 'string' ? action.payload.project.trim() : undefined;
+      const draftPayload = action.payload.draft;
       const draft: SessionDraft = {
         id:
           action.payload.id && action.payload.id.trim().length > 0
@@ -41,8 +43,11 @@ export const runningSessionReducer = (
             : crypto.randomUUID(),
         title,
         startedAt: action.payload.startedAt,
-        tags: [],
+        tags: Array.isArray(draftPayload?.tags) ? draftPayload.tags.slice() : [],
         project: trimmedProject ? trimmedProject : undefined,
+        skill: draftPayload?.skill,
+        intensity: draftPayload?.intensity,
+        notes: draftPayload?.notes,
       };
       return { status: 'running', draft, elapsedSeconds: 0 };
     }

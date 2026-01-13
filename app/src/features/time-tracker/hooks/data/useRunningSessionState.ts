@@ -17,7 +17,11 @@ export type UseRunningSessionStateOptions = {
 
 export type RunningSessionStateApi = {
   state: RunningSessionState;
-  start: (title: string, project?: string | null) => boolean;
+  start: (
+    title: string,
+    project?: string | null,
+    draft?: Partial<Omit<SessionDraft, 'startedAt' | 'title' | 'project' | 'id'>>,
+  ) => boolean;
   stop: () => TimeTrackerSession | null;
   updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
   adjustDuration: (deltaSeconds: number) => void;
@@ -42,15 +46,25 @@ export const useRunningSessionState = (
   useRunningSessionTimer({ state, dispatch, now, tickIntervalMs });
 
   const start = useCallback(
-    (rawTitle: string, project?: string | null) => {
+    (
+      rawTitle: string,
+      project?: string | null,
+      draft?: Partial<Omit<SessionDraft, 'startedAt' | 'title' | 'project' | 'id'>>,
+    ) => {
       const title = rawTitle.trim();
       if (!title) return false;
       if (state.status === 'running') return false;
 
-      dispatch({
-        type: 'START',
-        payload: { title, startedAt: now(), project },
-      });
+      const payload: {
+        title: string;
+        startedAt: number;
+        project?: string | null;
+        draft?: Partial<Omit<SessionDraft, 'startedAt' | 'title' | 'project' | 'id'>>;
+      } = { title, startedAt: now(), project };
+      if (draft && Object.keys(draft).length > 0) {
+        payload.draft = draft;
+      }
+      dispatch({ type: 'START', payload });
       return true;
     },
     [now, state.status],
