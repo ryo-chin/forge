@@ -364,6 +364,28 @@ export function TimeTrackerPage() {
     });
   }, [persistSessions, setSessions]);
 
+  const handleHistoryRestart = useCallback(
+    (session: TimeTrackerSession) => {
+      const started = start(session.title, session.project ?? null);
+      if (!started) return;
+
+      const draftPatch: Partial<Omit<SessionDraft, 'startedAt'>> = {};
+      if (session.project) draftPatch.project = session.project;
+      if (session.tags?.length) draftPatch.tags = [...session.tags];
+      if (session.skill) draftPatch.skill = session.skill;
+      if (session.intensity) draftPatch.intensity = session.intensity;
+      if (session.notes) draftPatch.notes = session.notes;
+
+      if (Object.keys(draftPatch).length > 0) {
+        updateDraft(draftPatch);
+      }
+
+      setComposerProject(session.project ?? '');
+      setUndoState(null);
+    },
+    [setComposerProject, setUndoState, start, updateDraft],
+  );
+
   // ==== モーダル保存 ====
   const handleModalSave = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -618,6 +640,8 @@ export function TimeTrackerPage() {
           sessions={displaySessions}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
+          onRestart={handleHistoryRestart}
+          isRunning={isRunning}
         />
 
         {undoState ? (

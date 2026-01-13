@@ -577,6 +577,13 @@
   transform: translateY(-1px);
 }
 
+.time-tracker__history-button:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .time-tracker__history-button--danger {
   background: #fee2e2;
   color: #b91c1c;

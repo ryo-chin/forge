@@ -7,9 +7,17 @@ type HistoryListProps = {
   sessions: TimeTrackerSession[];
   onEdit: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
+  onRestart: (session: TimeTrackerSession) => void;
+  isRunning: boolean;
 };
 
-export const HistoryList: React.FC<HistoryListProps> = ({ sessions, onEdit, onDelete }) => {
+export const HistoryList: React.FC<HistoryListProps> = ({
+  sessions,
+  onEdit,
+  onDelete,
+  onRestart,
+  isRunning,
+}) => {
   if (sessions.length === 0) return null;
 
   return (
@@ -41,6 +49,15 @@ export const HistoryList: React.FC<HistoryListProps> = ({ sessions, onEdit, onDe
                 {session.skill ? <span>@{session.skill}</span> : null}
               </div>
               <div className="time-tracker__history-actions">
+                <button
+                  type="button"
+                  className="time-tracker__history-button"
+                  onClick={() => onRestart(session)}
+                  aria-label={`「${session.title}」をもう一度開始`}
+                  disabled={isRunning}
+                >
+                  同じタスクを開始
+                </button>
                 <button
                   type="button"
                   className="time-tracker__history-button"
