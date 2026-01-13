@@ -23,6 +23,33 @@ describe('runningSessionReducer', () => {
     expect(state.elapsedSeconds).toBe(0);
   });
 
+  it('START アクションで追加フィールド (tags, skill, intensity, notes) を含めることができる', () => {
+    const state = runningSessionReducer(initialRunningSessionState, {
+      type: 'START',
+      payload: {
+        id: 'test-id',
+        title: 'ギター練習',
+        startedAt: START_TIME,
+        project: 'music',
+        tags: ['practice', 'guitar'],
+        skill: 'fingerpicking',
+        intensity: 'high',
+        notes: 'Focus on arpeggios',
+      },
+    });
+
+    if (state.status !== 'running') {
+      throw new Error('ランニング状態になっていません');
+    }
+
+    expect(state.draft.title).toBe('ギター練習');
+    expect(state.draft.project).toBe('music');
+    expect(state.draft.tags).toEqual(['practice', 'guitar']);
+    expect(state.draft.skill).toBe('fingerpicking');
+    expect(state.draft.intensity).toBe('high');
+    expect(state.draft.notes).toBe('Focus on arpeggios');
+  });
+
   it('TICK アクションで経過秒が更新される', () => {
     const runningState = runningSessionReducer(initialRunningSessionState, {
       type: 'START',

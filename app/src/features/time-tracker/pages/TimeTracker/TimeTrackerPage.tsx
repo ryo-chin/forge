@@ -185,7 +185,7 @@ export function TimeTrackerPage() {
     (title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return false;
-      const started = start(trimmed, composerProject || null);
+      const started = start(trimmed, { project: composerProject || null });
       if (started) {
         setUndoState(null);
       }
@@ -370,27 +370,15 @@ export function TimeTrackerPage() {
         return false;
       }
 
-      const ok = start(session.title, session.project ?? null);
+      const ok = start(session.title, {
+        project: session.project ?? null,
+        tags: session.tags?.length ? [...session.tags] : undefined,
+        skill: session.skill,
+        intensity: session.intensity,
+        notes: session.notes,
+      });
       if (!ok) {
         return false;
-      }
-
-      const additionalFields: Partial<Omit<SessionDraft, 'startedAt'>> = {};
-      if (session.tags?.length) {
-        additionalFields.tags = [...session.tags];
-      }
-      if (session.skill) {
-        additionalFields.skill = session.skill;
-      }
-      if (session.intensity) {
-        additionalFields.intensity = session.intensity;
-      }
-      if (session.notes) {
-        additionalFields.notes = session.notes;
-      }
-
-      if (Object.keys(additionalFields).length > 0) {
-        updateDraft(additionalFields);
       }
 
       setComposerProject(session.project ?? '');
@@ -398,7 +386,7 @@ export function TimeTrackerPage() {
 
       return true;
     },
-    [isRunning, start, updateDraft],
+    [isRunning, start],
   );
 
   // ==== モーダル保存 ====
