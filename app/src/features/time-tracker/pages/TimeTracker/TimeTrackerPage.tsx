@@ -185,7 +185,7 @@ export function TimeTrackerPage() {
     (title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return false;
-      const started = start(trimmed, composerProject || null);
+      const started = start(trimmed, { project: composerProject || null });
       if (started) {
         setUndoState(null);
       }
@@ -363,6 +363,31 @@ export function TimeTrackerPage() {
       return null;
     });
   }, [persistSessions, setSessions]);
+
+  const handleRestartHistory = useCallback(
+    (session: TimeTrackerSession): boolean => {
+      if (isRunning) {
+        return false;
+      }
+
+      const ok = start(session.title, {
+        project: session.project ?? null,
+        tags: session.tags?.length ? [...session.tags] : undefined,
+        skill: session.skill,
+        intensity: session.intensity,
+        notes: session.notes,
+      });
+      if (!ok) {
+        return false;
+      }
+
+      setComposerProject(session.project ?? '');
+      setUndoState(null);
+
+      return true;
+    },
+    [isRunning, start],
+  );
 
   // ==== モーダル保存 ====
   const handleModalSave = useCallback(
@@ -618,6 +643,8 @@ export function TimeTrackerPage() {
           sessions={displaySessions}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
+          onRestart={handleRestartHistory}
+          isRunning={isRunning}
         />
 
         {undoState ? (

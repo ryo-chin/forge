@@ -586,6 +586,12 @@
   background: #fecaca;
 }
 
+.time-tracker__history-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .time-tracker__undo {
   margin-top: 1rem;
   padding: 0.75rem 1rem;

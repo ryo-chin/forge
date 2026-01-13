@@ -15,9 +15,17 @@ export type UseRunningSessionStateOptions = {
   initialState?: RunningSessionState;
 };
 
+export type StartOptions = {
+  project?: string | null;
+  tags?: string[];
+  skill?: string;
+  intensity?: 'low' | 'medium' | 'high';
+  notes?: string;
+};
+
 export type RunningSessionStateApi = {
   state: RunningSessionState;
-  start: (title: string, project?: string | null) => boolean;
+  start: (title: string, options?: StartOptions) => boolean;
   stop: () => TimeTrackerSession | null;
   updateDraft: (partial: Partial<Omit<SessionDraft, 'startedAt'>>) => void;
   adjustDuration: (deltaSeconds: number) => void;
@@ -42,14 +50,22 @@ export const useRunningSessionState = (
   useRunningSessionTimer({ state, dispatch, now, tickIntervalMs });
 
   const start = useCallback(
-    (rawTitle: string, project?: string | null) => {
+    (rawTitle: string, options?: StartOptions) => {
       const title = rawTitle.trim();
       if (!title) return false;
       if (state.status === 'running') return false;
 
       dispatch({
         type: 'START',
-        payload: { title, startedAt: now(), project },
+        payload: {
+          title,
+          startedAt: now(),
+          project: options?.project,
+          tags: options?.tags,
+          skill: options?.skill,
+          intensity: options?.intensity,
+          notes: options?.notes,
+        },
       });
       return true;
     },
