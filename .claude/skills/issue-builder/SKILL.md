@@ -35,10 +35,27 @@ description: ユーザーの曖昧な要望・意図から、AIが自律実装�
 
 以下を自動で収集する:
 
+#### 3.1 アーキテクチャナレッジ
+
+実装対象に応じて参照:
+
+| 対象 | 参照先 |
+|------|--------|
+| Frontend | `docs/architecture/frontend/` 配下（overview, layers, directories, patterns） |
+| Backend | `docs/architecture/backend.md` |
+| ADR | `docs/adr/` 配下の関連ドキュメント |
+
+#### 3.2 関連コード探索
+
 1. **関連ファイル**: Glob/Grepで関連コードを探索
-2. **既存パターン**: 類似機能の実装パターンを特定
-3. **適用ガードレール**: ESLint、型定義、テスト要件を確認
-4. **依存関係**: 影響を受けるモジュールを特定
+2. **既存パターン**: 類似機能の実装パターンを特定（`docs/architecture/frontend/patterns.md` を参照）
+3. **依存関係**: 影響を受けるモジュールを特定
+
+#### 3.3 ガードレール確認
+
+- `app/.eslintrc.cjs`: レイヤー依存ルール
+- `biome.json`: コード品質ルール
+- `app/tests/e2e/`: 既存E2Eテストパターン
 
 収集後、AskUserQuestionで確認。
 

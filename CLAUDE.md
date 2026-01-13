@@ -33,10 +33,23 @@
 
 ## 参考（司法の人間向け表現）
 
-- アーキテクチャ背景: `docs/architecture/`
+### アーキテクチャ（Frontend）
+
+- 全体概要: `docs/architecture/frontend/overview.md`
+- レイヤー構造: `docs/architecture/frontend/layers.md`
+- ディレクトリ構成: `docs/architecture/frontend/directories.md`
+- 実装パターン: `docs/architecture/frontend/patterns.md`
+
+### アーキテクチャ（Backend）
+
+- API設計: `docs/architecture/backend.md`
+
+### その他
+
 - セットアップ手順: `app/README.md`, `api/README.md`
 - 意思決定記録: `docs/adr/`
 - 設計思想: `guards/README.md`
+- AI駆動開発ガイド: `docs/guides/ai-driven-development.md`
 
 ## 開発ツール
 
