@@ -11,7 +11,7 @@ import type {
   GoogleSyncSettings,
   SheetOption,
   SpreadsheetOption,
-} from '../../../features/time-tracker/domain/googleSyncTypes.ts';
+} from '../../../../features/time-tracker/domain/googleSyncTypes.ts';
 import {
   appendRunningSession as appendRunningSessionClient,
   clearRunningSession as clearRunningSessionClient,

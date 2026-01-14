@@ -90,7 +90,7 @@ module.exports = {
 
     // =====================================
     // Infra層の境界を強制
-    // features/からsupabase/google/への直接アクセスを禁止
+    // features/からinfra/impl/への直接アクセスを禁止
     // =====================================
     'import/no-restricted-paths': [
       'error',
@@ -98,13 +98,8 @@ module.exports = {
         zones: [
           {
             target: './src/features/**/*',
-            from: './src/infra/supabase/**/*',
-            message: 'Use @infra/repository or @infra/auth instead of direct Supabase access',
-          },
-          {
-            target: './src/features/**/*',
-            from: './src/infra/google/**/*',
-            message: 'Use @infra/repository or @infra/config instead of direct Google API access',
+            from: './src/infra/impl/**/*',
+            message: 'Use @infra/* (infra/api/) instead of direct infra/impl/ access',
           },
           // =====================================
           // ui/components はfeatures/に依存しない

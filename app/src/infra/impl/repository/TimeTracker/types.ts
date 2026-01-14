@@ -1,7 +1,7 @@
 import type {
   RunningSessionState,
   TimeTrackerSession,
-} from '../../../features/time-tracker/domain/types.ts';
+} from '../../../../features/time-tracker/domain/types.ts';
 
 export type TimeTrackerDataSource = {
   readonly mode: 'local' | 'supabase';

@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@infra': path.resolve(__dirname, 'src/infra'),
+      '@infra': path.resolve(__dirname, 'src/infra/api'),
       '@hooks': path.resolve(__dirname, 'src/hooks'),
       '@lib': path.resolve(__dirname, 'src/lib'),
       '@ui': path.resolve(__dirname, 'src/ui'),

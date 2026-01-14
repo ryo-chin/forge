@@ -7,11 +7,11 @@ import {
 import {
   parseRunningDraft,
   parseSession,
-} from '../../../features/time-tracker/domain/sessionParsers.ts';
+} from '../../../../features/time-tracker/domain/sessionParsers.ts';
 import type {
   RunningSessionState,
   TimeTrackerSession,
-} from '../../../features/time-tracker/domain/types.ts';
+} from '../../../../features/time-tracker/domain/types.ts';
 import type { CreateDataSourceOptions, TimeTrackerDataSource } from './types.ts';
 
 const computeRunningState = (now: () => number): RunningSessionState | null => {

@@ -7,8 +7,7 @@ import { AuthLoading, LoginPage } from '@features/login';
 import { SettingsPage } from '@features/settings';
 import { TimeTrackerPage } from '@features/time-tracker';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
-import { AuthProvider, useAuth } from '@infra/auth';
-import type { AuthContextValue } from '@infra/auth/authContext.ts';
+import { type AuthContextValue, AuthProvider, useAuth } from '@infra/auth';
 import { AppLayout } from '@ui/layouts/AppLayout';
 
 const queryClient = new QueryClient();
