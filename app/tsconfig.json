@@ -15,7 +15,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@infra/*": ["src/infra/*"],
+      "@infra/*": ["src/infra/api/*"],
       "@hooks/*": ["src/hooks/*"],
       "@lib/*": ["src/lib/*"],
       "@ui/*": ["src/ui/*"],

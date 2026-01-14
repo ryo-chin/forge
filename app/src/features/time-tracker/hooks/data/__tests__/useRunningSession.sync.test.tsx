@@ -19,7 +19,7 @@ const createMockDataSource = (
 });
 
 // createTimeTrackerDataSourceをモック
-vi.mock('../../../../../infra/repository/TimeTracker', () => ({
+vi.mock('@infra/repository/TimeTracker', () => ({
   createTimeTrackerDataSource: vi.fn(),
 }));
 
@@ -45,9 +45,7 @@ describe('useRunningSession - Supabase Sync', () => {
       fetchRunningState: vi.fn().mockResolvedValue(mockRunningState),
     });
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
@@ -64,9 +62,7 @@ describe('useRunningSession - Supabase Sync', () => {
   it('should persist running state when session starts', async () => {
     const mockDataSource = createMockDataSource();
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
@@ -89,9 +85,7 @@ describe('useRunningSession - Supabase Sync', () => {
   it('should persist state when draft is updated', async () => {
     const mockDataSource = createMockDataSource();
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
@@ -123,9 +117,7 @@ describe('useRunningSession - Supabase Sync', () => {
   it('should allow manual persistence via persistRunningState', async () => {
     const mockDataSource = createMockDataSource();
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
@@ -150,9 +142,7 @@ describe('useRunningSession - Supabase Sync', () => {
   it('should persist state when title is updated', async () => {
     const mockDataSource = createMockDataSource();
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
@@ -192,9 +182,7 @@ describe('useRunningSession - Supabase Sync', () => {
       fetchRunningState: vi.fn().mockResolvedValue(remoteState),
     });
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: 'user-1' }));
@@ -211,9 +199,7 @@ describe('useRunningSession - Supabase Sync', () => {
   it('should not persist state when userId is missing in supabase mode', async () => {
     const mockDataSource = createMockDataSource();
 
-    const { createTimeTrackerDataSource } = await import(
-      '../../../../../infra/repository/TimeTracker'
-    );
+    const { createTimeTrackerDataSource } = await import('@infra/repository/TimeTracker');
     vi.mocked(createTimeTrackerDataSource).mockReturnValue(mockDataSource);
 
     const { result } = renderHook(() => useRunningSession({ userId: null }));

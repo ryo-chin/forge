@@ -4,7 +4,7 @@
  */
 import { initialRunningSessionState } from '@features/time-tracker/domain/runningSession';
 import type { RunningSessionState, TimeTrackerSession } from '@features/time-tracker/domain/types';
-import type { TimeTrackerDataSource } from '@infra/repository/TimeTracker/types';
+import type { TimeTrackerDataSource } from '@infra/repository/TimeTracker';
 import { vi } from 'vitest';
 
 export type MockDataSourceOptions = {
