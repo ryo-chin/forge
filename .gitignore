@@ -4,6 +4,7 @@ node_modules
 /build/
 /coverage/
 /.wrangler/
+package-lock.json
 .env
 .env.*
 .dev.vars
