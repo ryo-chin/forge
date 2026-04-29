@@ -20,4 +20,4 @@ pnpm rebuild <package-name>
 pnpm exec playwright install chromium
 ```
 
-新しい lockfile や `npx` を追加した場合は、先に `pnpm run supply-chain:check` を通す。
+新しい lockfile や `npx` を追加した場合は、先に `pnpm run supply-chain:check` を通す。npm の `package-lock.json` は pnpm と混在させないため、生成された場合は削除する。

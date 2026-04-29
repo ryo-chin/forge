@@ -64,7 +64,6 @@ const checkNpmrc = () => {
     ['registry', 'https://registry.npmjs.org/'],
     ['ignore-scripts', 'true'],
     ['frozen-lockfile', 'true'],
-    ['package-lock', 'false'],
     ['engine-strict', 'true'],
     ['save-exact', 'true'],
     ['strict-ssl', 'true'],

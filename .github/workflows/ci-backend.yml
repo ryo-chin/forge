@@ -5,7 +5,11 @@ on:
   push:
     paths:
       - 'api/**'
+      - '.npmrc'
+      - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/ci-backend.yml'
 
 jobs:
   lint:

@@ -45,15 +45,6 @@ vi.mock('@infra/auth', () => ({
   getAccessToken: mocks.getAccessToken,
 }));
 
-global.localStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-  key: vi.fn(),
-  length: 0,
-} as Storage;
-
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -86,7 +77,8 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
 
     mocks.getAccessToken.mockResolvedValue('supabase-token');
 
-    vi.mocked(localStorage.getItem).mockReturnValue('{"configured":true}');
+    localStorage.clear();
+    localStorage.setItem('google-sheets-sync-config', '{"configured":true}');
     mocks.appendRunningSession.mockResolvedValue({ status: 'ok' });
     mocks.updateRunningSession.mockResolvedValue({ status: 'ok' });
     mocks.clearRunningSession.mockResolvedValue({ status: 'ok' });
@@ -133,7 +125,7 @@ describe('useGoogleSpreadsheetSync – running session helpers', () => {
   });
 
   it('returns null when Sheets config is missing', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
+    localStorage.removeItem('google-sheets-sync-config');
 
     const wrapper = createWrapper();
     const { result } = renderHook(() => useGoogleSpreadsheetSync(), {
