@@ -1,4 +1,5 @@
 import type { Env } from '../env';
+import { decryptSecret, encryptSecret } from '../security/tokenCrypto';
 
 export type ConnectionStatus = 'active' | 'revoked' | 'error';
 
@@ -89,6 +90,8 @@ export class SupabaseRepositoryError extends Error {
 }
 
 const REST_PREFIX = '/rest/v1';
+const ACCESS_TOKEN_AAD = 'google_spreadsheet_connections.access_token';
+const REFRESH_TOKEN_AAD = 'google_spreadsheet_connections.refresh_token';
 
 const ensureConfig = (env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -182,7 +185,20 @@ export const getConnectionByUser = async (
       },
     },
   );
-  return records.length > 0 ? records[0] : null;
+  if (records.length === 0) {
+    return null;
+  }
+
+  const row = records[0];
+  return {
+    ...row,
+    access_token: await decryptSecret(row.access_token, env.TOKEN_ENCRYPTION_KEY, ACCESS_TOKEN_AAD),
+    refresh_token: await decryptSecret(
+      row.refresh_token,
+      env.TOKEN_ENCRYPTION_KEY,
+      REFRESH_TOKEN_AAD,
+    ),
+  };
 };
 
 export const upsertConnection = async (
@@ -192,8 +208,16 @@ export const upsertConnection = async (
   const body = {
     user_id: payload.userId,
     google_user_id: payload.googleUserId,
-    access_token: payload.accessToken,
-    refresh_token: payload.refreshToken,
+    access_token: await encryptSecret(
+      payload.accessToken,
+      env.TOKEN_ENCRYPTION_KEY,
+      ACCESS_TOKEN_AAD,
+    ),
+    refresh_token: await encryptSecret(
+      payload.refreshToken,
+      env.TOKEN_ENCRYPTION_KEY,
+      REFRESH_TOKEN_AAD,
+    ),
     access_token_expires_at: payload.accessTokenExpiresAt,
     scopes: payload.scopes ?? ['https://www.googleapis.com/auth/spreadsheets'],
     status: payload.status ?? 'active',
@@ -211,7 +235,16 @@ export const upsertConnection = async (
     },
   );
 
-  return rows[0];
+  const row = rows[0];
+  return {
+    ...row,
+    access_token: await decryptSecret(row.access_token, env.TOKEN_ENCRYPTION_KEY, ACCESS_TOKEN_AAD),
+    refresh_token: await decryptSecret(
+      row.refresh_token,
+      env.TOKEN_ENCRYPTION_KEY,
+      REFRESH_TOKEN_AAD,
+    ),
+  };
 };
 
 export const updateAccessToken = async (
@@ -219,14 +252,24 @@ export const updateAccessToken = async (
   connectionId: string,
   accessToken: string,
   expiresAt: string,
+  refreshToken?: string,
 ): Promise<void> => {
+  const body: Record<string, unknown> = {
+    access_token: await encryptSecret(accessToken, env.TOKEN_ENCRYPTION_KEY, ACCESS_TOKEN_AAD),
+    access_token_expires_at: expiresAt,
+    updated_at: new Date().toISOString(),
+  };
+  if (refreshToken !== undefined) {
+    body.refresh_token = await encryptSecret(
+      refreshToken,
+      env.TOKEN_ENCRYPTION_KEY,
+      REFRESH_TOKEN_AAD,
+    );
+  }
+
   await request(env, 'PATCH', 'google_spreadsheet_connections', {
     searchParams: { id: `eq.${connectionId}` },
-    body: {
-      access_token: accessToken,
-      access_token_expires_at: expiresAt,
-      updated_at: new Date().toISOString(),
-    },
+    body,
   });
 };
 

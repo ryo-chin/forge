@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { handleOauthCallback, handleOauthRevoke, handleOauthStart } from '../oauth';
 
 const env = {
@@ -7,6 +7,8 @@ const env = {
   GOOGLE_CLIENT_ID: 'client-123',
   GOOGLE_CLIENT_SECRET: 'secret-xyz',
   GOOGLE_REDIRECT_URI: 'https://worker.example.com/oauth/callback',
+  OAUTH_STATE_SIGNING_SECRET: 'state-signing-secret-for-tests-32b',
+  TOKEN_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
 } as const;
 
 const buildRequest = (
@@ -38,6 +40,43 @@ const mocks = vi.hoisted(() => {
     getConnectionByUser,
   };
 });
+
+const extractStateFromStartResponse = async (response: Response): Promise<string> => {
+  const payload = (await response.json()) as { authorizationUrl: string };
+  const url = new URL(payload.authorizationUrl);
+  const state = url.searchParams.get('state');
+  if (!state) {
+    throw new Error('Missing state');
+  }
+  return state;
+};
+
+const decodeSignedStatePayload = (
+  state: string,
+): { userId: string; redirectPath: string; nonce: string; exp: number } => {
+  const [encodedPayload] = state.split('.');
+  return JSON.parse(Buffer.from(encodedPayload ?? '', 'base64url').toString('utf8')) as {
+    userId: string;
+    redirectPath: string;
+    nonce: string;
+    exp: number;
+  };
+};
+
+const tamperStateUserId = (state: string, userId: string): string => {
+  const [encodedPayload, signature] = state.split('.');
+  const payload = JSON.parse(Buffer.from(encodedPayload ?? '', 'base64url').toString('utf8')) as {
+    userId: string;
+  };
+  const tamperedPayload = Buffer.from(
+    JSON.stringify({
+      ...payload,
+      userId,
+    }),
+    'utf8',
+  ).toString('base64url');
+  return `${tamperedPayload}.${signature}`;
+};
 
 vi.mock('../../auth/verifySupabaseJwt', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../auth/verifySupabaseJwt')>();
@@ -112,28 +151,51 @@ describe('oauth handlers', () => {
       expect(scopes).toContain('https://www.googleapis.com/auth/spreadsheets');
       const state = url.searchParams.get('state');
       expect(state).toBeTruthy();
-      const decoded = JSON.parse(Buffer.from(state ?? '', 'base64url').toString('utf8')) as {
-        userId: string;
-        redirectPath: string;
-        nonce: string;
-      };
+      expect(state?.split('.')).toHaveLength(2);
+      const decoded = decodeSignedStatePayload(state ?? '');
       expect(decoded.userId).toBe('user-1');
       expect(decoded.redirectPath).toBe('/app/dashboard');
       expect(typeof decoded.nonce).toBe('string');
+      expect(decoded.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
+    });
+
+    it('rejects absolute redirect paths', async () => {
+      mocks.verifySupabaseJwt.mockResolvedValue({ userId: 'user-1', raw: {} });
+
+      const response = await handleOauthStart(
+        buildRequest('https://example.com/integrations/google/oauth/start', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer token-123',
+            'Content-Type': 'application/json',
+          },
+          body: { redirectPath: 'https://evil.example/callback' },
+        }),
+        env,
+      );
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        error: 'bad_request',
+      });
     });
   });
 
   describe('handleOauthCallback', () => {
     it('exchanges code and stores connection', async () => {
       mocks.verifySupabaseJwt.mockResolvedValue({ userId: 'user-1', raw: {} });
-      const state = Buffer.from(
-        JSON.stringify({
-          userId: 'user-1',
-          redirectPath: '/app/dashboard',
-          nonce: 'abc123',
+      const startResponse = await handleOauthStart(
+        buildRequest('https://example.com/integrations/google/oauth/start', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer token-123',
+            'Content-Type': 'application/json',
+          },
+          body: { redirectPath: '/app/dashboard' },
         }),
-        'utf8',
-      ).toString('base64url');
+        env,
+      );
+      const state = await extractStateFromStartResponse(startResponse);
 
       const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
       const payload = Buffer.from(
@@ -147,7 +209,7 @@ describe('oauth handlers', () => {
         token_type: 'Bearer',
         id_token: `${header}.${payload}.signature`,
       };
-      (fetch as unknown as vi.Mock).mockResolvedValue(
+      (fetch as unknown as Mock).mockResolvedValue(
         new Response(JSON.stringify(tokenResponse), { status: 200 }),
       );
 
@@ -179,6 +241,33 @@ describe('oauth handlers', () => {
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toContain('/app/dashboard');
     });
+
+    it('rejects tampered state before exchanging the authorization code', async () => {
+      mocks.verifySupabaseJwt.mockResolvedValue({ userId: 'user-1', raw: {} });
+      const startResponse = await handleOauthStart(
+        buildRequest('https://example.com/integrations/google/oauth/start', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer token-123',
+            'Content-Type': 'application/json',
+          },
+          body: { redirectPath: '/app/dashboard' },
+        }),
+        env,
+      );
+      const state = tamperStateUserId(await extractStateFromStartResponse(startResponse), 'user-2');
+
+      const response = await handleOauthCallback(
+        buildRequest(
+          `https://example.com/integrations/google/oauth/callback?code=auth-code&state=${state}`,
+        ),
+        env,
+      );
+
+      expect(response.status).toBe(400);
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mocks.upsertConnection).not.toHaveBeenCalled();
+    });
   });
 
   describe('handleOauthRevoke', () => {
@@ -199,7 +288,7 @@ describe('oauth handlers', () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
-      (fetch as unknown as vi.Mock).mockResolvedValue(new Response(null, { status: 200 }));
+      (fetch as unknown as Mock).mockResolvedValue(new Response(null, { status: 200 }));
 
       const response = await handleOauthRevoke(
         buildRequest('https://example.com/integrations/google/oauth/revoke', {

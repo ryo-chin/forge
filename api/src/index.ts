@@ -12,7 +12,14 @@ import {
   handleUpdateSettings,
 } from './handlers/settings';
 import { handleDeleteSyncedSession, handleSyncSession } from './handlers/syncSession';
-import { handleOptions } from './http/response';
+import {
+  handleCancelRunningSession,
+  handleGetRunningState,
+  handleStartRunningSession,
+  handleStopRunningSession,
+  handleUpdateRunningSession,
+} from './handlers/timeTracker';
+import { getCorsHeaders, handleOptions } from './http/response';
 
 const ROUTES = {
   SYNC: '/integrations/google/sync',
@@ -25,7 +32,27 @@ const ROUTES = {
   RUNNING_START: '/integrations/google/running/start',
   RUNNING_UPDATE: '/integrations/google/running/update',
   RUNNING_CANCEL: '/integrations/google/running/cancel',
+  TIME_TRACKER_RUNNING: '/time-tracker/running',
+  TIME_TRACKER_RUNNING_START: '/time-tracker/running/start',
+  TIME_TRACKER_RUNNING_UPDATE: '/time-tracker/running/update',
+  TIME_TRACKER_RUNNING_STOP: '/time-tracker/running/stop',
+  TIME_TRACKER_RUNNING_CANCEL: '/time-tracker/running/cancel',
 } as const;
+
+const withCors = (response: Response, request: Request): Response => {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(getCorsHeaders(request.headers.get('Origin')))) {
+    headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+};
+
+const respond = async (response: Promise<Response>, request: Request): Promise<Response> =>
+  withCors(await response, request);
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -38,56 +65,76 @@ export default {
 
     // OAuth routes
     if (request.method === 'POST' && url.pathname === ROUTES.OAUTH_START) {
-      return handleOauthStart(request, env);
+      return respond(handleOauthStart(request, env), request);
     }
     if (request.method === 'GET' && url.pathname === ROUTES.OAUTH_CALLBACK) {
-      return handleOauthCallback(request, env);
+      return respond(handleOauthCallback(request, env), request);
     }
     if (request.method === 'POST' && url.pathname === ROUTES.OAUTH_REVOKE) {
-      return handleOauthRevoke(request, env);
+      return respond(handleOauthRevoke(request, env), request);
     }
 
     // Settings routes
     if (request.method === 'GET' && url.pathname === ROUTES.SETTINGS) {
-      return handleGetSettings(request, env);
+      return respond(handleGetSettings(request, env), request);
     }
     if (request.method === 'PUT' && url.pathname === ROUTES.SETTINGS) {
-      return handleUpdateSettings(request, env);
+      return respond(handleUpdateSettings(request, env), request);
     }
 
     // Spreadsheet/Sheet listing routes
     if (request.method === 'GET' && url.pathname === ROUTES.SPREADSHEETS) {
-      return handleListSpreadsheets(request, env);
+      return respond(handleListSpreadsheets(request, env), request);
     }
     if (
       request.method === 'GET' &&
       url.pathname.startsWith('/integrations/google/spreadsheets/') &&
       url.pathname.endsWith('/sheets')
     ) {
-      return handleListSheets(request, env);
+      return respond(handleListSheets(request, env), request);
     }
 
     // Sync route
     if (request.method === 'POST' && url.pathname === ROUTES.SYNC) {
-      return handleSyncSession(request, env);
+      return respond(handleSyncSession(request, env), request);
     }
 
     if (request.method === 'POST' && url.pathname === ROUTES.SYNC_DELETE) {
-      return handleDeleteSyncedSession(request, env);
+      return respond(handleDeleteSyncedSession(request, env), request);
     }
 
     if (request.method === 'POST' && url.pathname === ROUTES.RUNNING_START) {
-      return handleRunningSessionStart(request, env);
+      return respond(handleRunningSessionStart(request, env), request);
     }
 
     if (request.method === 'PATCH' && url.pathname === ROUTES.RUNNING_UPDATE) {
-      return handleRunningSessionUpdate(request, env);
+      return respond(handleRunningSessionUpdate(request, env), request);
     }
 
     if (request.method === 'POST' && url.pathname === ROUTES.RUNNING_CANCEL) {
-      return handleRunningSessionCancel(request, env);
+      return respond(handleRunningSessionCancel(request, env), request);
     }
 
-    return new Response('Not Found', { status: 404 });
+    if (request.method === 'GET' && url.pathname === ROUTES.TIME_TRACKER_RUNNING) {
+      return respond(handleGetRunningState(request, env), request);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.TIME_TRACKER_RUNNING_START) {
+      return respond(handleStartRunningSession(request, env), request);
+    }
+
+    if (request.method === 'PATCH' && url.pathname === ROUTES.TIME_TRACKER_RUNNING_UPDATE) {
+      return respond(handleUpdateRunningSession(request, env), request);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.TIME_TRACKER_RUNNING_STOP) {
+      return respond(handleStopRunningSession(request, env), request);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.TIME_TRACKER_RUNNING_CANCEL) {
+      return respond(handleCancelRunningSession(request, env), request);
+    }
+
+    return withCors(new Response('Not Found', { status: 404 }), request);
   },
 };
