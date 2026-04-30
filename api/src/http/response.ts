@@ -62,4 +62,5 @@ export {
   serverError,
   handleOptions,
   getCorsHeaders,
+  resolveAllowedOrigin,
 };

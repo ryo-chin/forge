@@ -4,7 +4,13 @@ import {
   verifySupabaseJwt,
 } from '../auth/verifySupabaseJwt';
 import type { Env } from '../env';
-import { badRequest, jsonResponse, serverError, unauthorized } from '../http/response';
+import {
+  badRequest,
+  jsonResponse,
+  resolveAllowedOrigin,
+  serverError,
+  unauthorized,
+} from '../http/response';
 import {
   getConnectionByUser,
   SupabaseRepositoryError,
@@ -14,6 +20,7 @@ import {
 
 type OauthStatePayload = {
   userId: string;
+  redirectOrigin: string;
   redirectPath: string;
   nonce: string;
 };
@@ -155,6 +162,9 @@ const decodeState = async (value: string, env: Env): Promise<OauthStatePayload> 
     }
     return {
       userId: parsed.userId,
+      redirectOrigin: resolveAllowedOrigin(
+        typeof parsed.redirectOrigin === 'string' ? parsed.redirectOrigin : null,
+      ),
       redirectPath: parsed.redirectPath,
       nonce: parsed.nonce,
     };
@@ -366,6 +376,7 @@ export const handleOauthStart = async (request: Request, env: Env): Promise<Resp
 
   const state: OauthStatePayload = {
     userId: auth.userId,
+    redirectOrigin: resolveAllowedOrigin(origin),
     redirectPath,
     nonce: buildNonce(),
   };
@@ -474,7 +485,7 @@ export const handleOauthCallback = async (request: Request, env: Env): Promise<R
   return new Response(null, {
     status: 302,
     headers: {
-      Location: state.redirectPath,
+      Location: new URL(state.redirectPath, state.redirectOrigin).toString(),
     },
   });
 };
