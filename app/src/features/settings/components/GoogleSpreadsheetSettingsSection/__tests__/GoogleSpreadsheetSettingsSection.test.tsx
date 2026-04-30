@@ -63,6 +63,27 @@ describe('GoogleSpreadsheetSettingsSection', () => {
     expect(defaultProps.onStartOAuth).toHaveBeenCalledTimes(1);
   });
 
+  it('disables OAuth button while reconnect is starting', async () => {
+    const user = userEvent.setup();
+    const onStartOAuth = vi.fn(() => new Promise<void>(() => {}));
+    render(
+      <GoogleSpreadsheetSettingsSection
+        {...defaultProps}
+        isConnected={false}
+        onStartOAuth={onStartOAuth}
+      />,
+    );
+
+    const oauthButton = screen.getByRole('button', {
+      name: /Google アカウントと連携/i,
+    });
+    await user.click(oauthButton);
+    await user.click(oauthButton);
+
+    expect(onStartOAuth).toHaveBeenCalledTimes(1);
+    expect(oauthButton).toBeDisabled();
+  });
+
   it('loads spreadsheets on mount when connected', async () => {
     render(<GoogleSpreadsheetSettingsSection {...defaultProps} />);
 
@@ -121,6 +142,30 @@ describe('GoogleSpreadsheetSettingsSection', () => {
 
   it('shows reconnect prompt when spreadsheet fetch returns 401', async () => {
     const fetchError = new GoogleSyncClientError('Unauthorized', 401);
+    render(
+      <GoogleSpreadsheetSettingsSection
+        {...defaultProps}
+        onFetchSpreadsheets={vi.fn().mockRejectedValue(fetchError)}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Google アカウントとの連携が期限切れになりました。再度連携を行ってください。',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: 'Google アカウントを再連携' })).toBeInTheDocument();
+  });
+
+  it('shows reconnect prompt when Google reports invalid_grant', async () => {
+    const fetchError = new GoogleSyncClientError('Google sync request failed', 500, {
+      error: 'internal_error',
+      message:
+        'Failed to exchange authorization code: 400 {"error":"invalid_grant","error_description":"Token has been expired or revoked."}',
+    });
     render(
       <GoogleSpreadsheetSettingsSection
         {...defaultProps}

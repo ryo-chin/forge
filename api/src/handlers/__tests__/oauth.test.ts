@@ -53,10 +53,17 @@ const extractStateFromStartResponse = async (response: Response): Promise<string
 
 const decodeSignedStatePayload = (
   state: string,
-): { userId: string; redirectPath: string; nonce: string; exp: number } => {
+): {
+  userId: string;
+  redirectOrigin: string;
+  redirectPath: string;
+  nonce: string;
+  exp: number;
+} => {
   const [encodedPayload] = state.split('.');
   return JSON.parse(Buffer.from(encodedPayload ?? '', 'base64url').toString('utf8')) as {
     userId: string;
+    redirectOrigin: string;
     redirectPath: string;
     nonce: string;
     exp: number;
@@ -154,6 +161,7 @@ describe('oauth handlers', () => {
       expect(state?.split('.')).toHaveLength(2);
       const decoded = decodeSignedStatePayload(state ?? '');
       expect(decoded.userId).toBe('user-1');
+      expect(decoded.redirectOrigin).toBe('https://forge.h031203yama.workers.dev');
       expect(decoded.redirectPath).toBe('/app/dashboard');
       expect(typeof decoded.nonce).toBe('string');
       expect(decoded.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
@@ -239,7 +247,49 @@ describe('oauth handlers', () => {
         }),
       );
       expect(response.status).toBe(302);
-      expect(response.headers.get('Location')).toContain('/app/dashboard');
+      expect(response.headers.get('Location')).toBe(
+        'https://forge.h031203yama.workers.dev/app/dashboard',
+      );
+    });
+
+    it('redirects back to the allowed app origin from the signed state', async () => {
+      mocks.verifySupabaseJwt.mockResolvedValue({ userId: 'user-1', raw: {} });
+      const startResponse = await handleOauthStart(
+        buildRequest('https://example.com/integrations/google/oauth/start', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer token-123',
+            'Content-Type': 'application/json',
+            Origin: 'http://localhost:5173',
+          },
+          body: { redirectPath: '/settings?tab=google#connect' },
+        }),
+        env,
+      );
+      const state = await extractStateFromStartResponse(startResponse);
+
+      const tokenResponse = {
+        access_token: 'google-access',
+        refresh_token: 'google-refresh',
+        expires_in: 3600,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        token_type: 'Bearer',
+      };
+      (fetch as unknown as Mock).mockResolvedValue(
+        new Response(JSON.stringify(tokenResponse), { status: 200 }),
+      );
+
+      const response = await handleOauthCallback(
+        buildRequest(
+          `https://example.com/integrations/google/oauth/callback?code=auth-code&state=${state}`,
+        ),
+        env,
+      );
+
+      expect(response.status).toBe(302);
+      expect(response.headers.get('Location')).toBe(
+        'http://localhost:5173/settings?tab=google#connect',
+      );
     });
 
     it('rejects tampered state before exchanging the authorization code', async () => {

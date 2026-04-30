@@ -3,6 +3,7 @@ import './SettingsPage.css';
 import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
 import { isGoogleSyncEnabled } from '@infra/config';
 import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
+import { buildOAuthRedirectPath } from './oauthRedirectPath.ts';
 
 type FeedbackState = {
   type: 'success' | 'error';
@@ -37,8 +38,9 @@ export function SettingsPage(): JSX.Element {
   const handleStartOAuth = useCallback(async () => {
     setFeedback(null);
     try {
-      const currentUrl = typeof window !== 'undefined' ? window.location.href : '/settings';
-      const response = await startOAuth(currentUrl);
+      const redirectPath =
+        typeof window !== 'undefined' ? buildOAuthRedirectPath(window.location) : '/settings';
+      const response = await startOAuth(redirectPath);
       if (response.authorizationUrl && typeof window !== 'undefined') {
         window.location.href = response.authorizationUrl;
       }

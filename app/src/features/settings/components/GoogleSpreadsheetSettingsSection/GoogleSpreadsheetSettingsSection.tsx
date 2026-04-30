@@ -36,7 +36,7 @@ export type GoogleSpreadsheetSettingsSectionProps = {
   currentSheetId?: number;
   currentColumnMapping?: ColumnMapping;
   onSave: (selection: SavePayload) => void | Promise<void>;
-  onStartOAuth: () => void;
+  onStartOAuth: () => void | Promise<void>;
   onFetchSpreadsheets: (query?: string) => Promise<FetchSpreadsheetsResult>;
   onFetchSheets: (spreadsheetId: string) => Promise<FetchSheetsResult>;
   isSaving?: boolean;
@@ -44,6 +44,18 @@ export type GoogleSpreadsheetSettingsSectionProps = {
 
 const REAUTH_MESSAGE =
   'Google アカウントとの連携が期限切れになりました。再度連携を行ってください。';
+
+const isReconnectRequiredError = (error: unknown): boolean => {
+  if (!(error instanceof GoogleSyncClientError)) {
+    return false;
+  }
+  if (error.status === 401) {
+    return true;
+  }
+
+  const detail = typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+  return /invalid_grant|expired or revoked/i.test(`${error.message} ${detail}`);
+};
 
 export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSettingsSectionProps> = ({
   isConnected,
@@ -69,9 +81,10 @@ export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSetting
   const [isLoadingSheets, setIsLoadingSheets] = useState(false);
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [reconnectMessage, setReconnectMessage] = useState<string | null>(null);
+  const [isStartingOAuth, setIsStartingOAuth] = useState(false);
 
   const handleAuthError = useCallback((error: unknown): boolean => {
-    if (error instanceof GoogleSyncClientError && error.status === 401) {
+    if (isReconnectRequiredError(error)) {
       setNeedsReconnect(true);
       setReconnectMessage(REAUTH_MESSAGE);
       setSpreadsheets([]);
@@ -200,6 +213,18 @@ export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSetting
     });
   };
 
+  const handleStartOAuth = async () => {
+    if (isStartingOAuth) {
+      return;
+    }
+    setIsStartingOAuth(true);
+    try {
+      await onStartOAuth();
+    } finally {
+      setIsStartingOAuth(false);
+    }
+  };
+
   const saveDisabled = !selectedSpreadsheetId || selectedSheetId === undefined || isSaving;
 
   const showReconnectPrompt = needsReconnect || !isConnected;
@@ -230,10 +255,11 @@ export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSetting
           <div className="settings-section__actions">
             <button
               type="button"
-              onClick={onStartOAuth}
+              onClick={() => void handleStartOAuth()}
               className="settings-section__primary-button"
+              disabled={isStartingOAuth}
             >
-              {oauthButtonLabel}
+              {isStartingOAuth ? '連携を開始しています...' : oauthButtonLabel}
             </button>
           </div>
         </div>
