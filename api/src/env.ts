@@ -4,4 +4,6 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_REDIRECT_URI: string;
+  OAUTH_STATE_SIGNING_SECRET?: string;
+  TOKEN_ENCRYPTION_KEY?: string;
 }

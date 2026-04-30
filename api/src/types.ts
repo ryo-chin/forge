@@ -74,7 +74,37 @@ export type RunningSessionUpdateRequest = {
 };
 
 export type RunningSessionCancelRequest = {
+  id?: string;
+};
+
+export type RunningSessionStatePayload =
+  | {
+      status: 'idle';
+      draft: null;
+      elapsedSeconds: 0;
+    }
+  | {
+      status: 'running';
+      draft: RunningSessionDraftPayload;
+      elapsedSeconds: number;
+    };
+
+export type RunningSessionStopRequest = {
+  id?: string;
+  stoppedAt?: string | number;
+};
+
+export type TimeTrackerSessionPayload = {
   id: string;
+  title: string;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  project?: string | null;
+  notes?: string | null;
+  tags?: string[];
+  skill?: string | null;
+  intensity?: string | null;
 };
 
 export type ColumnMappingConfig = {
