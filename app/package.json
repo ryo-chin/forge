@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && tsc --project tsconfig.worker.json --noEmit && vite build",
     "preview": "vite preview",
-    "deploy": "pnpm run build && npx wrangler deploy",
+    "deploy": "pnpm run build && pnpm exec wrangler deploy",
     "format": "biome format --write .",
     "format:check": "biome check .",
     "lint": "eslint . --ext .ts,.tsx",
