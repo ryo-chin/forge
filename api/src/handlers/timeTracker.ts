@@ -19,6 +19,7 @@ import type {
   RunningSessionUpdateRequest,
   TimeTrackerSessionPayload,
 } from '../types';
+import { handleSyncSession } from './syncSession';
 
 class HttpResponseError extends Error {
   readonly response: Response;
@@ -195,6 +196,112 @@ const buildCompletedSession = (
   return session;
 };
 
+type CompletedSessionSyncResult =
+  | {
+      status: 'success';
+      log: unknown;
+    }
+  | {
+      status: 'skipped';
+      reason: string;
+      detail?: unknown;
+    }
+  | {
+      status: 'failed';
+      statusCode: number;
+      error: string;
+      detail?: unknown;
+    };
+
+const skippedSyncErrors = new Set([
+  'connection_missing',
+  'connection_inactive',
+  'selection_missing',
+  'mapping_missing',
+  'mapping_incomplete',
+]);
+
+const readResponseBody = async (response: Response): Promise<unknown> => {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  return response.text();
+};
+
+const describeSyncError = (detail: unknown, fallback: string): string => {
+  if (detail && typeof detail === 'object' && 'message' in detail) {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+  }
+  if (typeof detail === 'string' && detail.trim().length > 0) {
+    return detail;
+  }
+  return fallback;
+};
+
+const syncCompletedSession = async (
+  request: Request,
+  env: Env,
+  session: TimeTrackerSessionPayload,
+): Promise<CompletedSessionSyncResult> => {
+  const token = extractBearerToken(request);
+  if (!token) {
+    return { status: 'skipped', reason: 'Bearer token is required' };
+  }
+
+  try {
+    const syncUrl = new URL('/integrations/google/sync', request.url);
+    const syncResponse = await handleSyncSession(
+      new Request(syncUrl.toString(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session,
+          source: 'time-tracker-worker-api',
+        }),
+      }),
+      env,
+    );
+    const detail = await readResponseBody(syncResponse);
+
+    if (syncResponse.ok) {
+      return { status: 'success', log: detail };
+    }
+
+    const errorCode =
+      detail && typeof detail === 'object' && 'error' in detail
+        ? (detail as { error?: unknown }).error
+        : null;
+    const reason = describeSyncError(
+      detail,
+      `Google sync failed with status ${syncResponse.status}`,
+    );
+
+    if (typeof errorCode === 'string' && skippedSyncErrors.has(errorCode)) {
+      return { status: 'skipped', reason, detail };
+    }
+
+    return {
+      status: 'failed',
+      statusCode: syncResponse.status,
+      error: reason,
+      detail,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      statusCode: 500,
+      error: error instanceof Error ? error.message : 'Unknown Google sync error',
+    };
+  }
+};
+
 const handleError = (responseOrError: unknown): Response => {
   if (responseOrError instanceof HttpResponseError) {
     return responseOrError.response;
@@ -282,8 +389,9 @@ export const handleStopRunningSession = async (request: Request, env: Env): Prom
     const session = buildCompletedSession(currentState.draft, stoppedAt);
     const savedSession = await insertSession(env, auth.userId, session);
     const savedState = await upsertRunningState(env, auth.userId, idleState);
+    const sync = await syncCompletedSession(request, env, savedSession);
 
-    return jsonResponse({ session: savedSession, state: savedState });
+    return jsonResponse({ session: savedSession, state: savedState, sync });
   } catch (responseOrError) {
     return handleError(responseOrError);
   }
