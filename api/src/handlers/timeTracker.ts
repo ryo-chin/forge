@@ -14,12 +14,13 @@ import {
 import type {
   RunningSessionCancelRequest,
   RunningSessionDraftPayload,
+  RunningSessionStartRequest,
   RunningSessionStatePayload,
   RunningSessionStopRequest,
   RunningSessionUpdateRequest,
   TimeTrackerSessionPayload,
 } from '../types';
-import { handleSyncSession } from './syncSession';
+import { syncSessionForUser } from './syncSession';
 
 class HttpResponseError extends Error {
   readonly response: Response;
@@ -242,32 +243,21 @@ const describeSyncError = (detail: unknown, fallback: string): string => {
   return fallback;
 };
 
+export type TimeTrackerOperationResult = {
+  body: unknown;
+  status?: number;
+};
+
 const syncCompletedSession = async (
-  request: Request,
   env: Env,
+  userId: string,
   session: TimeTrackerSessionPayload,
 ): Promise<CompletedSessionSyncResult> => {
-  const token = extractBearerToken(request);
-  if (!token) {
-    return { status: 'skipped', reason: 'Bearer token is required' };
-  }
-
   try {
-    const syncUrl = new URL('/integrations/google/sync', request.url);
-    const syncResponse = await handleSyncSession(
-      new Request(syncUrl.toString(), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session,
-          source: 'time-tracker-worker-api',
-        }),
-      }),
-      env,
-    );
+    const syncResponse = await syncSessionForUser(env, userId, {
+      session,
+      source: 'time-tracker-worker-api',
+    });
     const detail = await readResponseBody(syncResponse);
 
     if (syncResponse.ok) {
@@ -318,12 +308,99 @@ const handleError = (responseOrError: unknown): Response => {
   return serverError('Unknown error', 500);
 };
 
+export const getRunningStateForUser = async (
+  env: Env,
+  userId: string,
+): Promise<TimeTrackerOperationResult> => {
+  const state = (await getRunningState(env, userId)) ?? idleState;
+  return { body: { state } };
+};
+
+export const startRunningSessionForUser = async (
+  env: Env,
+  userId: string,
+  payload: { draft?: unknown },
+): Promise<TimeTrackerOperationResult> => {
+  const draft = validateDraft(payload.draft);
+  const currentState = await getRunningState(env, userId);
+
+  if (currentState?.status === 'running') {
+    if (currentState.draft.id === draft.id) {
+      return { body: { state: currentState } };
+    }
+    throw new HttpResponseError(conflict('already_running', 'A running session already exists'));
+  }
+
+  const state: RunningSessionStatePayload = {
+    status: 'running',
+    draft,
+    elapsedSeconds: 0,
+  };
+  const savedState = await upsertRunningState(env, userId, state);
+
+  return { body: { state: savedState }, status: 201 };
+};
+
+export const updateRunningSessionForUser = async (
+  env: Env,
+  userId: string,
+  payload: RunningSessionUpdateRequest,
+): Promise<TimeTrackerOperationResult> => {
+  const draft = validateDraft(payload.draft);
+  const elapsedSeconds = validateElapsedSeconds(payload.elapsedSeconds);
+  const currentState = requireCurrentRunning(await getRunningState(env, userId));
+  ensureSessionIdMatches(currentState, draft.id);
+
+  const state: RunningSessionStatePayload = {
+    status: 'running',
+    draft,
+    elapsedSeconds,
+  };
+  const savedState = await upsertRunningState(env, userId, state);
+
+  return { body: { state: savedState } };
+};
+
+export const stopRunningSessionForUser = async (
+  env: Env,
+  userId: string,
+  payload: RunningSessionStopRequest,
+): Promise<TimeTrackerOperationResult> => {
+  const currentState = requireCurrentRunning(await getRunningState(env, userId));
+  ensureSessionIdMatches(currentState, payload.id);
+
+  const stoppedAt = parseStoppedAt(payload.stoppedAt);
+  const session = buildCompletedSession(currentState.draft, stoppedAt);
+  const savedSession = await insertSession(env, userId, session);
+  const savedState = await upsertRunningState(env, userId, idleState);
+  const sync = await syncCompletedSession(env, userId, savedSession);
+
+  return { body: { session: savedSession, state: savedState, sync } };
+};
+
+export const cancelRunningSessionForUser = async (
+  env: Env,
+  userId: string,
+  payload: RunningSessionCancelRequest,
+): Promise<TimeTrackerOperationResult> => {
+  const currentState = await getRunningState(env, userId);
+
+  if (!currentState || currentState.status === 'idle') {
+    return { body: { state: idleState } };
+  }
+  ensureSessionIdMatches(currentState, payload.id);
+
+  const savedState = await upsertRunningState(env, userId, idleState);
+
+  return { body: { state: savedState } };
+};
+
 export const handleGetRunningState = async (request: Request, env: Env): Promise<Response> => {
   try {
     const auth = await ensureAuthorized(request, env);
-    const state = (await getRunningState(env, auth.userId)) ?? idleState;
+    const result = await getRunningStateForUser(env, auth.userId);
 
-    return jsonResponse({ state });
+    return jsonResponse(result.body, result.status);
   } catch (responseOrError) {
     return handleError(responseOrError);
   }
@@ -332,25 +409,10 @@ export const handleGetRunningState = async (request: Request, env: Env): Promise
 export const handleStartRunningSession = async (request: Request, env: Env): Promise<Response> => {
   try {
     const auth = await ensureAuthorized(request, env);
-    const payload = await parseJson<{ draft?: unknown }>(request);
-    const draft = validateDraft(payload.draft);
-    const currentState = await getRunningState(env, auth.userId);
+    const payload = await parseJson<RunningSessionStartRequest>(request);
+    const result = await startRunningSessionForUser(env, auth.userId, payload);
 
-    if (currentState?.status === 'running') {
-      if (currentState.draft.id === draft.id) {
-        return jsonResponse({ state: currentState });
-      }
-      throw new HttpResponseError(conflict('already_running', 'A running session already exists'));
-    }
-
-    const state: RunningSessionStatePayload = {
-      status: 'running',
-      draft,
-      elapsedSeconds: 0,
-    };
-    const savedState = await upsertRunningState(env, auth.userId, state);
-
-    return jsonResponse({ state: savedState }, 201);
+    return jsonResponse(result.body, result.status);
   } catch (responseOrError) {
     return handleError(responseOrError);
   }
@@ -360,19 +422,9 @@ export const handleUpdateRunningSession = async (request: Request, env: Env): Pr
   try {
     const auth = await ensureAuthorized(request, env);
     const payload = await parseJson<RunningSessionUpdateRequest>(request);
-    const draft = validateDraft(payload.draft);
-    const elapsedSeconds = validateElapsedSeconds(payload.elapsedSeconds);
-    const currentState = requireCurrentRunning(await getRunningState(env, auth.userId));
-    ensureSessionIdMatches(currentState, draft.id);
+    const result = await updateRunningSessionForUser(env, auth.userId, payload);
 
-    const state: RunningSessionStatePayload = {
-      status: 'running',
-      draft,
-      elapsedSeconds,
-    };
-    const savedState = await upsertRunningState(env, auth.userId, state);
-
-    return jsonResponse({ state: savedState });
+    return jsonResponse(result.body, result.status);
   } catch (responseOrError) {
     return handleError(responseOrError);
   }
@@ -382,16 +434,9 @@ export const handleStopRunningSession = async (request: Request, env: Env): Prom
   try {
     const auth = await ensureAuthorized(request, env);
     const payload = await parseJson<RunningSessionStopRequest>(request);
-    const currentState = requireCurrentRunning(await getRunningState(env, auth.userId));
-    ensureSessionIdMatches(currentState, payload.id);
+    const result = await stopRunningSessionForUser(env, auth.userId, payload);
 
-    const stoppedAt = parseStoppedAt(payload.stoppedAt);
-    const session = buildCompletedSession(currentState.draft, stoppedAt);
-    const savedSession = await insertSession(env, auth.userId, session);
-    const savedState = await upsertRunningState(env, auth.userId, idleState);
-    const sync = await syncCompletedSession(request, env, savedSession);
-
-    return jsonResponse({ session: savedSession, state: savedState, sync });
+    return jsonResponse(result.body, result.status);
   } catch (responseOrError) {
     return handleError(responseOrError);
   }
@@ -401,16 +446,9 @@ export const handleCancelRunningSession = async (request: Request, env: Env): Pr
   try {
     const auth = await ensureAuthorized(request, env);
     const payload = await parseJson<RunningSessionCancelRequest>(request);
-    const currentState = await getRunningState(env, auth.userId);
+    const result = await cancelRunningSessionForUser(env, auth.userId, payload);
 
-    if (!currentState || currentState.status === 'idle') {
-      return jsonResponse({ state: idleState });
-    }
-    ensureSessionIdMatches(currentState, payload.id);
-
-    const savedState = await upsertRunningState(env, auth.userId, idleState);
-
-    return jsonResponse({ state: savedState });
+    return jsonResponse(result.body, result.status);
   } catch (responseOrError) {
     return handleError(responseOrError);
   }

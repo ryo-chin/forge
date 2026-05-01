@@ -12,13 +12,13 @@ const mocks = vi.hoisted(() => {
   const getRunningState = vi.fn();
   const upsertRunningState = vi.fn();
   const insertSession = vi.fn();
-  const handleSyncSession = vi.fn();
+  const syncSessionForUser = vi.fn();
   return {
     verifySupabaseJwt,
     getRunningState,
     upsertRunningState,
     insertSession,
-    handleSyncSession,
+    syncSessionForUser,
   };
 });
 
@@ -44,7 +44,7 @@ vi.mock('../syncSession', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../syncSession')>();
   return {
     ...actual,
-    handleSyncSession: mocks.handleSyncSession,
+    syncSessionForUser: mocks.syncSessionForUser,
   };
 });
 
@@ -94,7 +94,7 @@ describe('time tracker canonical Worker handlers', () => {
       userId: 'user-1',
       raw: {},
     });
-    mocks.handleSyncSession.mockResolvedValue(
+    mocks.syncSessionForUser.mockResolvedValue(
       new Response(
         JSON.stringify({
           error: 'connection_missing',
@@ -210,7 +210,7 @@ describe('time tracker canonical Worker handlers', () => {
     });
     expect(mocks.insertSession).toHaveBeenCalledWith(env, 'user-1', completedSession);
     expect(mocks.upsertRunningState).toHaveBeenCalledWith(env, 'user-1', idleState);
-    expect(mocks.handleSyncSession).toHaveBeenCalledTimes(1);
+    expect(mocks.syncSessionForUser).toHaveBeenCalledTimes(1);
   });
 
   it('returns Google Sheets sync success when stop sync succeeds', async () => {
@@ -235,7 +235,7 @@ describe('time tracker canonical Worker handlers', () => {
     mocks.getRunningState.mockResolvedValue(runningState);
     mocks.insertSession.mockResolvedValue(completedSession);
     mocks.upsertRunningState.mockResolvedValue(idleState);
-    mocks.handleSyncSession.mockResolvedValue(
+    mocks.syncSessionForUser.mockResolvedValue(
       new Response(JSON.stringify(syncLog), {
         status: 202,
         headers: { 'Content-Type': 'application/json' },
@@ -256,11 +256,13 @@ describe('time tracker canonical Worker handlers', () => {
         log: syncLog,
       },
     });
-    expect(mocks.handleSyncSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: 'POST',
-      }),
+    expect(mocks.syncSessionForUser).toHaveBeenCalledWith(
       env,
+      'user-1',
+      expect.objectContaining({
+        source: 'time-tracker-worker-api',
+        session: completedSession,
+      }),
     );
   });
 
@@ -279,7 +281,7 @@ describe('time tracker canonical Worker handlers', () => {
     mocks.getRunningState.mockResolvedValue(runningState);
     mocks.insertSession.mockResolvedValue(completedSession);
     mocks.upsertRunningState.mockResolvedValue(idleState);
-    mocks.handleSyncSession.mockResolvedValue(
+    mocks.syncSessionForUser.mockResolvedValue(
       new Response(
         JSON.stringify({
           error: 'internal_error',
