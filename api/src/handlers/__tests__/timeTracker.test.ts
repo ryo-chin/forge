@@ -12,11 +12,13 @@ const mocks = vi.hoisted(() => {
   const getRunningState = vi.fn();
   const upsertRunningState = vi.fn();
   const insertSession = vi.fn();
+  const handleSyncSession = vi.fn();
   return {
     verifySupabaseJwt,
     getRunningState,
     upsertRunningState,
     insertSession,
+    handleSyncSession,
   };
 });
 
@@ -35,6 +37,14 @@ vi.mock('../../repositories/timeTracker', async (importOriginal) => {
     getRunningState: mocks.getRunningState,
     upsertRunningState: mocks.upsertRunningState,
     insertSession: mocks.insertSession,
+  };
+});
+
+vi.mock('../syncSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../syncSession')>();
+  return {
+    ...actual,
+    handleSyncSession: mocks.handleSyncSession,
   };
 });
 
@@ -84,6 +94,18 @@ describe('time tracker canonical Worker handlers', () => {
       userId: 'user-1',
       raw: {},
     });
+    mocks.handleSyncSession.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: 'connection_missing',
+          message: 'Google spreadsheet connection not found',
+        }),
+        {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
   });
 
   it('returns idle state when the user has no running row', async () => {
@@ -177,9 +199,114 @@ describe('time tracker canonical Worker handlers', () => {
     await expect(response.json()).resolves.toEqual({
       session: completedSession,
       state: idleState,
+      sync: {
+        status: 'skipped',
+        reason: 'Google spreadsheet connection not found',
+        detail: {
+          error: 'connection_missing',
+          message: 'Google spreadsheet connection not found',
+        },
+      },
     });
     expect(mocks.insertSession).toHaveBeenCalledWith(env, 'user-1', completedSession);
     expect(mocks.upsertRunningState).toHaveBeenCalledWith(env, 'user-1', idleState);
+    expect(mocks.handleSyncSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns Google Sheets sync success when stop sync succeeds', async () => {
+    const stoppedAt = '2026-04-30T00:05:00.000Z';
+    const completedSession = {
+      id: 'session-1',
+      title: 'Focus',
+      startedAt: draft.startedAt,
+      endedAt: stoppedAt,
+      durationSeconds: 300,
+      project: 'Forge',
+      tags: ['mcp'],
+      notes: 'local test',
+    };
+    const syncLog = {
+      id: 'sync-1',
+      sessionId: 'session-1',
+      status: 'success',
+      attemptedAt: '2026-04-30T00:05:01.000Z',
+      retryCount: 0,
+    };
+    mocks.getRunningState.mockResolvedValue(runningState);
+    mocks.insertSession.mockResolvedValue(completedSession);
+    mocks.upsertRunningState.mockResolvedValue(idleState);
+    mocks.handleSyncSession.mockResolvedValue(
+      new Response(JSON.stringify(syncLog), {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const response = await handleStopRunningSession(
+      buildRequest('POST', '/time-tracker/running/stop', { id: 'session-1', stoppedAt }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      session: completedSession,
+      state: idleState,
+      sync: {
+        status: 'success',
+        log: syncLog,
+      },
+    });
+    expect(mocks.handleSyncSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+      }),
+      env,
+    );
+  });
+
+  it('keeps the completed session when Google Sheets sync fails', async () => {
+    const stoppedAt = '2026-04-30T00:05:00.000Z';
+    const completedSession = {
+      id: 'session-1',
+      title: 'Focus',
+      startedAt: draft.startedAt,
+      endedAt: stoppedAt,
+      durationSeconds: 300,
+      project: 'Forge',
+      tags: ['mcp'],
+      notes: 'local test',
+    };
+    mocks.getRunningState.mockResolvedValue(runningState);
+    mocks.insertSession.mockResolvedValue(completedSession);
+    mocks.upsertRunningState.mockResolvedValue(idleState);
+    mocks.handleSyncSession.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: 'internal_error',
+          message: 'Failed to refresh access token',
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
+
+    const response = await handleStopRunningSession(
+      buildRequest('POST', '/time-tracker/running/stop', { id: 'session-1', stoppedAt }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      session: completedSession,
+      state: idleState,
+      sync: {
+        status: 'failed',
+        statusCode: 401,
+        error: 'Failed to refresh access token',
+      },
+    });
   });
 
   it('cancels the current running session without creating a completed session', async () => {

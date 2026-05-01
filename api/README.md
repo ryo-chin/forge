@@ -32,10 +32,10 @@ Time Trackerの本体状態とGoogle Spreadsheets同期を扱うCloudflare Worke
 - `GET /time-tracker/running` - 実行中セッション状態を取得
 - `POST /time-tracker/running/start` - 実行中セッションを開始
 - `PATCH /time-tracker/running/update` - 実行中セッションの下書き・経過秒数を更新
-- `POST /time-tracker/running/stop` - 実行中セッションを完了セッションとして保存し、実行中状態を解除
+- `POST /time-tracker/running/stop` - 実行中セッションを完了セッションとして保存し、実行中状態を解除したうえでGoogle Sheets同期を試行
 - `POST /time-tracker/running/cancel` - 実行中状態をキャンセル
 
-現時点の Time Tracker 本体APIはSupabaseのcanonical stateを更新します。Google Sheetsへの同期統合とフロントエンド移行は別sliceで扱います。
+Time Tracker 本体APIはSupabaseのcanonical stateを更新します。`stop` はSupabaseへの完了セッション保存を成功条件とし、Google Sheets同期結果は `sync.status` (`success` / `skipped` / `failed`) としてレスポンスに含めます。Sheets同期失敗時もSupabaseの記録はロールバックしません。
 
 ## ローカル開発
 
