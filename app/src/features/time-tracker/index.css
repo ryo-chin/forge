@@ -549,6 +549,11 @@
   color: #6b7280;
 }
 
+.time-tracker__history-range {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
 .time-tracker__history-meta span {
   white-space: nowrap;
 }

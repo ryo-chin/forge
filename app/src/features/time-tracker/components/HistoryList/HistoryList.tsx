@@ -1,7 +1,7 @@
 import { formatTimer } from '@lib/time.ts';
 import type React from 'react';
 import type { TimeTrackerSession } from '../../domain/types.ts';
-import { describeHistorySession } from './logic.ts';
+import { describeHistorySession, formatHistoryTimeRange } from './logic.ts';
 
 type HistoryListProps = {
   sessions: TimeTrackerSession[];
@@ -40,6 +40,9 @@ export const HistoryList: React.FC<HistoryListProps> = ({
               <div className="time-tracker__history-main">
                 <strong id={titleId}>{session.title}</strong>
                 <span>{formatTimer(session.durationSeconds)}</span>
+              </div>
+              <div className="time-tracker__history-range">
+                {formatHistoryTimeRange(session)}
               </div>
               <div className="time-tracker__history-meta">
                 {session.project ? <span>#{session.project}</span> : null}

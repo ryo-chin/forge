@@ -426,9 +426,9 @@ describe('TimeTrackerRoot', () => {
     const storedSession = {
       id: 'stored-1',
       title: '保存済みタスク',
-      startedAt: Date.now() - 60_000,
-      endedAt: Date.now(),
-      durationSeconds: 60,
+      startedAt: new Date(2026, 4, 1, 20, 30).getTime(),
+      endedAt: new Date(2026, 4, 1, 22, 0).getTime(),
+      durationSeconds: 5400,
       project: 'archive',
     };
     window.localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify([storedSession]));
@@ -436,6 +436,8 @@ describe('TimeTrackerRoot', () => {
     renderTimeTrackerPage();
 
     expect(screen.getByText('保存済みタスク')).toBeInTheDocument();
+    expect(screen.getByText('5/1 20:30 - 22:00')).toBeInTheDocument();
+    expect(screen.getByText('90:00')).toBeInTheDocument();
     expect(screen.getByText('#archive')).toBeInTheDocument();
   });
 
