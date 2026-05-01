@@ -534,9 +534,6 @@ export function TimeTrackerPage() {
     void syncSession(lastSyncedSession);
   }, [lastSyncedSession, syncSession]);
 
-  // 表示用に先頭5件のみに制限
-  const displaySessions = useMemo(() => sessions.slice(0, 5), [sessions]);
-
   const isGoogleConnected = googleSettings.data?.connectionStatus === 'active';
   const settingsButtonLabel = isGoogleConnected ? '⚙️ 設定 (連携中)' : '⚙️ 設定';
 
@@ -640,7 +637,7 @@ export function TimeTrackerPage() {
         />
 
         <HistoryList
-          sessions={displaySessions}
+          sessions={sessions}
           onEdit={handleEditHistory}
           onDelete={handleDeleteHistory}
           onRestart={handleRestartHistory}

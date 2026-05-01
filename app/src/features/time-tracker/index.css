@@ -510,6 +510,51 @@
   color: #4b5563;
 }
 
+.time-tracker__history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.time-tracker__history-header span {
+  color: #64748b;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.time-tracker__history-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.time-tracker__history-search input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid #d9e0eb;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.85rem;
+  outline: none;
+}
+
+.time-tracker__history-search input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.time-tracker__history-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
 .time-tracker__history ul {
   list-style: none;
   margin: 0;
@@ -562,6 +607,11 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.time-tracker__history-load-more {
+  display: flex;
+  justify-content: center;
 }
 
 .time-tracker__history-button {

@@ -38,3 +38,33 @@ export function formatHistoryTimeRange(session: TimeTrackerSession): string {
     : `${formatDate(end)} ${formatTime(end)}`;
   return `${startLabel} - ${endLabel}`;
 }
+
+const normalize = (value: string) => value.trim().toLocaleLowerCase();
+
+const searchableText = (session: TimeTrackerSession) =>
+  [
+    session.title,
+    session.project,
+    session.project ? `#${session.project}` : undefined,
+    session.skill,
+    session.skill ? `@${session.skill}` : undefined,
+    session.notes,
+    ...(session.tags ?? []),
+    ...(session.tags?.map((tag) => `#${tag}`) ?? []),
+    formatHistoryTimeRange(session),
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .toLocaleLowerCase();
+
+export function filterHistorySessions(
+  sessions: TimeTrackerSession[],
+  query: string,
+): TimeTrackerSession[] {
+  const tokens = normalize(query).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return sessions;
+  return sessions.filter((session) => {
+    const text = searchableText(session);
+    return tokens.every((token) => text.includes(token));
+  });
+}
