@@ -4,15 +4,19 @@ import { handleMcp } from '../mcp';
 const mocks = vi.hoisted(() => {
   const authorizeMcpToken = vi.fn();
   const getRunningStateForUser = vi.fn();
+  const listSessionsForUser = vi.fn();
   const startRunningSessionForUser = vi.fn();
   const stopRunningSessionForUser = vi.fn();
   const cancelRunningSessionForUser = vi.fn();
+  const recordSessionForUser = vi.fn();
   return {
     authorizeMcpToken,
     getRunningStateForUser,
+    listSessionsForUser,
     startRunningSessionForUser,
     stopRunningSessionForUser,
     cancelRunningSessionForUser,
+    recordSessionForUser,
   };
 });
 
@@ -29,9 +33,11 @@ vi.mock('../timeTracker', async (importOriginal) => {
   return {
     ...actual,
     getRunningStateForUser: mocks.getRunningStateForUser,
+    listSessionsForUser: mocks.listSessionsForUser,
     startRunningSessionForUser: mocks.startRunningSessionForUser,
     stopRunningSessionForUser: mocks.stopRunningSessionForUser,
     cancelRunningSessionForUser: mocks.cancelRunningSessionForUser,
+    recordSessionForUser: mocks.recordSessionForUser,
   };
 });
 
@@ -101,6 +107,8 @@ describe('remote HTTP MCP handler', () => {
           expect.objectContaining({ name: 'ForgeTimeTrackerStatus' }),
           expect.objectContaining({ name: 'ForgeTimeTrackerStop' }),
           expect.objectContaining({ name: 'ForgeTimeTrackerCancel' }),
+          expect.objectContaining({ name: 'ForgeTimeTrackerListSessions' }),
+          expect.objectContaining({ name: 'ForgeTimeTrackerRecordSession' }),
         ]),
       },
     });
@@ -193,6 +201,106 @@ describe('remote HTTP MCP handler', () => {
       result: {
         structuredContent: {
           sync: { status: 'skipped' },
+        },
+      },
+    });
+  });
+
+  it('lists sessions with read scope', async () => {
+    mocks.listSessionsForUser.mockResolvedValue({
+      body: {
+        sessions: [
+          {
+            id: 'session-1',
+            title: 'Focus',
+            startedAt: '2026-05-01T00:00:00.000Z',
+            endedAt: '2026-05-01T00:10:00.000Z',
+            durationSeconds: 600,
+          },
+        ],
+      },
+    });
+
+    const response = await handleMcp(
+      buildRequest({
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: {
+          name: 'ForgeTimeTrackerListSessions',
+          arguments: { limit: 5, query: 'Focus' },
+        },
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.authorizeMcpToken).toHaveBeenCalledWith(
+      expect.any(Request),
+      env,
+      'time-tracker:read',
+    );
+    expect(mocks.listSessionsForUser).toHaveBeenCalledWith(env, 'user-1', {
+      limit: 5,
+      query: 'Focus',
+    });
+    await expect(response.json()).resolves.toMatchObject({
+      result: {
+        structuredContent: {
+          sessions: [expect.objectContaining({ id: 'session-1' })],
+        },
+      },
+    });
+  });
+
+  it('records past sessions with write scope', async () => {
+    mocks.recordSessionForUser.mockResolvedValue({
+      body: {
+        session: {
+          id: 'session-1',
+          title: 'Manual record',
+          startedAt: '2026-05-01T00:00:00.000Z',
+          endedAt: '2026-05-01T00:30:00.000Z',
+          durationSeconds: 1800,
+        },
+        sync: { status: 'skipped', reason: 'connection_missing' },
+        warnings: [],
+      },
+    });
+
+    const response = await handleMcp(
+      buildRequest({
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: {
+          name: 'ForgeTimeTrackerRecordSession',
+          arguments: {
+            title: 'Manual record',
+            startedAt: '2026-05-01T00:00:00.000Z',
+            endedAt: '2026-05-01T00:30:00.000Z',
+          },
+        },
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.authorizeMcpToken).toHaveBeenCalledWith(
+      expect.any(Request),
+      env,
+      'time-tracker:write',
+    );
+    expect(mocks.recordSessionForUser).toHaveBeenCalledWith(env, 'user-1', {
+      title: 'Manual record',
+      startedAt: '2026-05-01T00:00:00.000Z',
+      endedAt: '2026-05-01T00:30:00.000Z',
+    });
+    await expect(response.json()).resolves.toMatchObject({
+      result: {
+        structuredContent: {
+          session: { title: 'Manual record' },
+          warnings: [],
         },
       },
     });

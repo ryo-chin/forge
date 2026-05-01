@@ -94,6 +94,28 @@ export type RunningSessionStopRequest = {
   stoppedAt?: string | number;
 };
 
+export type TimeTrackerSessionListRequest = {
+  limit?: number;
+  from?: string | number;
+  to?: string | number;
+  query?: string;
+  project?: string;
+  tags?: string[];
+};
+
+export type TimeTrackerSessionRecordRequest = {
+  id?: string;
+  title: string;
+  startedAt: string | number;
+  endedAt: string | number;
+  project?: string | null;
+  notes?: string | null;
+  tags?: string[];
+  skill?: string | null;
+  intensity?: string | null;
+  dryRun?: boolean;
+};
+
 export type TimeTrackerSessionPayload = {
   id: string;
   title: string;

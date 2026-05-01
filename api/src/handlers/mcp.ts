@@ -6,10 +6,14 @@ import type {
   RunningSessionCancelRequest,
   RunningSessionDraftPayload,
   RunningSessionStopRequest,
+  TimeTrackerSessionListRequest,
+  TimeTrackerSessionRecordRequest,
 } from '../types';
 import {
   cancelRunningSessionForUser,
   getRunningStateForUser,
+  listSessionsForUser,
+  recordSessionForUser,
   startRunningSessionForUser,
   stopRunningSessionForUser,
 } from './timeTracker';
@@ -21,6 +25,8 @@ const TOOL_NAMES = {
   STATUS: 'ForgeTimeTrackerStatus',
   STOP: 'ForgeTimeTrackerStop',
   CANCEL: 'ForgeTimeTrackerCancel',
+  LIST_SESSIONS: 'ForgeTimeTrackerListSessions',
+  RECORD_SESSION: 'ForgeTimeTrackerRecordSession',
 } as const;
 
 type JsonRpcId = string | number | null;
@@ -116,6 +122,7 @@ const toolRequiresScope = (rpc: JsonRpcRequest): McpTokenScope => {
     case TOOL_NAMES.START:
     case TOOL_NAMES.STOP:
     case TOOL_NAMES.CANCEL:
+    case TOOL_NAMES.RECORD_SESSION:
       return 'time-tracker:write';
     default:
       return 'time-tracker:read';
@@ -172,6 +179,43 @@ const listToolsResult = () => ({
         properties: {
           id: { type: 'string' },
         },
+        additionalProperties: false,
+      },
+    },
+    {
+      name: TOOL_NAMES.LIST_SESSIONS,
+      description: 'List recent completed Forge time-tracker sessions.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', minimum: 1, maximum: 50 },
+          from: { type: 'string' },
+          to: { type: 'string' },
+          query: { type: 'string' },
+          project: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: false,
+      },
+    },
+    {
+      name: TOOL_NAMES.RECORD_SESSION,
+      description: 'Record a completed Forge time-tracker session for a past time range.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          startedAt: { type: 'string' },
+          endedAt: { type: 'string' },
+          project: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          notes: { type: 'string' },
+          skill: { type: 'string' },
+          intensity: { type: 'string' },
+          dryRun: { type: 'boolean' },
+        },
+        required: ['title', 'startedAt', 'endedAt'],
         additionalProperties: false,
       },
     },
@@ -242,6 +286,11 @@ const executeTool = async (
       const result = await getRunningStateForUser(env, userId);
       return result.body;
     }
+    case TOOL_NAMES.LIST_SESSIONS: {
+      const args = (asObject(argumentsValue) ?? {}) as TimeTrackerSessionListRequest;
+      const result = await listSessionsForUser(env, userId, args);
+      return result.body;
+    }
     case TOOL_NAMES.STOP: {
       const args = asObject(argumentsValue) ?? {};
       const payload: RunningSessionStopRequest = {};
@@ -258,6 +307,11 @@ const executeTool = async (
       const id = optionalString(args.id);
       if (id) payload.id = id;
       const result = await cancelRunningSessionForUser(env, userId, payload);
+      return result.body;
+    }
+    case TOOL_NAMES.RECORD_SESSION: {
+      const args = (asObject(argumentsValue) ?? {}) as TimeTrackerSessionRecordRequest;
+      const result = await recordSessionForUser(env, userId, args);
       return result.body;
     }
     default:
