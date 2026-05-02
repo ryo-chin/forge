@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => {
   const getRunningStateForUser = vi.fn();
   const listSessionsForUser = vi.fn();
   const startRunningSessionForUser = vi.fn();
+  const updateRunningSessionForUser = vi.fn();
   const stopRunningSessionForUser = vi.fn();
   const cancelRunningSessionForUser = vi.fn();
   const recordSessionForUser = vi.fn();
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => {
     getRunningStateForUser,
     listSessionsForUser,
     startRunningSessionForUser,
+    updateRunningSessionForUser,
     stopRunningSessionForUser,
     cancelRunningSessionForUser,
     recordSessionForUser,
@@ -35,6 +37,7 @@ vi.mock('../timeTracker', async (importOriginal) => {
     getRunningStateForUser: mocks.getRunningStateForUser,
     listSessionsForUser: mocks.listSessionsForUser,
     startRunningSessionForUser: mocks.startRunningSessionForUser,
+    updateRunningSessionForUser: mocks.updateRunningSessionForUser,
     stopRunningSessionForUser: mocks.stopRunningSessionForUser,
     cancelRunningSessionForUser: mocks.cancelRunningSessionForUser,
     recordSessionForUser: mocks.recordSessionForUser,
@@ -105,6 +108,7 @@ describe('remote HTTP MCP handler', () => {
         tools: expect.arrayContaining([
           expect.objectContaining({ name: 'ForgeTimeTrackerStart' }),
           expect.objectContaining({ name: 'ForgeTimeTrackerStatus' }),
+          expect.objectContaining({ name: 'ForgeTimeTrackerUpdate' }),
           expect.objectContaining({ name: 'ForgeTimeTrackerStop' }),
           expect.objectContaining({ name: 'ForgeTimeTrackerCancel' }),
           expect.objectContaining({ name: 'ForgeTimeTrackerListSessions' }),
@@ -172,6 +176,79 @@ describe('remote HTTP MCP handler', () => {
     });
   });
 
+  it('updates running sessions through the shared time tracker operation using write scope', async () => {
+    mocks.getRunningStateForUser.mockResolvedValue({
+      body: {
+        state: {
+          status: 'running',
+          draft: {
+            id: 'session-1',
+            title: 'Focus',
+            startedAt: '2026-05-01T00:00:00.000Z',
+          },
+          elapsedSeconds: 120,
+        },
+      },
+    });
+    mocks.updateRunningSessionForUser.mockResolvedValue({
+      body: {
+        state: {
+          status: 'running',
+          draft: {
+            id: 'session-1',
+            title: 'Corrected title',
+            startedAt: '2026-05-01T00:00:00.000Z',
+            project: 'AI駆動開発',
+          },
+          elapsedSeconds: 120,
+        },
+      },
+    });
+
+    const response = await handleMcp(
+      buildRequest({
+        jsonrpc: '2.0',
+        id: 22,
+        method: 'tools/call',
+        params: {
+          name: 'ForgeTimeTrackerUpdate',
+          arguments: {
+            id: 'session-1',
+            title: 'Corrected title',
+            project: 'AI駆動開発',
+            elapsedSeconds: 120,
+          },
+        },
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.authorizeMcpToken).toHaveBeenCalledWith(
+      expect.any(Request),
+      env,
+      'time-tracker:write',
+    );
+    expect(mocks.updateRunningSessionForUser).toHaveBeenCalledWith(env, 'user-1', {
+      draft: {
+        id: 'session-1',
+        title: 'Corrected title',
+        startedAt: '2026-05-01T00:00:00.000Z',
+        project: 'AI駆動開発',
+      },
+      elapsedSeconds: 120,
+    });
+    await expect(response.json()).resolves.toMatchObject({
+      result: {
+        structuredContent: {
+          state: {
+            draft: { title: 'Corrected title' },
+          },
+        },
+      },
+    });
+  });
+
   it('stops sessions and preserves Google sync details in structured content', async () => {
     mocks.stopRunningSessionForUser.mockResolvedValue({
       body: {
@@ -187,7 +264,13 @@ describe('remote HTTP MCP handler', () => {
         method: 'tools/call',
         params: {
           name: 'ForgeTimeTrackerStop',
-          arguments: { id: 'session-1' },
+          arguments: {
+            id: 'session-1',
+            title: 'Corrected title',
+            project: 'AI駆動開発',
+            tags: ['forge'],
+            notes: 'corrected at stop',
+          },
         },
       }),
       env,
@@ -196,6 +279,10 @@ describe('remote HTTP MCP handler', () => {
     expect(response.status).toBe(200);
     expect(mocks.stopRunningSessionForUser).toHaveBeenCalledWith(env, 'user-1', {
       id: 'session-1',
+      title: 'Corrected title',
+      project: 'AI駆動開発',
+      tags: ['forge'],
+      notes: 'corrected at stop',
     });
     await expect(response.json()).resolves.toMatchObject({
       result: {

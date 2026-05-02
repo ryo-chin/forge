@@ -129,6 +129,31 @@ describe('time tracker canonical Worker handlers', () => {
     expect(mocks.getRunningState).toHaveBeenCalledWith(env, 'user-1');
   });
 
+  it('returns live elapsed seconds for running state status', async () => {
+    mocks.getRunningState.mockResolvedValue({
+      ...runningState,
+      draft: {
+        ...draft,
+        startedAt: '2026-05-01T11:55:00.000Z',
+      },
+      elapsedSeconds: 0,
+    });
+
+    const response = await handleGetRunningState(buildRequest('GET', '/time-tracker/running'), env);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      state: {
+        ...runningState,
+        draft: {
+          ...draft,
+          startedAt: '2026-05-01T11:55:00.000Z',
+        },
+        elapsedSeconds: 300,
+      },
+    });
+  });
+
   it('starts a running session using the verified user id only', async () => {
     mocks.getRunningState.mockResolvedValue(null);
     mocks.upsertRunningState.mockResolvedValue(runningState);
@@ -222,6 +247,38 @@ describe('time tracker canonical Worker handlers', () => {
     expect(mocks.insertSession).toHaveBeenCalledWith(env, 'user-1', completedSession);
     expect(mocks.upsertRunningState).toHaveBeenCalledWith(env, 'user-1', idleState);
     expect(mocks.syncSessionForUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies stop-time metadata overrides to the completed session', async () => {
+    const stoppedAt = '2026-04-30T00:05:00.000Z';
+    const completedSession = {
+      id: 'session-1',
+      title: 'Corrected title',
+      startedAt: draft.startedAt,
+      endedAt: stoppedAt,
+      durationSeconds: 300,
+      project: 'AI駆動開発',
+      tags: ['forge', 'deploy'],
+      notes: 'corrected at stop',
+    };
+    mocks.getRunningState.mockResolvedValue(runningState);
+    mocks.insertSession.mockResolvedValue(completedSession);
+    mocks.upsertRunningState.mockResolvedValue(idleState);
+
+    const response = await handleStopRunningSession(
+      buildRequest('POST', '/time-tracker/running/stop', {
+        id: 'session-1',
+        stoppedAt,
+        title: 'Corrected title',
+        project: 'AI駆動開発',
+        tags: ['forge', 'deploy'],
+        notes: 'corrected at stop',
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.insertSession).toHaveBeenCalledWith(env, 'user-1', completedSession);
   });
 
   it('returns Google Sheets sync success when stop sync succeeds', async () => {

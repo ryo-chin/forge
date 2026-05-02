@@ -92,6 +92,12 @@ export type RunningSessionStatePayload =
 export type RunningSessionStopRequest = {
   id?: string;
   stoppedAt?: string | number;
+  title?: string;
+  project?: string | null;
+  notes?: string | null;
+  tags?: string[];
+  skill?: string | null;
+  intensity?: string | null;
 };
 
 export type TimeTrackerSessionListRequest = {

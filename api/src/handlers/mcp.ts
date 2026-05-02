@@ -5,6 +5,7 @@ import type { McpTokenScope } from '../repositories/mcpTokens';
 import type {
   RunningSessionCancelRequest,
   RunningSessionDraftPayload,
+  RunningSessionStatePayload,
   RunningSessionStopRequest,
   TimeTrackerSessionListRequest,
   TimeTrackerSessionRecordRequest,
@@ -16,6 +17,7 @@ import {
   recordSessionForUser,
   startRunningSessionForUser,
   stopRunningSessionForUser,
+  updateRunningSessionForUser,
 } from './timeTracker';
 
 const PROTOCOL_VERSION = '2025-11-25';
@@ -23,6 +25,7 @@ const PROTOCOL_VERSION = '2025-11-25';
 const TOOL_NAMES = {
   START: 'ForgeTimeTrackerStart',
   STATUS: 'ForgeTimeTrackerStatus',
+  UPDATE: 'ForgeTimeTrackerUpdate',
   STOP: 'ForgeTimeTrackerStop',
   CANCEL: 'ForgeTimeTrackerCancel',
   LIST_SESSIONS: 'ForgeTimeTrackerListSessions',
@@ -120,6 +123,7 @@ const toolRequiresScope = (rpc: JsonRpcRequest): McpTokenScope => {
   const params = asObject(rpc.params) as ToolCallParams | null;
   switch (params?.name) {
     case TOOL_NAMES.START:
+    case TOOL_NAMES.UPDATE:
     case TOOL_NAMES.STOP:
     case TOOL_NAMES.CANCEL:
     case TOOL_NAMES.RECORD_SESSION:
@@ -160,6 +164,25 @@ const listToolsResult = () => ({
       },
     },
     {
+      name: TOOL_NAMES.UPDATE,
+      description: 'Update the current Forge time-tracker running session metadata.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          startedAt: { type: 'string' },
+          project: { type: 'string' },
+          notes: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          skill: { type: 'string' },
+          intensity: { type: 'string' },
+          elapsedSeconds: { type: 'number' },
+        },
+        additionalProperties: false,
+      },
+    },
+    {
       name: TOOL_NAMES.STOP,
       description: 'Stop the current Forge time-tracker session.',
       inputSchema: {
@@ -167,6 +190,12 @@ const listToolsResult = () => ({
         properties: {
           id: { type: 'string' },
           stoppedAt: { type: 'string' },
+          title: { type: 'string' },
+          project: { type: 'string' },
+          notes: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          skill: { type: 'string' },
+          intensity: { type: 'string' },
         },
         additionalProperties: false,
       },
@@ -238,6 +267,11 @@ const optionalString = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
+const optionalNumber = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return Math.floor(value);
+};
+
 const buildDraftFromArguments = (argumentsValue: unknown): RunningSessionDraftPayload => {
   const args = asObject(argumentsValue) ?? {};
   const draftArg = asObject(args.draft);
@@ -269,6 +303,47 @@ const buildDraftFromArguments = (argumentsValue: unknown): RunningSessionDraftPa
   return draft;
 };
 
+const buildRunningUpdateFromArguments = async (
+  env: Env,
+  userId: string,
+  argumentsValue: unknown,
+): Promise<{ draft: RunningSessionDraftPayload; elapsedSeconds: number }> => {
+  const statusResult = await getRunningStateForUser(env, userId);
+  const currentState = (statusResult.body as { state?: RunningSessionStatePayload }).state;
+  if (!currentState || currentState.status !== 'running') {
+    throw new Error('No running session exists');
+  }
+
+  const args = asObject(argumentsValue) ?? {};
+  const id = optionalString(args.id);
+  if (id && currentState.draft.id !== id) {
+    throw new Error('Running session id does not match');
+  }
+
+  const draft: RunningSessionDraftPayload = { ...currentState.draft };
+  const title = optionalString(args.title);
+  if (title) draft.title = title;
+  const startedAt = optionalString(args.startedAt);
+  if (startedAt) draft.startedAt = startedAt;
+  const project = optionalString(args.project);
+  if (project) draft.project = project;
+  const notes = optionalString(args.notes);
+  if (notes) draft.notes = notes;
+  const skill = optionalString(args.skill);
+  if (skill) draft.skill = skill;
+  const intensity = optionalString(args.intensity);
+  if (intensity) draft.intensity = intensity;
+  if (Array.isArray(args.tags)) {
+    draft.tags = args.tags.filter((tag): tag is string => typeof tag === 'string');
+  }
+
+  const elapsedSeconds =
+    optionalNumber(args.elapsedSeconds) ??
+    Math.max(0, Math.floor((Date.now() - new Date(draft.startedAt).getTime()) / 1000));
+
+  return { draft, elapsedSeconds };
+};
+
 const executeTool = async (
   env: Env,
   userId: string,
@@ -286,6 +361,14 @@ const executeTool = async (
       const result = await getRunningStateForUser(env, userId);
       return result.body;
     }
+    case TOOL_NAMES.UPDATE: {
+      const result = await updateRunningSessionForUser(
+        env,
+        userId,
+        await buildRunningUpdateFromArguments(env, userId, argumentsValue),
+      );
+      return result.body;
+    }
     case TOOL_NAMES.LIST_SESSIONS: {
       const args = (asObject(argumentsValue) ?? {}) as TimeTrackerSessionListRequest;
       const result = await listSessionsForUser(env, userId, args);
@@ -298,6 +381,19 @@ const executeTool = async (
       if (id) payload.id = id;
       const stoppedAt = optionalString(args.stoppedAt);
       if (stoppedAt) payload.stoppedAt = stoppedAt;
+      const title = optionalString(args.title);
+      if (title) payload.title = title;
+      const project = optionalString(args.project);
+      if (project) payload.project = project;
+      const notes = optionalString(args.notes);
+      if (notes) payload.notes = notes;
+      const skill = optionalString(args.skill);
+      if (skill) payload.skill = skill;
+      const intensity = optionalString(args.intensity);
+      if (intensity) payload.intensity = intensity;
+      if (Array.isArray(args.tags)) {
+        payload.tags = args.tags.filter((tag): tag is string => typeof tag === 'string');
+      }
       const result = await stopRunningSessionForUser(env, userId, payload);
       return result.body;
     }

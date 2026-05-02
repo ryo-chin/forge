@@ -230,6 +230,44 @@ const buildCompletedSession = (
   return session;
 };
 
+const withLiveElapsedSeconds = (state: RunningSessionStatePayload): RunningSessionStatePayload => {
+  if (state.status !== 'running') {
+    return state;
+  }
+  const startedAtMs = new Date(state.draft.startedAt).getTime();
+  if (Number.isNaN(startedAtMs)) {
+    return state;
+  }
+  return {
+    ...state,
+    elapsedSeconds: Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000)),
+  };
+};
+
+const applyStopOverrides = (
+  draft: RunningSessionDraftPayload,
+  payload: RunningSessionStopRequest,
+): RunningSessionDraftPayload => {
+  const nextDraft: RunningSessionDraftPayload = { ...draft };
+
+  if (payload.title !== undefined) {
+    nextDraft.title = validateString(payload.title, 'title');
+  }
+
+  const project = validateOptionalString(payload.project, 'project');
+  if (project !== undefined) nextDraft.project = project;
+  const notes = validateOptionalString(payload.notes, 'notes');
+  if (notes !== undefined) nextDraft.notes = notes;
+  const skill = validateOptionalString(payload.skill, 'skill');
+  if (skill !== undefined) nextDraft.skill = skill;
+  const intensity = validateOptionalString(payload.intensity, 'intensity');
+  if (intensity !== undefined) nextDraft.intensity = intensity;
+  const tags = validateOptionalTags(payload.tags, 'tags');
+  if (tags !== undefined) nextDraft.tags = tags;
+
+  return nextDraft;
+};
+
 const buildRecordSession = (
   payload: TimeTrackerSessionRecordRequest,
 ): { session: TimeTrackerSessionPayload; warnings: string[]; dryRun: boolean } => {
@@ -389,7 +427,7 @@ export const getRunningStateForUser = async (
   userId: string,
 ): Promise<TimeTrackerOperationResult> => {
   const state = (await getRunningState(env, userId)) ?? idleState;
-  return { body: { state } };
+  return { body: { state: withLiveElapsedSeconds(state) } };
 };
 
 export const listSessionsForUser = async (
@@ -462,7 +500,7 @@ export const stopRunningSessionForUser = async (
   ensureSessionIdMatches(currentState, payload.id);
 
   const stoppedAt = parseStoppedAt(payload.stoppedAt);
-  const session = buildCompletedSession(currentState.draft, stoppedAt);
+  const session = buildCompletedSession(applyStopOverrides(currentState.draft, payload), stoppedAt);
   const savedSession = await insertSession(env, userId, session);
   const savedState = await upsertRunningState(env, userId, idleState);
   const sync = await syncCompletedSession(env, userId, savedSession);
