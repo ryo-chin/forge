@@ -103,11 +103,17 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                 </div>
                 <div className="time-tracker__history-range">{formatHistoryTimeRange(session)}</div>
                 <div className="time-tracker__history-meta">
-                  {session.project ? <span>#{session.project}</span> : null}
-                  {session.tags?.length ? (
-                    <span>{session.tags.map((tag) => `#${tag}`).join(' ')}</span>
+                  {session.project ? (
+                    <span className="time-tracker__history-meta-item">#{session.project}</span>
                   ) : null}
-                  {session.skill ? <span>@{session.skill}</span> : null}
+                  {session.tags?.map((tag) => (
+                    <span className="time-tracker__history-meta-item" key={tag}>
+                      #{tag}
+                    </span>
+                  ))}
+                  {session.skill ? (
+                    <span className="time-tracker__history-meta-item">@{session.skill}</span>
+                  ) : null}
                 </div>
                 <div className="time-tracker__history-actions">
                   <button

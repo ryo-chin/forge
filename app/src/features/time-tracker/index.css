@@ -497,6 +497,7 @@
 .time-tracker__history {
   width: 100%;
   max-width: 640px;
+  box-sizing: border-box;
   text-align: left;
   display: flex;
   flex-direction: column;
@@ -534,6 +535,7 @@
 
 .time-tracker__history-search input {
   width: 100%;
+  box-sizing: border-box;
   min-height: 2.75rem;
   border: 1px solid #d9e0eb;
   border-radius: 0.85rem;
@@ -559,12 +561,17 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
 }
 
 .time-tracker__history-item {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 1rem 1.25rem;
   border-radius: 1.25rem;
   background: #ffffff;
@@ -580,16 +587,26 @@
   align-items: center;
   gap: 1rem;
   font-size: 1rem;
+  min-width: 0;
 }
 
 .time-tracker__history-main strong {
+  min-width: 0;
   font-weight: 600;
   color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.time-tracker__history-main span {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .time-tracker__history-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
+  min-width: 0;
   font-size: 0.9rem;
   color: #6b7280;
 }
@@ -599,8 +616,10 @@
   color: #64748b;
 }
 
-.time-tracker__history-meta span {
-  white-space: nowrap;
+.time-tracker__history-meta-item {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .time-tracker__history-actions {
