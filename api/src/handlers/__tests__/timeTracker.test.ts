@@ -1,21 +1,25 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   handleCancelRunningSession,
   handleGetRunningState,
   handleStartRunningSession,
   handleStopRunningSession,
   handleUpdateRunningSession,
+  listSessionsForUser,
+  recordSessionForUser,
 } from '../timeTracker';
 
 const mocks = vi.hoisted(() => {
   const verifySupabaseJwt = vi.fn();
   const getRunningState = vi.fn();
+  const listSessions = vi.fn();
   const upsertRunningState = vi.fn();
   const insertSession = vi.fn();
   const syncSessionForUser = vi.fn();
   return {
     verifySupabaseJwt,
     getRunningState,
+    listSessions,
     upsertRunningState,
     insertSession,
     syncSessionForUser,
@@ -35,6 +39,7 @@ vi.mock('../../repositories/timeTracker', async (importOriginal) => {
   return {
     ...actual,
     getRunningState: mocks.getRunningState,
+    listSessions: mocks.listSessions,
     upsertRunningState: mocks.upsertRunningState,
     insertSession: mocks.insertSession,
   };
@@ -90,6 +95,8 @@ const idleState = {
 describe('time tracker canonical Worker handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-01T12:00:00.000Z'));
     mocks.verifySupabaseJwt.mockResolvedValue({
       userId: 'user-1',
       raw: {},
@@ -108,6 +115,10 @@ describe('time tracker canonical Worker handlers', () => {
     );
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('returns idle state when the user has no running row', async () => {
     mocks.getRunningState.mockResolvedValue(null);
 
@@ -116,6 +127,31 @@ describe('time tracker canonical Worker handlers', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ state: idleState });
     expect(mocks.getRunningState).toHaveBeenCalledWith(env, 'user-1');
+  });
+
+  it('returns live elapsed seconds for running state status', async () => {
+    mocks.getRunningState.mockResolvedValue({
+      ...runningState,
+      draft: {
+        ...draft,
+        startedAt: '2026-05-01T11:55:00.000Z',
+      },
+      elapsedSeconds: 0,
+    });
+
+    const response = await handleGetRunningState(buildRequest('GET', '/time-tracker/running'), env);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      state: {
+        ...runningState,
+        draft: {
+          ...draft,
+          startedAt: '2026-05-01T11:55:00.000Z',
+        },
+        elapsedSeconds: 300,
+      },
+    });
   });
 
   it('starts a running session using the verified user id only', async () => {
@@ -213,6 +249,38 @@ describe('time tracker canonical Worker handlers', () => {
     expect(mocks.syncSessionForUser).toHaveBeenCalledTimes(1);
   });
 
+  it('applies stop-time metadata overrides to the completed session', async () => {
+    const stoppedAt = '2026-04-30T00:05:00.000Z';
+    const completedSession = {
+      id: 'session-1',
+      title: 'Corrected title',
+      startedAt: draft.startedAt,
+      endedAt: stoppedAt,
+      durationSeconds: 300,
+      project: 'AI駆動開発',
+      tags: ['forge', 'deploy'],
+      notes: 'corrected at stop',
+    };
+    mocks.getRunningState.mockResolvedValue(runningState);
+    mocks.insertSession.mockResolvedValue(completedSession);
+    mocks.upsertRunningState.mockResolvedValue(idleState);
+
+    const response = await handleStopRunningSession(
+      buildRequest('POST', '/time-tracker/running/stop', {
+        id: 'session-1',
+        stoppedAt,
+        title: 'Corrected title',
+        project: 'AI駆動開発',
+        tags: ['forge', 'deploy'],
+        notes: 'corrected at stop',
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.insertSession).toHaveBeenCalledWith(env, 'user-1', completedSession);
+  });
+
   it('returns Google Sheets sync success when stop sync succeeds', async () => {
     const stoppedAt = '2026-04-30T00:05:00.000Z';
     const completedSession = {
@@ -264,6 +332,117 @@ describe('time tracker canonical Worker handlers', () => {
         session: completedSession,
       }),
     );
+  });
+
+  it('lists completed sessions using bounded filters', async () => {
+    const sessions = [
+      {
+        id: 'session-1',
+        title: 'Focus',
+        startedAt: '2026-04-30T00:00:00.000Z',
+        endedAt: '2026-04-30T00:05:00.000Z',
+        durationSeconds: 300,
+      },
+    ];
+    mocks.listSessions.mockResolvedValue(sessions);
+
+    const result = await listSessionsForUser(env, 'user-1', {
+      limit: 5,
+      from: '2026-04-01T00:00:00.000Z',
+      query: 'Focus',
+      tags: ['mcp'],
+    });
+
+    expect(result).toEqual({ body: { sessions } });
+    expect(mocks.listSessions).toHaveBeenCalledWith(env, 'user-1', {
+      limit: 5,
+      from: '2026-04-01T00:00:00.000Z',
+      to: undefined,
+      query: 'Focus',
+      project: undefined,
+      tags: ['mcp'],
+    });
+  });
+
+  it('records a completed past session without touching running state', async () => {
+    const completedSession = {
+      id: 'session-1',
+      title: 'Manual record',
+      startedAt: '2026-05-01T00:00:00.000Z',
+      endedAt: '2026-05-01T00:30:00.000Z',
+      durationSeconds: 1800,
+      project: 'Forge',
+      tags: ['mcp'],
+    };
+    mocks.insertSession.mockResolvedValue(completedSession);
+
+    const result = await recordSessionForUser(env, 'user-1', {
+      id: 'session-1',
+      title: 'Manual record',
+      startedAt: completedSession.startedAt,
+      endedAt: completedSession.endedAt,
+      project: 'Forge',
+      tags: ['mcp'],
+    });
+
+    expect(result).toEqual({
+      status: 201,
+      body: {
+        session: completedSession,
+        warnings: [],
+        sync: {
+          status: 'skipped',
+          reason: 'Google spreadsheet connection not found',
+          detail: {
+            error: 'connection_missing',
+            message: 'Google spreadsheet connection not found',
+          },
+        },
+      },
+    });
+    expect(mocks.insertSession).toHaveBeenCalledWith(env, 'user-1', completedSession);
+    expect(mocks.getRunningState).not.toHaveBeenCalled();
+    expect(mocks.upsertRunningState).not.toHaveBeenCalled();
+  });
+
+  it('dry-runs manual records without persisting or syncing', async () => {
+    const result = await recordSessionForUser(env, 'user-1', {
+      id: 'session-1',
+      title: 'Manual record',
+      startedAt: '2026-05-01T00:00:00.000Z',
+      endedAt: '2026-05-01T00:30:00.000Z',
+      dryRun: true,
+    });
+
+    expect(result).toEqual({
+      body: {
+        session: {
+          id: 'session-1',
+          title: 'Manual record',
+          startedAt: '2026-05-01T00:00:00.000Z',
+          endedAt: '2026-05-01T00:30:00.000Z',
+          durationSeconds: 1800,
+        },
+        dryRun: true,
+        warnings: [],
+        sync: { status: 'skipped', reason: 'dry_run' },
+      },
+    });
+    expect(mocks.insertSession).not.toHaveBeenCalled();
+    expect(mocks.syncSessionForUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects manual records in the future', async () => {
+    await expect(
+      recordSessionForUser(env, 'user-1', {
+        title: 'Future record',
+        startedAt: '2026-05-02T00:00:00.000Z',
+        endedAt: '2026-05-02T00:30:00.000Z',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ status: 400 }),
+    });
+    expect(mocks.insertSession).not.toHaveBeenCalled();
   });
 
   it('keeps the completed session when Google Sheets sync fails', async () => {

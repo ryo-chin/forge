@@ -3,6 +3,8 @@ import './SettingsPage.css';
 import { useGoogleSpreadsheetOptions } from '@features/time-tracker/hooks/data/useGoogleSpreadsheetOptions.ts';
 import { isGoogleSyncEnabled } from '@infra/config';
 import { GoogleSpreadsheetSettingsSection } from '../../components/GoogleSpreadsheetSettingsSection';
+import { McpTokenSettingsSection } from '../../components/McpTokenSettingsSection';
+import { useMcpTokens } from '../../hooks/useMcpTokens.ts';
 import { buildOAuthRedirectPath } from './oauthRedirectPath.ts';
 
 type FeedbackState = {
@@ -13,6 +15,7 @@ type FeedbackState = {
 export function SettingsPage(): JSX.Element {
   const { settings, updateSelection, isUpdating, fetchSpreadsheets, fetchSheets, startOAuth } =
     useGoogleSpreadsheetOptions();
+  const mcpTokens = useMcpTokens();
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   const handleSave = useCallback(
@@ -106,6 +109,20 @@ export function SettingsPage(): JSX.Element {
             isSaving={isUpdating}
           />
         )}
+
+        <McpTokenSettingsSection
+          authStatus={mcpTokens.authStatus}
+          isAvailable={mcpTokens.isAvailable}
+          tokens={mcpTokens.tokens}
+          isLoading={mcpTokens.isLoading}
+          isRefreshing={mcpTokens.isRefreshing}
+          error={mcpTokens.error}
+          onCreate={mcpTokens.createToken}
+          onRevoke={mcpTokens.revokeToken}
+          isCreating={mcpTokens.isCreating}
+          revokingTokenId={mcpTokens.revokingTokenId}
+          onRefresh={mcpTokens.refetchTokens}
+        />
       </div>
     </main>
   );

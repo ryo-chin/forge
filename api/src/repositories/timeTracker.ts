@@ -18,6 +18,15 @@ type SessionRow = {
   notes: string | null;
 };
 
+export type ListSessionsOptions = {
+  limit: number;
+  from?: string;
+  to?: string;
+  query?: string;
+  project?: string;
+  tags?: string[];
+};
+
 export class TimeTrackerRepositoryError extends Error {
   readonly status: number;
 
@@ -29,6 +38,7 @@ export class TimeTrackerRepositoryError extends Error {
 }
 
 const REST_PREFIX = '/rest/v1';
+const SESSION_SELECT = 'id,title,started_at,ended_at,duration_seconds,tags,project,notes';
 
 const ensureConfig = (env: Env) => {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -140,6 +150,17 @@ const mapSessionRow = (row: SessionRow): TimeTrackerSessionPayload => {
   return session;
 };
 
+const sanitizePostgrestSearchTerm = (value: string): string =>
+  value
+    .replace(/[(),{}"]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const tagsContainFilter = (tags: string[]): string | undefined => {
+  const cleaned = tags.map(sanitizePostgrestSearchTerm).filter((tag) => tag.length > 0);
+  return cleaned.length > 0 ? `cs.{${cleaned.join(',')}}` : undefined;
+};
+
 export const getRunningState = async (
   env: Env,
   userId: string,
@@ -153,6 +174,48 @@ export const getRunningState = async (
   });
 
   return rows.length > 0 ? mapRunningStateRow(rows[0]) : null;
+};
+
+export const listSessions = async (
+  env: Env,
+  userId: string,
+  options: ListSessionsOptions,
+): Promise<TimeTrackerSessionPayload[]> => {
+  const searchParams: Record<string, string> = {
+    select: SESSION_SELECT,
+    user_id: `eq.${userId}`,
+    order: 'started_at.desc',
+    limit: String(options.limit),
+  };
+
+  if (options.from && options.to) {
+    searchParams.and = `(started_at.gte.${options.from},started_at.lte.${options.to})`;
+  } else if (options.from) {
+    searchParams.started_at = `gte.${options.from}`;
+  } else if (options.to) {
+    searchParams.started_at = `lte.${options.to}`;
+  }
+
+  const query = options.query ? sanitizePostgrestSearchTerm(options.query) : '';
+  if (query) {
+    searchParams.or = `(title.ilike.*${query}*,project.ilike.*${query}*,notes.ilike.*${query}*)`;
+  }
+
+  const project = options.project ? sanitizePostgrestSearchTerm(options.project) : '';
+  if (project) {
+    searchParams.project = `eq.${project}`;
+  }
+
+  const tagsFilter = options.tags ? tagsContainFilter(options.tags) : undefined;
+  if (tagsFilter) {
+    searchParams.tags = tagsFilter;
+  }
+
+  const rows = await request<SessionRow[]>(env, 'GET', 'time_tracker_sessions', {
+    searchParams,
+  });
+
+  return rows.map(mapSessionRow);
 };
 
 export const upsertRunningState = async (
@@ -197,7 +260,7 @@ export const insertSession = async (
       updated_at: new Date().toISOString(),
     },
     searchParams: {
-      select: 'id,title,started_at,ended_at,duration_seconds,tags,project,notes',
+      select: SESSION_SELECT,
     },
     prefer: 'return=representation',
   });

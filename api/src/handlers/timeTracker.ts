@@ -8,6 +8,7 @@ import { badRequest, conflict, jsonResponse, serverError, unauthorized } from '.
 import {
   getRunningState,
   insertSession,
+  listSessions,
   TimeTrackerRepositoryError,
   upsertRunningState,
 } from '../repositories/timeTracker';
@@ -18,7 +19,9 @@ import type {
   RunningSessionStatePayload,
   RunningSessionStopRequest,
   RunningSessionUpdateRequest,
+  TimeTrackerSessionListRequest,
   TimeTrackerSessionPayload,
+  TimeTrackerSessionRecordRequest,
 } from '../types';
 import { syncSessionForUser } from './syncSession';
 
@@ -87,6 +90,30 @@ const validateOptionalString = (value: unknown, field: string): string | null | 
   return trimmed.length > 0 ? trimmed : null;
 };
 
+const validateOptionalTags = (value: unknown, field: string): string[] | undefined => {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((tag) => typeof tag !== 'string')) {
+    throw new HttpResponseError(badRequest(`${field} must be an array of strings`));
+  }
+  return value.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+};
+
+const parseDateField = (value: unknown, field: string): string => {
+  if (typeof value === 'number' || typeof value === 'string') {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new HttpResponseError(badRequest(`${field} must be a valid date string or timestamp`));
+    }
+    return date.toISOString();
+  }
+  throw new HttpResponseError(badRequest(`${field} must be a date string or timestamp`));
+};
+
+const parseOptionalDateField = (value: unknown, field: string): string | undefined => {
+  if (value === undefined || value === null) return undefined;
+  return parseDateField(value, field);
+};
+
 const validateDraft = (draft: unknown): RunningSessionDraftPayload => {
   const value = asObject(draft);
   if (!value) {
@@ -96,11 +123,6 @@ const validateDraft = (draft: unknown): RunningSessionDraftPayload => {
   const startedAt = validateString(value.startedAt, 'draft.startedAt');
   if (Number.isNaN(new Date(startedAt).getTime())) {
     throw new HttpResponseError(badRequest('draft.startedAt must be a valid date string'));
-  }
-
-  const tags = value.tags;
-  if (tags !== undefined && (!Array.isArray(tags) || tags.some((tag) => typeof tag !== 'string'))) {
-    throw new HttpResponseError(badRequest('draft.tags must be an array of strings'));
   }
 
   const normalized: RunningSessionDraftPayload = {
@@ -117,11 +139,22 @@ const validateDraft = (draft: unknown): RunningSessionDraftPayload => {
   if (intensity !== undefined) normalized.intensity = intensity;
   const notes = validateOptionalString(value.notes, 'draft.notes');
   if (notes !== undefined) normalized.notes = notes;
-  if (Array.isArray(tags)) {
-    normalized.tags = tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
-  }
+  const tags = validateOptionalTags(value.tags, 'draft.tags');
+  if (tags !== undefined) normalized.tags = tags;
 
   return normalized;
+};
+
+const validateListLimit = (value: unknown): number => {
+  if (value === undefined || value === null) return 10;
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new HttpResponseError(badRequest('limit must be a number'));
+  }
+  const limit = Math.floor(value);
+  if (limit < 1 || limit > 50) {
+    throw new HttpResponseError(badRequest('limit must be between 1 and 50'));
+  }
+  return limit;
 };
 
 const validateElapsedSeconds = (elapsedSeconds: unknown): number => {
@@ -195,6 +228,87 @@ const buildCompletedSession = (
   if (draft.intensity) session.intensity = draft.intensity;
 
   return session;
+};
+
+const withLiveElapsedSeconds = (state: RunningSessionStatePayload): RunningSessionStatePayload => {
+  if (state.status !== 'running') {
+    return state;
+  }
+  const startedAtMs = new Date(state.draft.startedAt).getTime();
+  if (Number.isNaN(startedAtMs)) {
+    return state;
+  }
+  return {
+    ...state,
+    elapsedSeconds: Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000)),
+  };
+};
+
+const applyStopOverrides = (
+  draft: RunningSessionDraftPayload,
+  payload: RunningSessionStopRequest,
+): RunningSessionDraftPayload => {
+  const nextDraft: RunningSessionDraftPayload = { ...draft };
+
+  if (payload.title !== undefined) {
+    nextDraft.title = validateString(payload.title, 'title');
+  }
+
+  const project = validateOptionalString(payload.project, 'project');
+  if (project !== undefined) nextDraft.project = project;
+  const notes = validateOptionalString(payload.notes, 'notes');
+  if (notes !== undefined) nextDraft.notes = notes;
+  const skill = validateOptionalString(payload.skill, 'skill');
+  if (skill !== undefined) nextDraft.skill = skill;
+  const intensity = validateOptionalString(payload.intensity, 'intensity');
+  if (intensity !== undefined) nextDraft.intensity = intensity;
+  const tags = validateOptionalTags(payload.tags, 'tags');
+  if (tags !== undefined) nextDraft.tags = tags;
+
+  return nextDraft;
+};
+
+const buildRecordSession = (
+  payload: TimeTrackerSessionRecordRequest,
+): { session: TimeTrackerSessionPayload; warnings: string[]; dryRun: boolean } => {
+  const title = validateString(payload.title, 'title');
+  const startedAt = parseDateField(payload.startedAt, 'startedAt');
+  const endedAt = parseDateField(payload.endedAt, 'endedAt');
+  const startedAtMs = new Date(startedAt).getTime();
+  const endedAtMs = new Date(endedAt).getTime();
+  if (startedAtMs >= endedAtMs) {
+    throw new HttpResponseError(badRequest('startedAt must be before endedAt'));
+  }
+  if (endedAtMs > Date.now()) {
+    throw new HttpResponseError(badRequest('endedAt must not be in the future'));
+  }
+
+  const durationSeconds = Math.floor((endedAtMs - startedAtMs) / 1000);
+  const warnings: string[] = [];
+  if (durationSeconds > 12 * 60 * 60) {
+    warnings.push('duration_exceeds_12_hours');
+  }
+
+  const session: TimeTrackerSessionPayload = {
+    id: validateOptionalString(payload.id, 'id') ?? crypto.randomUUID(),
+    title,
+    startedAt,
+    endedAt,
+    durationSeconds,
+  };
+
+  const project = validateOptionalString(payload.project, 'project');
+  if (project !== undefined) session.project = project;
+  const notes = validateOptionalString(payload.notes, 'notes');
+  if (notes !== undefined) session.notes = notes;
+  const skill = validateOptionalString(payload.skill, 'skill');
+  if (skill !== undefined) session.skill = skill;
+  const intensity = validateOptionalString(payload.intensity, 'intensity');
+  if (intensity !== undefined) session.intensity = intensity;
+  const tags = validateOptionalTags(payload.tags, 'tags');
+  if (tags !== undefined) session.tags = tags;
+
+  return { session, warnings, dryRun: payload.dryRun === true };
 };
 
 type CompletedSessionSyncResult =
@@ -313,7 +427,23 @@ export const getRunningStateForUser = async (
   userId: string,
 ): Promise<TimeTrackerOperationResult> => {
   const state = (await getRunningState(env, userId)) ?? idleState;
-  return { body: { state } };
+  return { body: { state: withLiveElapsedSeconds(state) } };
+};
+
+export const listSessionsForUser = async (
+  env: Env,
+  userId: string,
+  payload: TimeTrackerSessionListRequest,
+): Promise<TimeTrackerOperationResult> => {
+  const sessions = await listSessions(env, userId, {
+    limit: validateListLimit(payload.limit),
+    from: parseOptionalDateField(payload.from, 'from'),
+    to: parseOptionalDateField(payload.to, 'to'),
+    query: validateOptionalString(payload.query, 'query') ?? undefined,
+    project: validateOptionalString(payload.project, 'project') ?? undefined,
+    tags: validateOptionalTags(payload.tags, 'tags'),
+  });
+  return { body: { sessions } };
 };
 
 export const startRunningSessionForUser = async (
@@ -370,12 +500,34 @@ export const stopRunningSessionForUser = async (
   ensureSessionIdMatches(currentState, payload.id);
 
   const stoppedAt = parseStoppedAt(payload.stoppedAt);
-  const session = buildCompletedSession(currentState.draft, stoppedAt);
+  const session = buildCompletedSession(applyStopOverrides(currentState.draft, payload), stoppedAt);
   const savedSession = await insertSession(env, userId, session);
   const savedState = await upsertRunningState(env, userId, idleState);
   const sync = await syncCompletedSession(env, userId, savedSession);
 
   return { body: { session: savedSession, state: savedState, sync } };
+};
+
+export const recordSessionForUser = async (
+  env: Env,
+  userId: string,
+  payload: TimeTrackerSessionRecordRequest,
+): Promise<TimeTrackerOperationResult> => {
+  const { session, warnings, dryRun } = buildRecordSession(payload);
+  if (dryRun) {
+    return {
+      body: {
+        session,
+        dryRun: true,
+        warnings,
+        sync: { status: 'skipped', reason: 'dry_run' },
+      },
+    };
+  }
+
+  const savedSession = await insertSession(env, userId, session);
+  const sync = await syncCompletedSession(env, userId, savedSession);
+  return { body: { session: savedSession, warnings, sync }, status: 201 };
 };
 
 export const cancelRunningSessionForUser = async (
