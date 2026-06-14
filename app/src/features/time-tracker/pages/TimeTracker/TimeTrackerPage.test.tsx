@@ -426,9 +426,9 @@ describe('TimeTrackerRoot', () => {
     const storedSession = {
       id: 'stored-1',
       title: '保存済みタスク',
-      startedAt: Date.now() - 60_000,
-      endedAt: Date.now(),
-      durationSeconds: 60,
+      startedAt: new Date(2026, 4, 1, 20, 30).getTime(),
+      endedAt: new Date(2026, 4, 1, 22, 0).getTime(),
+      durationSeconds: 5400,
       project: 'archive',
     };
     window.localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify([storedSession]));
@@ -436,7 +436,41 @@ describe('TimeTrackerRoot', () => {
     renderTimeTrackerPage();
 
     expect(screen.getByText('保存済みタスク')).toBeInTheDocument();
+    expect(screen.getByText('5/1 20:30 - 22:00')).toBeInTheDocument();
+    expect(screen.getByText('90:00')).toBeInTheDocument();
     expect(screen.getByText('#archive')).toBeInTheDocument();
+  });
+
+  it('最近の記録を検索し、追加表示できる', () => {
+    const baseStartedAt = new Date(2026, 4, 1, 20, 0).getTime();
+    const storedSessions = Array.from({ length: 12 }, (_, index) => ({
+      id: `stored-${index + 1}`,
+      title: `履歴 ${index + 1}`,
+      startedAt: baseStartedAt + index * 60_000,
+      endedAt: baseStartedAt + (index + 1) * 60_000,
+      durationSeconds: 60,
+      project: index === 11 ? 'deep-work' : 'archive',
+      tags: index === 11 ? ['focus'] : [`tag-${index + 1}`],
+      notes: index === 11 ? '検索対象メモ' : undefined,
+    }));
+    window.localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(storedSessions));
+
+    renderTimeTrackerPage();
+
+    const history = screen.getByRole('region', { name: '最近の記録' });
+    expect(within(history).getByText('履歴 1')).toBeInTheDocument();
+    expect(within(history).queryByText('履歴 12')).not.toBeInTheDocument();
+
+    fireEvent.click(within(history).getByRole('button', { name: 'さらに表示（残り2件）' }));
+    expect(within(history).getByText('履歴 12')).toBeInTheDocument();
+
+    fireEvent.change(within(history).getByLabelText('最近の記録を検索'), {
+      target: { value: 'deep-work focus' },
+    });
+
+    expect(within(history).getByText('履歴 12')).toBeInTheDocument();
+    expect(within(history).queryByText('履歴 1')).not.toBeInTheDocument();
+    expect(within(history).getByText('1/1')).toBeInTheDocument();
   });
 
   it('localStorageのランニングセッションを復元する', () => {

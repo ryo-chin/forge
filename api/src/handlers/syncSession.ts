@@ -238,9 +238,17 @@ export const handleSyncSession = async (request: Request, env: Env): Promise<Res
     return unauthorized('Invalid token');
   }
 
+  return syncSessionForUser(env, auth.userId, payload);
+};
+
+export const syncSessionForUser = async (
+  env: Env,
+  userId: string,
+  payload: SyncRequestBody,
+): Promise<Response> => {
   let connection;
   try {
-    connection = await getConnectionByUser(env, auth.userId);
+    connection = await getConnectionByUser(env, userId);
   } catch (error) {
     if (error instanceof SupabaseRepositoryError) {
       return serverError(error.message, error.status >= 500 ? 502 : error.status);

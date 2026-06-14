@@ -6,4 +6,5 @@ export interface Env {
   GOOGLE_REDIRECT_URI: string;
   OAUTH_STATE_SIGNING_SECRET?: string;
   TOKEN_ENCRYPTION_KEY?: string;
+  MCP_TOKEN_HASH_PEPPER?: string;
 }

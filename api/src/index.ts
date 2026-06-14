@@ -1,4 +1,10 @@
 import type { Env } from './env';
+import { handleMcp } from './handlers/mcp';
+import {
+  handleCreateMcpToken,
+  handleListMcpTokens,
+  handleRevokeMcpToken,
+} from './handlers/mcpTokens';
 import { handleOauthCallback, handleOauthRevoke, handleOauthStart } from './handlers/oauth';
 import {
   handleRunningSessionCancel,
@@ -37,6 +43,8 @@ const ROUTES = {
   TIME_TRACKER_RUNNING_UPDATE: '/time-tracker/running/update',
   TIME_TRACKER_RUNNING_STOP: '/time-tracker/running/stop',
   TIME_TRACKER_RUNNING_CANCEL: '/time-tracker/running/cancel',
+  MCP: '/mcp',
+  MCP_TOKENS: '/mcp/tokens',
 } as const;
 
 const withCors = (response: Response, request: Request): Response => {
@@ -133,6 +141,23 @@ export default {
 
     if (request.method === 'POST' && url.pathname === ROUTES.TIME_TRACKER_RUNNING_CANCEL) {
       return respond(handleCancelRunningSession(request, env), request);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.MCP) {
+      return respond(handleMcp(request, env), request);
+    }
+
+    if (request.method === 'GET' && url.pathname === ROUTES.MCP_TOKENS) {
+      return respond(handleListMcpTokens(request, env), request);
+    }
+
+    if (request.method === 'POST' && url.pathname === ROUTES.MCP_TOKENS) {
+      return respond(handleCreateMcpToken(request, env), request);
+    }
+
+    if (request.method === 'DELETE' && url.pathname.startsWith(`${ROUTES.MCP_TOKENS}/`)) {
+      const tokenId = decodeURIComponent(url.pathname.slice(`${ROUTES.MCP_TOKENS}/`.length));
+      return respond(handleRevokeMcpToken(request, env, tokenId), request);
     }
 
     return withCors(new Response('Not Found', { status: 404 }), request);
