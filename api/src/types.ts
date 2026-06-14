@@ -135,6 +135,68 @@ export type TimeTrackerSessionPayload = {
   intensity?: string | null;
 };
 
+// ===== 予実管理（タグ単位・曜日別予算） =====
+export type BudgetPayload = {
+  id: string;
+  tag: string;
+  label?: string | null;
+  /** 長さ7・index 0=日曜の1日あたり予算「分」 */
+  weekdayMinutes: number[];
+  effectiveFrom: string; // 'YYYY-MM-DD'
+  effectiveTo?: string | null;
+};
+
+export type BudgetUpsertRequest = {
+  id?: string;
+  tag: string;
+  label?: string | null;
+  weekdayMinutes: number[];
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+};
+
+// ===== デイリーカスタム記録 =====
+export type MetricKind = 'boolean' | 'number' | 'text' | 'single_select' | 'multi_select';
+
+export type MetricOptionPayload = { value: string; label: string };
+
+export type MetricDefinitionPayload = {
+  id: string;
+  name: string;
+  kind: MetricKind;
+  unit?: string | null;
+  options?: MetricOptionPayload[] | null;
+  targetNumber?: number | null;
+  displayOrder: number;
+  archivedAt?: string | null;
+};
+
+export type MetricDefinitionUpsertRequest = {
+  id?: string;
+  name: string;
+  kind: MetricKind;
+  unit?: string | null;
+  options?: MetricOptionPayload[] | null;
+  targetNumber?: number | null;
+  displayOrder?: number;
+};
+
+export type MetricValuePayload = boolean | number | string | string[];
+
+export type MetricEntryPayload = {
+  id: string;
+  metricId: string;
+  entryDate: string; // 'YYYY-MM-DD'
+  value: MetricValuePayload;
+};
+
+export type MetricEntryUpsertRequest = {
+  metricId?: string;
+  metricName?: string;
+  entryDate: string;
+  value: MetricValuePayload;
+};
+
 export type ColumnMappingConfig = {
   mappings: ColumnMapping;
   requiredColumns: string[];

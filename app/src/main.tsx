@@ -3,7 +3,9 @@ import React, { type ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
+import { DailyLogPage } from '@features/daily-log';
 import { AuthLoading, LoginPage } from '@features/login';
+import { ReportsPage } from '@features/reports';
 import { SettingsPage } from '@features/settings';
 import { TimeTrackerPage } from '@features/time-tracker';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
@@ -78,6 +80,8 @@ function AppRoutes(): JSX.Element {
       >
         <Route index element={<Navigate to="/time-tracker" replace />} />
         <Route path="time-tracker" element={<TimeTrackerPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="daily-log" element={<DailyLogPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

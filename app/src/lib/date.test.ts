@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTimeLocal, parseDateTimeLocal } from './date';
+import {
+  addDays,
+  dateKeyToDate,
+  eachDayKey,
+  formatDateTimeLocal,
+  monthStartKey,
+  parseDateTimeLocal,
+  toDateKey,
+  weekStartKey,
+  weekdayIndex,
+} from './date';
 
 describe('date', () => {
   describe('formatDateTimeLocal', () => {
@@ -54,6 +64,56 @@ describe('date', () => {
 
     it('無効な日時文字列はnullを返す', () => {
       expect(parseDateTimeLocal('invalid-date')).toBeNull();
+    });
+  });
+
+  describe('日付キーユーティリティ', () => {
+    it('ローカル日付を YYYY-MM-DD に変換する', () => {
+      const ts = new Date(2025, 0, 6, 9, 30).getTime();
+      expect(toDateKey(ts)).toBe('2025-01-06');
+    });
+
+    it('日付キーをローカル日の Date に戻せる', () => {
+      const date = dateKeyToDate('2025-01-06');
+      expect(date.getFullYear()).toBe(2025);
+      expect(date.getMonth()).toBe(0);
+      expect(date.getDate()).toBe(6);
+    });
+
+    it('日付を加算・減算できる（月境界をまたぐ）', () => {
+      expect(addDays('2025-01-31', 1)).toBe('2025-02-01');
+      expect(addDays('2025-03-01', -1)).toBe('2025-02-28');
+    });
+
+    it('両端を含む日付キーを昇順で列挙する', () => {
+      expect(eachDayKey('2025-01-06', '2025-01-09')).toEqual([
+        '2025-01-06',
+        '2025-01-07',
+        '2025-01-08',
+        '2025-01-09',
+      ]);
+    });
+
+    it('from > to のとき空配列を返す', () => {
+      expect(eachDayKey('2025-01-09', '2025-01-06')).toEqual([]);
+    });
+
+    it('曜日インデックスは 0=日曜', () => {
+      expect(weekdayIndex('2025-01-05')).toBe(0);
+      expect(weekdayIndex('2025-01-06')).toBe(1);
+    });
+
+    it('週開始日は既定で月曜', () => {
+      expect(weekStartKey('2025-01-09')).toBe('2025-01-06');
+      expect(weekStartKey('2025-01-06')).toBe('2025-01-06');
+    });
+
+    it('週開始日を日曜にもできる', () => {
+      expect(weekStartKey('2025-01-09', 0)).toBe('2025-01-05');
+    });
+
+    it('月初日キーを返す', () => {
+      expect(monthStartKey('2025-01-20')).toBe('2025-01-01');
     });
   });
 });
