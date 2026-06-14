@@ -184,8 +184,7 @@ export const buildNumberMetricRows = (
       const entry = daily.get(dayKey);
       if (entry && typeof entry.value === 'number') nums.push(entry.value);
     }
-    const value =
-      nums.length > 0 ? nums.reduce((sum, n) => sum + n, 0) / nums.length : null;
+    const value = nums.length > 0 ? nums.reduce((sum, n) => sum + n, 0) / nums.length : null;
     return { date: bucket.key, label: bucket.label, value };
   });
 };

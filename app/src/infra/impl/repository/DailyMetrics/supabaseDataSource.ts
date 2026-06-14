@@ -5,7 +5,7 @@ import type {
   MetricValue,
 } from '../../../../features/daily-log/domain/types.ts';
 import { getSupabaseClient } from '../../supabase/client.ts';
-import type { DailyMetricsDataSource, CreateDailyMetricsDataSourceOptions } from './types.ts';
+import type { CreateDailyMetricsDataSourceOptions, DailyMetricsDataSource } from './types.ts';
 
 const DEFINITIONS_TABLE = 'daily_metric_definitions';
 const ENTRIES_TABLE = 'daily_metric_entries';

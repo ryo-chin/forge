@@ -43,7 +43,8 @@ export const createBudgetsLocalStorageDataSource = (): BudgetsDataSource => ({
     const budget = normalizeBudget(input);
     const current = readBudgets();
     const index = current.findIndex((item) => item.id === budget.id);
-    const next = index === -1 ? [...current, budget] : current.map((item, i) => (i === index ? budget : item));
+    const next =
+      index === -1 ? [...current, budget] : current.map((item, i) => (i === index ? budget : item));
     saveJsonList(STORAGE_KEY, next);
     return budget;
   },

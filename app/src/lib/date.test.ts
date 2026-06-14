@@ -7,8 +7,8 @@ import {
   monthStartKey,
   parseDateTimeLocal,
   toDateKey,
-  weekStartKey,
   weekdayIndex,
+  weekStartKey,
 } from './date';
 
 describe('date', () => {

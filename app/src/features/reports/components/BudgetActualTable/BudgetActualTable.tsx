@@ -1,5 +1,5 @@
-import type { BudgetActualRow } from '../../domain/types.ts';
 import { formatHours, formatHoursSigned } from '../../domain/format.ts';
+import type { BudgetActualRow } from '../../domain/types.ts';
 
 type BudgetActualTableProps = {
   rows: BudgetActualRow[];

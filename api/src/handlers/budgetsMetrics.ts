@@ -1,8 +1,8 @@
 import type { Env } from '../env';
 import { deleteBudget, listBudgets, upsertBudget } from '../repositories/budgets';
 import {
-  deleteEntry,
   deleteDefinition,
+  deleteEntry,
   findDefinitionByName,
   listDefinitions,
   listEntries,
@@ -79,9 +79,10 @@ export const setBudgetForUser = async (env: Env, userId: string, argumentsValue:
     label: optionalString(args.label) ?? null,
     weekdayMinutes,
     effectiveFrom: requireDateKey(args.effectiveFrom, 'effectiveFrom'),
-    effectiveTo: typeof args.effectiveTo === 'string' && DATE_KEY.test(args.effectiveTo)
-      ? args.effectiveTo
-      : null,
+    effectiveTo:
+      typeof args.effectiveTo === 'string' && DATE_KEY.test(args.effectiveTo)
+        ? args.effectiveTo
+        : null,
   };
   return { budget: await upsertBudget(env, userId, budget) };
 };
@@ -161,8 +162,7 @@ export const recordMetricForUser = async (env: Env, userId: string, argumentsVal
 
   let definition: MetricDefinitionPayload | null = null;
   if (metricId) {
-    definition =
-      (await listDefinitions(env, userId)).find((item) => item.id === metricId) ?? null;
+    definition = (await listDefinitions(env, userId)).find((item) => item.id === metricId) ?? null;
   } else if (metricName) {
     definition = await findDefinitionByName(env, userId, metricName);
   } else {
@@ -172,7 +172,8 @@ export const recordMetricForUser = async (env: Env, userId: string, argumentsVal
     throw new Error('metric definition not found');
   }
 
-  const entryDate = args.entryDate === undefined ? utcTodayKey() : requireDateKey(args.entryDate, 'entryDate');
+  const entryDate =
+    args.entryDate === undefined ? utcTodayKey() : requireDateKey(args.entryDate, 'entryDate');
   const value = validateValueForKind(definition.kind, args.value);
 
   const entry = await upsertEntry(env, userId, {

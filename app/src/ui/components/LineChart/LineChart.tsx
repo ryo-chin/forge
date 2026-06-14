@@ -177,19 +177,16 @@ export function LineChart({
           </g>
         ))}
 
-        {/* x ラベル */}
-        {labels.map((label, index) =>
-          index % xLabelStep === 0 ? (
-            <text
-              key={`${label}-${index}`}
-              x={xFor(index)}
-              y={height - 8}
-              className="line-chart__x-label"
-            >
+        {/* x ラベル（位置 cx をキーに使い、配列 index をキーに含めない） */}
+        {labels.map((label, index) => {
+          if (index % xLabelStep !== 0) return null;
+          const cx = xFor(index);
+          return (
+            <text key={`${label}-${cx}`} x={cx} y={height - 8} className="line-chart__x-label">
               {label}
             </text>
-          ) : null,
-        )}
+          );
+        })}
 
         {/* 系列線（孤立点はドットで描画して見えるようにする） */}
         <g clipPath={`url(#${clipId})`}>
@@ -202,14 +199,9 @@ export function LineChart({
               const prev = index > 0 ? s.values[index - 1] : null;
               const next = index < s.values.length - 1 ? s.values[index + 1] : null;
               if (prev != null || next != null) return null;
+              const cx = xFor(index);
               return (
-                <circle
-                  key={`${s.id}-dot-${index}`}
-                  cx={xFor(index)}
-                  cy={yFor(value)}
-                  r={3}
-                  fill={s.color}
-                />
+                <circle key={`${s.id}-dot-${cx}`} cx={cx} cy={yFor(value)} r={3} fill={s.color} />
               );
             }),
           )}

@@ -1,7 +1,7 @@
 import {
-  MCP_TOKEN_SCOPES,
   type CreateMcpTokenPayload,
   type CreateMcpTokenResponse,
+  MCP_TOKEN_SCOPES,
   type McpToken,
   type McpTokenScope,
 } from '@infra/mcp';

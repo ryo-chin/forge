@@ -12,7 +12,9 @@ type DailyMetricTableProps = {
 
 const formatDayLabel = (dateKey: string): string => {
   const [, month, day] = dateKey.split('-');
-  const weekday = ['日', '月', '火', '水', '木', '金', '土'][new Date(`${dateKey}T00:00:00`).getDay()];
+  const weekday = ['日', '月', '火', '水', '木', '金', '土'][
+    new Date(`${dateKey}T00:00:00`).getDay()
+  ];
   return `${Number(month)}/${Number(day)}(${weekday})`;
 };
 

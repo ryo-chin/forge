@@ -151,7 +151,10 @@ const mapSessionRow = (row: SessionRow): TimeTrackerSessionPayload => {
 };
 
 const sanitizePostgrestSearchTerm = (value: string): string =>
-  value.replace(/[(),{}"]/g, ' ').replace(/\s+/g, ' ').trim();
+  value
+    .replace(/[(),{}"]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const tagsContainFilter = (tags: string[]): string | undefined => {
   const cleaned = tags.map(sanitizePostgrestSearchTerm).filter((tag) => tag.length > 0);

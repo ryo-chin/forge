@@ -1,4 +1,4 @@
-import type { Budget, BudgetInput } from '../../../../features/reports/domain/types.ts';
+import type { Budget } from '../../../../features/reports/domain/types.ts';
 import { getSupabaseClient } from '../../supabase/client.ts';
 import type { BudgetsDataSource, CreateBudgetsDataSourceOptions } from './types.ts';
 

@@ -51,8 +51,16 @@ describe('dailyActualMinutes', () => {
 
   it('project が対象名に一致するセッションも拾う（web UI は project のみ記録）', () => {
     const sessions: SessionLike[] = [
-      { startedAt: new Date('2025-01-06T10:00:00').getTime(), durationSeconds: 150 * 60, project: '鍛錬' },
-      { startedAt: new Date('2025-01-06T12:00:00').getTime(), durationSeconds: 60 * 60, project: '別' },
+      {
+        startedAt: new Date('2025-01-06T10:00:00').getTime(),
+        durationSeconds: 150 * 60,
+        project: '鍛錬',
+      },
+      {
+        startedAt: new Date('2025-01-06T12:00:00').getTime(),
+        durationSeconds: 60 * 60,
+        project: '別',
+      },
     ];
     const map = dailyActualMinutes(sessions, '鍛錬', '2025-01-06', '2025-01-06');
     expect(map.get('2025-01-06')).toBe(150);

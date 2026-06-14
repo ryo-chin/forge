@@ -11,15 +11,6 @@ import type {
   TimeTrackerSessionRecordRequest,
 } from '../types';
 import {
-  cancelRunningSessionForUser,
-  getRunningStateForUser,
-  listSessionsForUser,
-  recordSessionForUser,
-  startRunningSessionForUser,
-  stopRunningSessionForUser,
-  updateRunningSessionForUser,
-} from './timeTracker';
-import {
   defineMetricForUser,
   deleteBudgetForUser,
   deleteMetricEntryForUser,
@@ -30,6 +21,15 @@ import {
   recordMetricForUser,
   setBudgetForUser,
 } from './budgetsMetrics';
+import {
+  cancelRunningSessionForUser,
+  getRunningStateForUser,
+  listSessionsForUser,
+  recordSessionForUser,
+  startRunningSessionForUser,
+  stopRunningSessionForUser,
+  updateRunningSessionForUser,
+} from './timeTracker';
 
 const PROTOCOL_VERSION = '2025-11-25';
 

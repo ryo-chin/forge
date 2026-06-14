@@ -12,8 +12,9 @@ test('チェックボックス項目を追加して当日を記録できる', as
   // 列ヘッダー（編集ボタン）と当日のチェックボックスが出る
   await expect(page.getByRole('button', { name: 'ジムで運動する' })).toBeVisible();
 
+  // チェックは remote クエリで制御されるため、click 後に retry 付きで反映を待つ
   const todayCheckbox = page.getByRole('checkbox').first();
-  await todayCheckbox.check();
+  await todayCheckbox.click();
   await expect(todayCheckbox).toBeChecked();
 });
 

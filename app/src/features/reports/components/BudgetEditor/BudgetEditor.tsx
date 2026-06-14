@@ -24,8 +24,7 @@ export function BudgetEditor({ initial, onSave, onCancel }: BudgetEditorProps): 
   const [tag, setTag] = useState(initial?.tag ?? '');
   const [label, setLabel] = useState(initial?.label ?? '');
   const [hours, setHours] = useState<string[]>(
-    () =>
-      (initial?.weekdayMinutes ?? [0, 0, 0, 0, 0, 0, 0]).map(minutesToHoursInput) as string[],
+    () => (initial?.weekdayMinutes ?? [0, 0, 0, 0, 0, 0, 0]).map(minutesToHoursInput) as string[],
   );
   const [effectiveFrom, setEffectiveFrom] = useState(initial?.effectiveFrom ?? today);
   const [effectiveTo, setEffectiveTo] = useState(initial?.effectiveTo ?? '');

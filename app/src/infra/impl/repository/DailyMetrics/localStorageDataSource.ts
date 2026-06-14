@@ -2,7 +2,6 @@ import type {
   MetricDefinition,
   MetricDefinitionInput,
   MetricEntry,
-  MetricEntryInput,
   MetricKind,
   MetricValue,
 } from '../../../../features/daily-log/domain/types.ts';

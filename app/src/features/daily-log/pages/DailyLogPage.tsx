@@ -5,14 +5,14 @@ import { useMemo, useState } from 'react';
 import '../daily-log.css';
 import { DailyMetricTable } from '../components/DailyMetricTable';
 import { MetricDefinitionEditor } from '../components/MetricDefinitionEditor';
-import { useMetricDefinitions } from '../hooks/data/useMetricDefinitions.ts';
-import { useMetricEntries } from '../hooks/data/useMetricEntries.ts';
 import type {
   MetricDefinition,
   MetricDefinitionInput,
   MetricEntry,
   MetricValue,
 } from '../domain/types.ts';
+import { useMetricDefinitions } from '../hooks/data/useMetricDefinitions.ts';
+import { useMetricEntries } from '../hooks/data/useMetricEntries.ts';
 
 const TREND_COLOR = '#2563eb';
 const RANGE_OPTIONS = [

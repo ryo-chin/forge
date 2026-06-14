@@ -41,7 +41,10 @@ export const useBudgets = (options: UseBudgetsOptions = {}) => {
     (input: BudgetInput) => saveMutation.mutateAsync(input),
     [saveMutation],
   );
-  const deleteBudget = useCallback((id: string) => deleteMutation.mutateAsync(id), [deleteMutation]);
+  const deleteBudget = useCallback(
+    (id: string) => deleteMutation.mutateAsync(id),
+    [deleteMutation],
+  );
 
   const budgets: Budget[] = budgetsQuery.data ?? [];
 

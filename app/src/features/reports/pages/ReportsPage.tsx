@@ -17,8 +17,8 @@ import {
   type EntryLike,
   type SessionLike,
 } from '../domain/aggregation.ts';
-import { useBudgets } from '../hooks/data/useBudgets.ts';
 import type { Budget, BudgetInput, PeriodUnit } from '../domain/types.ts';
+import { useBudgets } from '../hooks/data/useBudgets.ts';
 
 const BUDGET_COLOR = '#2563eb';
 const ACTUAL_COLOR = '#ef4444';
@@ -73,7 +73,7 @@ export function ReportsPage(): JSX.Element {
   const selectedBudget = selected?.type === 'budget' ? selected.budget : null;
   const selectedMetric =
     selected?.type === 'metric'
-      ? reportableMetrics.find((definition) => `metric:${definition.id}` === selected.id) ?? null
+      ? (reportableMetrics.find((definition) => `metric:${definition.id}` === selected.id) ?? null)
       : null;
 
   const budgetRows = useMemo(() => {
