@@ -11,7 +11,11 @@
     "lint": "pnpm --filter forge-app lint && pnpm --filter api lint",
     "lint:fix": "pnpm --filter forge-app lint:fix && pnpm --filter api lint:fix",
     "lint:app": "pnpm --filter forge-app lint",
-    "lint:worker": "pnpm --filter api lint"
+    "lint:worker": "pnpm --filter api lint",
+    "type-check": "pnpm --filter forge-app type-check && pnpm --filter api type-check",
+    "test": "pnpm --filter forge-app test:run && pnpm --filter api test:run",
+    "verify": "pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm run test",
+    "verify:e2e": "pnpm --filter forge-app test:e2e"
   },
   "engines": {
     "node": ">=20.12.0",

@@ -16,7 +16,13 @@ paths:
 
 ## Push前の検証
 
-git pushを実行する前に、CIと同等の検証をローカルで実行すること。
-コマンドは @.github/workflows/ci-frontend.yml を参照。
+git pushを実行する前に、リポジトリルートで **`pnpm verify`** を必ず実行すること。
+これは CI の Lint ジョブと同じく **eslint だけでなく Biome の `format:check` も含む**
+（lint + format:check + type-check + test を app/api 両方）。eslint だけ通して
+format:check を忘れると CI Lint が落ちる。format 崩れは `pnpm format` で修正できる。
 
-build と e2e はCIに委ねる（ローカル実行は時間がかかるため）。
+UI / 入力まわり（reports・daily-log 等）を変更したら、変更領域の E2E を
+**`pnpm verify:e2e`** で1回ローカル実行する（初回は `pnpm --filter forge-app exec playwright install chromium` が必要）。
+「e2e は CI 委ね」で push するとフィードバックが1往復遅れるので、新規・変更した spec は手元で通しておく。
+
+build と coverage はCIに委ねてよい。
