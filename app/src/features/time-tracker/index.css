@@ -946,3 +946,227 @@
 .time-tracker__intro-top > * {
   flex: 0 1 auto;
 }
+
+/* ===========================
+ * 履歴ヘッダの「過去の記録を追加」
+ * =========================== */
+.time-tracker__history-header h2 {
+  margin-right: auto;
+}
+
+.time-tracker__history-count {
+  color: #64748b;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.time-tracker__history-add {
+  border: 1px solid #c7d2e8;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.time-tracker__history-add:hover {
+  background: rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.time-tracker__history-add:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ===========================
+ * SearchPicker（検索付き履歴ピッカー）
+ * =========================== */
+.time-tracker__search-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.time-tracker__search-picker > label {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.time-tracker__search-picker-control {
+  position: relative;
+}
+
+.time-tracker__search-picker-control > input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d0d7e2;
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 1rem;
+  color: #111827;
+  background: #f9fafc;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.time-tracker__search-picker-control > input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.time-tracker__search-picker-popover {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.time-tracker__search-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.time-tracker__search-picker-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0.6rem;
+  background: #eef1f6;
+  color: #1f2937;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.time-tracker__search-picker-item:hover,
+.time-tracker__search-picker-item:focus {
+  background: #e2e7f0;
+  outline: none;
+}
+
+.time-tracker__search-picker-item[aria-selected="true"] {
+  background: #dbe4fb;
+  color: #1d4ed8;
+}
+
+.time-tracker__search-picker-empty {
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-align: left;
+}
+
+.time-tracker__search-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.4rem;
+}
+
+.time-tracker__search-picker-actions button {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.time-tracker__search-picker-actions button:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* ===========================
+ * 作業時間（モーダル内）
+ * =========================== */
+.time-tracker__duration {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-tracker__duration-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.time-tracker__duration-label {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.time-tracker__duration-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* ===========================
+ * モーダルのアクションボタン（primary / secondary）
+ * 既存の type ベース規則に勝つよう element+class で指定し、末尾に配置
+ * =========================== */
+.time-tracker__modal-actions {
+  flex-wrap: wrap;
+}
+
+.time-tracker__modal-actions button.time-tracker__modal-primary {
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.time-tracker__modal-actions button.time-tracker__modal-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.time-tracker__modal-actions button.time-tracker__modal-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.time-tracker__modal-actions button.time-tracker__modal-secondary {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.time-tracker__modal-actions button.time-tracker__modal-secondary:hover {
+  background: #cbd5f5;
+  transform: translateY(-1px);
+}
+
+.time-tracker__modal-actions button.time-tracker__modal-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}

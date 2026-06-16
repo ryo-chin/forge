@@ -111,6 +111,25 @@ describe('TimeTrackerRoot', () => {
     expect(screen.queryByText('計測中')).not.toBeInTheDocument();
   });
 
+  it('計測中でもタイトルを変更でき、停止後の履歴に反映される', () => {
+    renderTimeTrackerPage();
+
+    const input = screen.getByPlaceholderText('何をやる？');
+    fireEvent.change(input, { target: { value: '仮タイトル' } });
+    fireEvent.click(screen.getByRole('button', { name: '開始' }));
+
+    // 計測中にタイトルを書き換える
+    fireEvent.change(screen.getByPlaceholderText('何をやる？'), {
+      target: { value: '本タイトル' },
+    });
+    expect(screen.getByPlaceholderText('何をやる？')).toHaveValue('本タイトル');
+
+    fireEvent.click(screen.getByRole('button', { name: '停止' }));
+
+    const history = screen.getByRole('region', { name: '最近の記録' });
+    expect(within(history).getByText('本タイトル')).toBeInTheDocument();
+  });
+
   it('クイックナッジで作業時間を加算できる', () => {
     renderTimeTrackerPage();
 
@@ -158,7 +177,7 @@ describe('TimeTrackerRoot', () => {
       target: { value: 'daily-practice' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存して継続' }));
 
     fireEvent.click(screen.getByRole('button', { name: '停止' }));
 
@@ -207,8 +226,12 @@ describe('TimeTrackerRoot', () => {
     expect(startButton).toBeEnabled();
     expect(screen.queryByText('計測中')).not.toBeInTheDocument();
 
-    const history = screen.queryByRole('region', { name: '最近の記録' });
-    expect(history).toBeNull();
+    // 履歴セクションは常時表示（過去の記録を追加できる）だが、破棄したセッションは残らない
+    const history = screen.getByRole('region', { name: '最近の記録' });
+    expect(within(history).queryByText('集中作業')).not.toBeInTheDocument();
+    expect(
+      within(history).getByText('まだ記録がありません。', { exact: false }),
+    ).toBeInTheDocument();
 
     await waitFor(() => {
       expect(window.localStorage.getItem(STORAGE_KEY_RUNNING)).toBeNull();
@@ -280,15 +303,10 @@ describe('TimeTrackerRoot', () => {
       target: { value: 'updated-project' },
     });
 
-    const startInput = screen.getByLabelText('開始時刻') as HTMLInputElement;
     const endInput = screen.getByLabelText('終了時刻') as HTMLInputElement;
-    const currentStart = new Date(startInput.value);
-    const adjustedStart = new Date(currentStart.getTime() - 5 * 60 * 1000);
-    fireEvent.change(startInput, {
-      target: { value: formatDateTimeLocal(adjustedStart) },
-    });
+    const adjustedEnd = new Date(new Date(endInput.value).getTime() + 5 * 60 * 1000);
     fireEvent.change(endInput, {
-      target: { value: formatDateTimeLocal(new Date(endInput.value)) },
+      target: { value: formatDateTimeLocal(adjustedEnd) },
     });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 

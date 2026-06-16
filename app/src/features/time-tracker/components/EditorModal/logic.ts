@@ -1,3 +1,12 @@
+/** 作業時間（ms）を HH:MM 表示にする（例: 72:59 / 00:05）。null は '—' */
+export function formatDurationLabel(durationMs: number | null): string {
+  if (durationMs === null) return '—';
+  const totalMinutes = Math.max(0, Math.round(durationMs / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 /* ===========================
  * attach 系（副作用を外出しした関数）
  * =========================== */
