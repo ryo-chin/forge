@@ -21,6 +21,7 @@ describe('HistoryList', () => {
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onRestart={vi.fn()}
+        onAddManual={vi.fn()}
         isRunning={false}
       />,
     );
@@ -39,6 +40,7 @@ describe('HistoryList', () => {
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onRestart={vi.fn()}
+        onAddManual={vi.fn()}
         isRunning={false}
       />,
     );

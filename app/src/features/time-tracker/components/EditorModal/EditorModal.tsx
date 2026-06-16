@@ -1,53 +1,122 @@
 import { trapTabFocus } from '@lib/accessibility/focus.ts';
+import { formatDateTimeLocal, parseDateTimeLocal } from '@lib/date.ts';
 import type React from 'react';
-import { useEffect, useRef } from 'react';
-import { attachEscapeClose, focusModalOnOpen } from './logic.ts';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { SearchPicker } from '../SearchPicker';
+import { attachEscapeClose, focusModalOnOpen, formatDurationLabel } from './logic.ts';
 
-export type EditorModalMode = 'running' | 'history';
+export type EditorModalMode = 'running' | 'history' | 'new';
+
+export type EditorModalResult = {
+  title: string;
+  project: string;
+  startMs: number;
+  endMs: number;
+};
 
 type EditorModalProps = {
   mode: EditorModalMode;
-  title: string;
-  project: string;
-  startTime: string;
-  endTime: string;
-  saveDisabled: boolean;
-  onTitleChange: (value: string) => void;
-  onProjectChange: (value: string) => void;
-  onStartTimeChange: (value: string) => void;
-  onEndTimeChange: (value: string) => void;
-  onSave: (e: React.FormEvent<HTMLFormElement>) => void;
+  initialTitle: string;
+  initialProject: string;
+  initialStartMs: number;
+  initialEndMs: number;
+  titleSuggestions: string[];
+  projectSuggestions: string[];
+  /** 主アクション: new=記録する / history=保存 / running=保存して継続 */
+  onSave: (result: EditorModalResult) => void;
+  /** running モードのみ: この時刻で完了 */
+  onFinalize?: (result: EditorModalResult) => void;
   onCancel: () => void;
+};
+
+const DURATION_NUDGES = [-30, -10, 10, 30, 60] as const;
+
+const TITLE_BY_MODE: Record<EditorModalMode, string> = {
+  new: '記録を追加',
+  history: '記録を編集',
+  running: '計測中の編集',
 };
 
 export const EditorModal: React.FC<EditorModalProps> = ({
   mode,
-  title,
-  project,
-  startTime,
-  endTime,
-  saveDisabled,
-  onTitleChange,
-  onProjectChange,
-  onStartTimeChange,
-  onEndTimeChange,
+  initialTitle,
+  initialProject,
+  initialStartMs,
+  initialEndMs,
+  titleSuggestions,
+  projectSuggestions,
   onSave,
+  onFinalize,
   onCancel,
 }) => {
   const modalContainerRef = useRef<HTMLDivElement>(null);
+  const [title, setTitle] = useState(initialTitle);
+  const [project, setProject] = useState(initialProject);
+  const [startStr, setStartStr] = useState(() => formatDateTimeLocal(initialStartMs));
+  // 作業時間（分）を主軸に保持する。完了時刻 = 開始 + 作業時間 で常に算出するため、
+  // 開始を動かすと完了が追従し、ナッジは「開始からの作業時間」を増減する。
+  const [durationMinutes, setDurationMinutes] = useState(() =>
+    Math.max(0, Math.round((initialEndMs - initialStartMs) / 60_000)),
+  );
 
-  useEffect(() => {
-    return focusModalOnOpen(() => modalContainerRef.current);
-  }, []);
+  const startMs = useMemo(() => parseDateTimeLocal(startStr), [startStr]);
+  const endMs = startMs !== null ? startMs + durationMinutes * 60_000 : null;
+  const endStr = endMs !== null ? formatDateTimeLocal(endMs) : '';
+  const durationMs = startMs !== null ? durationMinutes * 60_000 : null;
 
-  useEffect(() => {
-    return attachEscapeClose(onCancel);
-  }, [onCancel]);
+  // running の保存（継続）は完了時刻不要。それ以外は作業時間 >= 0（完了 >= 開始）が必須
+  const baseValid = title.trim().length > 0 && startMs !== null;
+  const rangeValid = baseValid && durationMinutes >= 0;
+  const isRunning = mode === 'running';
+  const endLabel = isRunning ? '完了時刻' : '終了時刻';
+
+  useEffect(() => focusModalOnOpen(() => modalContainerRef.current), []);
+  useEffect(() => attachEscapeClose(onCancel), [onCancel]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (modalContainerRef.current) {
-      trapTabFocus(modalContainerRef.current, e);
-    }
+    if (modalContainerRef.current) trapTabFocus(modalContainerRef.current, e);
+  };
+
+  // ナッジは作業時間（開始からの差分）を増減する → 完了 = 開始 + 作業時間 に反映
+  const handleNudge = (deltaMinutes: number) => {
+    setDurationMinutes((prev) => Math.max(0, prev + deltaMinutes));
+  };
+
+  // 完了時刻を直接編集したら、開始との差分から作業時間を再計算
+  const handleEndChange = (value: string) => {
+    const parsed = parseDateTimeLocal(value);
+    if (parsed === null || startMs === null) return;
+    setDurationMinutes(Math.max(0, Math.round((parsed - startMs) / 60_000)));
+  };
+
+  const buildResult = (): EditorModalResult | null => {
+    if (startMs === null) return null;
+    return {
+      title: title.trim(),
+      project: project.trim(),
+      startMs,
+      endMs: endMs ?? startMs,
+    };
+  };
+
+  const submitPrimary = () => {
+    const result = buildResult();
+    if (!result) return;
+    // 継続保存以外は範囲必須
+    if (!isRunning && !rangeValid) return;
+    if (isRunning && !baseValid) return;
+    onSave(result);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    submitPrimary();
+  };
+
+  const handleFinalize = () => {
+    if (!rangeValid) return;
+    const result = buildResult();
+    if (result && onFinalize) onFinalize(result);
   };
 
   return (
@@ -61,58 +130,93 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         tabIndex={-1}
         onKeyDown={handleKeyDown}
       >
-        <h2 id="session-editor-title">
-          {mode === 'history' ? '記録を編集' : '計測中の詳細を編集'}
-        </h2>
-        <form className="time-tracker__modal-form" onSubmit={onSave}>
-          <div className="time-tracker__field">
-            <label htmlFor="modal-title">タイトル</label>
-            <input
-              id="modal-title"
-              type="text"
-              value={title}
-              onChange={(e) => onTitleChange(e.target.value)}
-              autoComplete="off"
-              data-autofocus="true"
-            />
-          </div>
-          <div className="time-tracker__field">
-            <label htmlFor="modal-project">プロジェクト</label>
-            <input
-              id="modal-project"
-              type="text"
-              value={project}
-              onChange={(e) => onProjectChange(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
+        <h2 id="session-editor-title">{TITLE_BY_MODE[mode]}</h2>
+        <form className="time-tracker__modal-form" onSubmit={handleSubmit}>
+          <SearchPicker
+            label="タイトル"
+            value={title}
+            suggestions={titleSuggestions}
+            placeholder="何に取り組んだ？"
+            autoFocus
+            onChange={setTitle}
+          />
+          <SearchPicker
+            label="プロジェクト"
+            value={project}
+            suggestions={projectSuggestions}
+            placeholder="プロジェクトを検索・入力"
+            itemPrefix="#"
+            allowClear
+            onChange={setProject}
+          />
           <div className="time-tracker__field">
             <label htmlFor="modal-start">開始時刻</label>
             <input
               id="modal-start"
               type="datetime-local"
-              value={startTime}
-              onChange={(e) => onStartTimeChange(e.target.value)}
+              value={startStr}
+              onChange={(e) => setStartStr(e.target.value)}
             />
           </div>
-          {mode === 'history' ? (
-            <div className="time-tracker__field">
-              <label htmlFor="modal-end">終了時刻</label>
-              <input
-                id="modal-end"
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => onEndTimeChange(e.target.value)}
-              />
+          <div className="time-tracker__field">
+            <label htmlFor="modal-end">{endLabel}</label>
+            <input
+              id="modal-end"
+              type="datetime-local"
+              value={endStr}
+              onChange={(e) => handleEndChange(e.target.value)}
+            />
+          </div>
+          <div className="time-tracker__duration">
+            <div className="time-tracker__duration-header">
+              <span className="time-tracker__duration-label">作業時間</span>
+              <span className="time-tracker__duration-value" aria-live="polite">
+                {formatDurationLabel(durationMs)}
+              </span>
             </div>
-          ) : null}
+            <div className="time-tracker__nudges" role="group" aria-label="作業時間を調整">
+              {DURATION_NUDGES.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleNudge(m)}
+                  aria-label={
+                    m > 0 ? `${endLabel}を${m}分後ろへ` : `${endLabel}を${Math.abs(m)}分手前へ`
+                  }
+                >
+                  {m > 0 ? `+${m}分` : `${m}分`}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="time-tracker__modal-actions">
-            <button type="button" onClick={onCancel}>
+            <button type="button" className="time-tracker__modal-secondary" onClick={onCancel}>
               キャンセル
             </button>
-            <button type="submit" disabled={saveDisabled}>
-              保存
-            </button>
+            {isRunning ? (
+              <>
+                <button
+                  type="button"
+                  className="time-tracker__modal-secondary"
+                  onClick={submitPrimary}
+                  disabled={!baseValid}
+                >
+                  保存して継続
+                </button>
+                <button
+                  type="button"
+                  className="time-tracker__modal-primary"
+                  onClick={handleFinalize}
+                  disabled={!rangeValid}
+                >
+                  この時刻で完了
+                </button>
+              </>
+            ) : (
+              <button type="submit" className="time-tracker__modal-primary" disabled={!rangeValid}>
+                {mode === 'new' ? '記録する' : '保存'}
+              </button>
+            )}
           </div>
         </form>
       </div>

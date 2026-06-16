@@ -5,14 +5,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TimeTrackerSession } from '../../domain/types.ts';
 import {
   attachClickAwayAndEsc,
-  attachGlobalFocusShortcut,
   buildProjectSuggestions,
   filterSuggestions,
   focusSearchOnOpen,
   onEnterKey,
   onEnterOrMetaEnter,
   onEnterPickFirstElseSubmit,
-} from './logic.ts';
+} from '../SearchPicker';
+import { attachGlobalFocusShortcut } from './logic.ts';
 
 type ComposerStopResult = {
   nextInputValue: string;
@@ -28,6 +28,7 @@ type ComposerProps = {
   isRunning: boolean;
   isRunningEditorOpen: boolean;
   onProjectChange: (value: string) => void;
+  onTitleChange: (value: string) => void;
   onStart: (title: string) => boolean;
   onStop: () => ComposerStopResult;
   onCancel: () => ComposerStopResult;
@@ -44,6 +45,7 @@ export const Composer: React.FC<ComposerProps> = ({
   isRunning,
   isRunningEditorOpen,
   onProjectChange,
+  onTitleChange,
   onStart,
   onStop,
   onCancel,
@@ -233,7 +235,10 @@ export const Composer: React.FC<ComposerProps> = ({
           placeholder="何をやる？"
           value={displayInputValue}
           onChange={(e) => {
-            if (!isRunning) setInputValue(e.target.value);
+            const value = e.target.value;
+            // 計測中は走行中ドラフトのタイトルを更新、未走行時は次回開始用の入力
+            if (isRunning) onTitleChange(value);
+            else setInputValue(value);
           }}
           // Enterで開始/停止（IME中Enterは自動で無視）
           onKeyDown={onEnterKey(handlePrimaryAction)}

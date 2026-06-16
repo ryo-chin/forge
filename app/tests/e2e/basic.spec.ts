@@ -33,12 +33,63 @@ test('履歴のモーダル編集でタイトルを更新できる', async ({ pa
   await page.getByRole('button', { name: '停止' }).click();
 
   await page.getByRole('button', { name: '「ギター練習」を編集' }).click();
-  await page.getByLabel('タイトル').fill('アップデート済みタイトル');
-  await page.getByRole('textbox', { name: 'プロジェクト', exact: true }).fill('focus');
+  await page.getByLabel('タイトル', { exact: true }).fill('アップデート済みタイトル');
+  await page.getByLabel('プロジェクト', { exact: true }).fill('focus');
   await page.getByRole('button', { name: '保存' }).click();
 
   await expect(page.getByText('アップデート済みタイトル', { exact: true })).toBeVisible();
   await expect(page.getByText('#focus')).toBeVisible();
+});
+
+test('過去の記録を追加から後追いでセッションを登録できる', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: '過去の記録を追加' }).click();
+
+  await expect(page.getByRole('dialog', { name: '記録を追加' })).toBeVisible();
+
+  // 既定 30 分 → +30分 ナッジで 1時間（01:00）
+  await page.getByRole('button', { name: '終了時刻を30分後ろへ' }).click();
+  await expect(page.getByText('01:00', { exact: true })).toBeVisible();
+
+  await page.getByLabel('タイトル', { exact: true }).fill('議事録まとめ');
+  await page.getByRole('button', { name: '記録する' }).click();
+
+  await expect(page.getByRole('dialog', { name: '記録を追加' })).not.toBeVisible();
+  await expect(page.getByText('議事録まとめ', { exact: true })).toBeVisible();
+});
+
+test('計測中セッションを指定時刻で完了できる', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByPlaceholder('何をやる？').fill('資料作成');
+  await page.getByRole('button', { name: '開始', exact: true }).click();
+  await expect(page.getByText('計測中')).toBeVisible();
+
+  await page.getByRole('button', { name: '詳細編集' }).click();
+  await expect(page.getByRole('dialog', { name: '計測中の編集' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'この時刻で完了' }).click();
+
+  // 計測が終わり履歴に残る
+  await expect(page.getByText('計測中')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: '「資料作成」を編集' })).toBeVisible();
+});
+
+test('過去の記録を追加でタイトルを履歴から選べる', async ({ page }) => {
+  await page.goto('/');
+
+  // 履歴を1件作る
+  await page.getByPlaceholder('何をやる？').fill('週次レビュー');
+  await page.getByRole('button', { name: '開始', exact: true }).click();
+  await page.getByRole('button', { name: '停止' }).click();
+
+  await page.getByRole('button', { name: '過去の記録を追加' }).click();
+  // タイトル欄をクリックすると履歴候補が出る
+  await page.getByRole('combobox', { name: 'タイトル' }).click();
+  await page.getByRole('option', { name: '週次レビュー' }).click();
+
+  await expect(page.getByRole('combobox', { name: 'タイトル' })).toHaveValue('週次レビュー');
 });
 
 test('履歴から同じタスクを再開始できる', async ({ page }) => {

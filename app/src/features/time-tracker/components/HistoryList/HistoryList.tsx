@@ -9,6 +9,7 @@ type HistoryListProps = {
   onEdit: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
   onRestart: (session: TimeTrackerSession) => boolean;
+  onAddManual: () => void;
   isRunning: boolean;
 };
 
@@ -19,6 +20,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
   onEdit,
   onDelete,
   onRestart,
+  onAddManual,
   isRunning,
 }) => {
   const [query, setQuery] = useState('');
@@ -58,15 +60,39 @@ export const HistoryList: React.FC<HistoryListProps> = ({
     return () => observer.disconnect();
   }, [hasMore, loadMore]);
 
-  if (sessions.length === 0) return null;
+  const addButton = (
+    <button
+      type="button"
+      className="time-tracker__history-add"
+      onClick={onAddManual}
+      aria-label="過去の記録を追加"
+    >
+      ＋ 過去の記録を追加
+    </button>
+  );
+
+  if (sessions.length === 0) {
+    return (
+      <section className="time-tracker__history" aria-label="最近の記録">
+        <div className="time-tracker__history-header">
+          <h2>最近の記録</h2>
+          {addButton}
+        </div>
+        <p className="time-tracker__history-empty" role="status">
+          まだ記録がありません。「過去の記録を追加」から後追いで登録できます。
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="time-tracker__history" aria-label="最近の記録">
       <div className="time-tracker__history-header">
         <h2>最近の記録</h2>
-        <span>
+        <span className="time-tracker__history-count">
           {visibleSessions.length}/{filteredSessions.length}
         </span>
+        {addButton}
       </div>
       <label className="time-tracker__history-search">
         <span>履歴を検索</span>
