@@ -77,12 +77,18 @@ export const buildBuckets = (
   return order.map((key) => buckets.get(key) as Bucket);
 };
 
-/** tag を含むセッションを日次でバケットし、各日の実績「分」を返す（範囲内は 0 で初期化）。 */
+/**
+ * tag を含むセッションを日次でバケットし、各日の実績「分」を返す（範囲内は 0 で初期化）。
+ * 予算の有効期間（effectiveFrom / effectiveTo）を渡すと、その期間外のセッションは実績に含めない。
+ * 同じプロジェクト名で予算開始前に記録した過去セッションが累積へ混入するのを防ぐ。
+ */
 export const dailyActualMinutes = (
   sessions: SessionLike[],
   tag: string,
   fromKey: string,
   toKey: string,
+  effectiveFrom?: string,
+  effectiveTo?: string | null,
 ): Map<string, number> => {
   const map = new Map<string, number>();
   for (const key of eachDayKey(fromKey, toKey)) {
@@ -92,6 +98,8 @@ export const dailyActualMinutes = (
     if (!matchesTag(session, tag)) continue;
     const key = toDateKey(session.startedAt);
     if (key < fromKey || key > toKey) continue;
+    if (effectiveFrom != null && key < effectiveFrom) continue;
+    if (effectiveTo != null && key > effectiveTo) continue;
     map.set(key, (map.get(key) ?? 0) + minutesFromSeconds(session.durationSeconds));
   }
   return map;
@@ -126,7 +134,14 @@ export const buildBudgetActualRows = (
   options: { weekStartsOn?: number; withYear?: boolean } = {},
 ): BudgetActualRow[] => {
   const budgetDaily = dailyBudgetMinutes(budget, fromKey, toKey);
-  const actualDaily = dailyActualMinutes(sessions, budget.tag, fromKey, toKey);
+  const actualDaily = dailyActualMinutes(
+    sessions,
+    budget.tag,
+    fromKey,
+    toKey,
+    budget.effectiveFrom,
+    budget.effectiveTo,
+  );
   const buckets = buildBuckets(fromKey, toKey, unit, options);
 
   let cumulativeBudget = 0;

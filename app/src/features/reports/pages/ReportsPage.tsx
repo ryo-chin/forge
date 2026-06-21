@@ -1,7 +1,7 @@
 import { useMetricDefinitions, useMetricEntries } from '@features/daily-log';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { useAuth } from '@infra/auth';
-import { addDays, addMonths, toDateKey } from '@lib/date.ts';
+import { toDateKey } from '@lib/date.ts';
 import { LineChart } from '@ui/components/LineChart';
 import { RangeControl } from '@ui/components/RangeControl';
 import { useMemo, useState } from 'react';
@@ -17,8 +17,9 @@ import {
   type EntryLike,
   type SessionLike,
 } from '../domain/aggregation.ts';
-import type { Budget, BudgetInput, PeriodUnit } from '../domain/types.ts';
+import type { Budget, BudgetInput } from '../domain/types.ts';
 import { useBudgets } from '../hooks/data/useBudgets.ts';
+import { useReportViewState } from '../hooks/useReportViewState.ts';
 
 const BUDGET_COLOR = '#2563eb';
 const ACTUAL_COLOR = '#ef4444';
@@ -33,12 +34,8 @@ export function ReportsPage(): JSX.Element {
   const userId = user?.id ?? null;
   const today = toDateKey(Date.now());
 
-  const [range, setRange] = useState(() => ({
-    fromKey: addDays(addMonths(today, -3), 1),
-    toKey: today,
-  }));
-  const [period, setPeriod] = useState<PeriodUnit>('week');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { selectedId, setSelectedId, range, setRange, period, setPeriod } =
+    useReportViewState(today);
   const [editor, setEditor] = useState<EditorState>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -75,6 +72,10 @@ export function ReportsPage(): JSX.Element {
     selected?.type === 'metric'
       ? (reportableMetrics.find((definition) => `metric:${definition.id}` === selected.id) ?? null)
       : null;
+
+  // 予算の開始日にレポートの開始日を合わせる（終了日は維持）。
+  const alignStartToBudget = (budget: Budget) =>
+    setRange((current) => ({ fromKey: budget.effectiveFrom, toKey: current.toKey }));
 
   const budgetRows = useMemo(() => {
     if (!selectedBudget) return [];
@@ -159,7 +160,7 @@ export function ReportsPage(): JSX.Element {
               },
             ]}
             yBaseline="zero"
-            formatValue={(value) => `${Math.round(value)}h`}
+            formatValue={(value) => `${round1(value)}h`}
             ariaLabel="累積時間の予算と実績"
           />
         )}
@@ -289,6 +290,7 @@ export function ReportsPage(): JSX.Element {
                           onClick={() => {
                             setSelectedId(source.id);
                             setConfirmingDelete(false);
+                            alignStartToBudget(source.budget);
                           }}
                         >
                           {source.label}
@@ -331,6 +333,16 @@ export function ReportsPage(): JSX.Element {
                 onChange={(fromKey, toKey) => setRange({ fromKey, toKey })}
               />
               <PeriodToggle value={period} onChange={setPeriod} />
+              {selectedBudget ? (
+                <button
+                  type="button"
+                  className="reports__button-ghost"
+                  onClick={() => alignStartToBudget(selectedBudget)}
+                  title="レポートの開始日を予算の開始日に合わせる"
+                >
+                  予算開始日に合わせる
+                </button>
+              ) : null}
             </div>
 
             {selectedBudget ? renderBudget(selectedBudget) : null}

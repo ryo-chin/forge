@@ -49,6 +49,30 @@ describe('dailyActualMinutes', () => {
     expect(map.get('2025-01-07')).toBe(0);
   });
 
+  it('effectiveFrom より前のセッションは実績に含めない（過去同名プロジェクトの混入を防ぐ）', () => {
+    const sessions = [
+      sessionAt('2025-01-04', 120), // effectiveFrom(01-06) より前 → 除外
+      sessionAt('2025-01-06', 90),
+    ];
+    const map = dailyActualMinutes(sessions, '鍛錬', '2025-01-04', '2025-01-06', '2025-01-06');
+    expect(map.get('2025-01-04')).toBe(0);
+    expect(map.get('2025-01-06')).toBe(90);
+  });
+
+  it('effectiveTo より後のセッションは実績に含めない', () => {
+    const sessions = [sessionAt('2025-01-06', 60), sessionAt('2025-01-08', 60)];
+    const map = dailyActualMinutes(
+      sessions,
+      '鍛錬',
+      '2025-01-06',
+      '2025-01-08',
+      '2025-01-06',
+      '2025-01-07',
+    );
+    expect(map.get('2025-01-06')).toBe(60);
+    expect(map.get('2025-01-08')).toBe(0); // effectiveTo(01-07) より後 → 除外
+  });
+
   it('project が対象名に一致するセッションも拾う（web UI は project のみ記録）', () => {
     const sessions: SessionLike[] = [
       {
@@ -96,6 +120,24 @@ describe('buildBudgetActualRows', () => {
     expect(rows[0].date).toBe('2025-01-06');
     expect(rows[0].budgetMinutes).toBe(180 * 5); // 平日5日分
     expect(rows[0].actualMinutes).toBe(120);
+  });
+
+  it('表示期間が effectiveFrom より前まで及んでも、実績の累積は予算開始日からのみ積み上がる', () => {
+    const sessions = [
+      sessionAt('2025-01-02', 300), // effectiveFrom(01-06) より前 → 実績に含めない
+      sessionAt('2025-01-06', 200),
+    ];
+    const rows = buildBudgetActualRows(budget, sessions, '2025-01-02', '2025-01-06', 'day');
+    expect(rows[0]).toMatchObject({
+      date: '2025-01-02',
+      budgetMinutes: 0,
+      actualMinutes: 0,
+      cumulativeActualMinutes: 0,
+    });
+    const last = rows[rows.length - 1];
+    expect(last.date).toBe('2025-01-06');
+    expect(last.actualMinutes).toBe(200);
+    expect(last.cumulativeActualMinutes).toBe(200); // 01-02 の 300 は混入しない
   });
 
   it('月次でバケットを束ねる', () => {

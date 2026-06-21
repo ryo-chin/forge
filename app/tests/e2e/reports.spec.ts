@@ -43,3 +43,38 @@ test('期間プリセットで表示レンジを切り替えられる', async ({
   // グラフは引き続き表示される
   await expect(page.getByRole('img', { name: '累積時間の予算と実績' })).toBeVisible();
 });
+
+test('表示状態が URL クエリと localStorage に保持される', async ({ page }) => {
+  await page.goto('/reports');
+  await addBudget(page);
+
+  // 月次に切り替えると URL クエリに反映される
+  await page.getByRole('tab', { name: '月次' }).click();
+  await expect(page.getByRole('tab', { name: '月次' })).toHaveAttribute('aria-selected', 'true');
+  await expect.poll(() => new URL(page.url()).searchParams.get('period')).toBe('month');
+
+  // リロードしても（URL クエリ／localStorage 経由で）月次が復元される
+  await page.reload();
+  await expect(page.getByRole('tab', { name: '月次' })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('予算を選ぶとレポート開始日が予算開始日に合い、ボタンで再適用できる', async ({ page }) => {
+  await page.goto('/reports');
+  await addBudget(page);
+
+  // 予算選択中は「予算開始日に合わせる」ボタンが出て、押してもグラフが表示される
+  const alignButton = page.getByRole('button', { name: '予算開始日に合わせる' });
+  await expect(alignButton).toBeVisible();
+  await alignButton.click();
+  await expect(page.getByRole('img', { name: '累積時間の予算と実績' })).toBeVisible();
+});
+
+test('クエリパラメータで表示状態を指定して開ける', async ({ page }) => {
+  // 予算を作っておく（localStorage に保存される）
+  await page.goto('/reports');
+  await addBudget(page);
+
+  // period=day を URL で直接指定して開くと日次で表示される
+  await page.goto('/reports?period=day');
+  await expect(page.getByRole('tab', { name: '日次' })).toHaveAttribute('aria-selected', 'true');
+});
