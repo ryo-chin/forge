@@ -32,7 +32,8 @@ export function DailyLogPage(): JSX.Element {
   const [editor, setEditor] = useState<EditorState>(null);
 
   const fromKey = addDays(today, -(rangeDays - 1));
-  const { definitions, saveDefinition, deleteDefinition } = useMetricDefinitions({ userId });
+  const { definitions, saveDefinition, deleteDefinition, reorderDefinitions } =
+    useMetricDefinitions({ userId });
   const { entries, upsertEntry, deleteEntry } = useMetricEntries({ userId, fromKey, toKey: today });
 
   // (metricId|date) -> entry の索引
@@ -126,6 +127,7 @@ export function DailyLogPage(): JSX.Element {
                 entryFor={(metricId, dateKey) => entryIndex.get(`${metricId}|${dateKey}`)}
                 onCommit={handleCommit}
                 onEditDefinition={(definition) => setEditor({ mode: 'edit', definition })}
+                onReorder={(orderedIds) => void reorderDefinitions(orderedIds)}
               />
             </section>
 

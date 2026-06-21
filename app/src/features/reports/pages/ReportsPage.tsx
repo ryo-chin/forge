@@ -1,7 +1,7 @@
 import { useMetricDefinitions, useMetricEntries } from '@features/daily-log';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { useAuth } from '@infra/auth';
-import { addDays, addMonths, toDateKey } from '@lib/date.ts';
+import { toDateKey } from '@lib/date.ts';
 import { LineChart } from '@ui/components/LineChart';
 import { RangeControl } from '@ui/components/RangeControl';
 import { useMemo, useState } from 'react';
@@ -17,8 +17,9 @@ import {
   type EntryLike,
   type SessionLike,
 } from '../domain/aggregation.ts';
-import type { Budget, BudgetInput, PeriodUnit } from '../domain/types.ts';
+import type { Budget, BudgetInput } from '../domain/types.ts';
 import { useBudgets } from '../hooks/data/useBudgets.ts';
+import { useReportViewState } from '../hooks/useReportViewState.ts';
 
 const BUDGET_COLOR = '#2563eb';
 const ACTUAL_COLOR = '#ef4444';
@@ -33,12 +34,8 @@ export function ReportsPage(): JSX.Element {
   const userId = user?.id ?? null;
   const today = toDateKey(Date.now());
 
-  const [range, setRange] = useState(() => ({
-    fromKey: addDays(addMonths(today, -3), 1),
-    toKey: today,
-  }));
-  const [period, setPeriod] = useState<PeriodUnit>('week');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { selectedId, setSelectedId, range, setRange, period, setPeriod } =
+    useReportViewState(today);
   const [editor, setEditor] = useState<EditorState>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 

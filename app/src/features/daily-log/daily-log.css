@@ -163,6 +163,36 @@
   background: rgba(37, 99, 235, 0.05);
 }
 
+.daily-log__col-head-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.daily-log__col-drag {
+  border: none;
+  background: transparent;
+  padding: 0 0.1rem;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1;
+  letter-spacing: -0.12em;
+  cursor: grab;
+  touch-action: none;
+}
+
+.daily-log__col-drag:hover {
+  color: #94a3b8;
+}
+
+.daily-log__col-drag:active {
+  cursor: grabbing;
+}
+
+.daily-log__th--dragging {
+  background: #f1f5f9;
+}
+
 .daily-log__col-head {
   border: none;
   background: transparent;
