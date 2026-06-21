@@ -73,6 +73,10 @@ export function ReportsPage(): JSX.Element {
       ? (reportableMetrics.find((definition) => `metric:${definition.id}` === selected.id) ?? null)
       : null;
 
+  // 予算の開始日にレポートの開始日を合わせる（終了日は維持）。
+  const alignStartToBudget = (budget: Budget) =>
+    setRange((current) => ({ fromKey: budget.effectiveFrom, toKey: current.toKey }));
+
   const budgetRows = useMemo(() => {
     if (!selectedBudget) return [];
     return buildBudgetActualRows(
@@ -156,7 +160,7 @@ export function ReportsPage(): JSX.Element {
               },
             ]}
             yBaseline="zero"
-            formatValue={(value) => `${Math.round(value)}h`}
+            formatValue={(value) => `${round1(value)}h`}
             ariaLabel="累積時間の予算と実績"
           />
         )}
@@ -286,6 +290,7 @@ export function ReportsPage(): JSX.Element {
                           onClick={() => {
                             setSelectedId(source.id);
                             setConfirmingDelete(false);
+                            alignStartToBudget(source.budget);
                           }}
                         >
                           {source.label}
@@ -328,6 +333,16 @@ export function ReportsPage(): JSX.Element {
                 onChange={(fromKey, toKey) => setRange({ fromKey, toKey })}
               />
               <PeriodToggle value={period} onChange={setPeriod} />
+              {selectedBudget ? (
+                <button
+                  type="button"
+                  className="reports__button-ghost"
+                  onClick={() => alignStartToBudget(selectedBudget)}
+                  title="レポートの開始日を予算の開始日に合わせる"
+                >
+                  予算開始日に合わせる
+                </button>
+              ) : null}
             </div>
 
             {selectedBudget ? renderBudget(selectedBudget) : null}

@@ -58,6 +58,17 @@ test('表示状態が URL クエリと localStorage に保持される', async (
   await expect(page.getByRole('tab', { name: '月次' })).toHaveAttribute('aria-selected', 'true');
 });
 
+test('予算を選ぶとレポート開始日が予算開始日に合い、ボタンで再適用できる', async ({ page }) => {
+  await page.goto('/reports');
+  await addBudget(page);
+
+  // 予算選択中は「予算開始日に合わせる」ボタンが出て、押してもグラフが表示される
+  const alignButton = page.getByRole('button', { name: '予算開始日に合わせる' });
+  await expect(alignButton).toBeVisible();
+  await alignButton.click();
+  await expect(page.getByRole('img', { name: '累積時間の予算と実績' })).toBeVisible();
+});
+
 test('クエリパラメータで表示状態を指定して開ける', async ({ page }) => {
   // 予算を作っておく（localStorage に保存される）
   await page.goto('/reports');

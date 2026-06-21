@@ -79,6 +79,8 @@ module.exports = {
           '**/infra/**',
           // ui層内部の依存を許可
           '**/ui/**',
+          // dev専用ツール（import.meta.env.DEV ガード、本番ビルド外）の依存を許可
+          '**/dev/**',
           // テストユーティリティの依存を許可
           '**/tests/**',
           'react-dom/client',

@@ -11,6 +11,8 @@ import { TimeTrackerPage } from '@features/time-tracker';
 import { useTimeTrackerSessions } from '@features/time-tracker/hooks/data/useTimeTrackerSessions.ts';
 import { type AuthContextValue, AuthProvider, useAuth } from '@infra/auth';
 import { AppLayout } from '@ui/layouts/AppLayout';
+import { DevToolbar } from './dev/DevToolbar.tsx';
+import './dev/dev-toolbar.css';
 
 const queryClient = new QueryClient();
 
@@ -93,6 +95,7 @@ export function App(): JSX.Element {
   return (
     <BrowserRouter>
       <AppRoutes />
+      {import.meta.env.DEV ? <DevToolbar /> : null}
     </BrowserRouter>
   );
 }
