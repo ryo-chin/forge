@@ -29,7 +29,8 @@ type EditorModalProps = {
   onCancel: () => void;
 };
 
-const DURATION_NUDGES = [-30, -10, 10, 30, 60] as const;
+// 0 は差分ではなく「作業時間を 0 に戻す」アンカー（開始＝完了に揃え、0 からナッジで積み上げる）
+const DURATION_NUDGES = [0, -30, -10, 10, 30, 60] as const;
 
 const TITLE_BY_MODE: Record<EditorModalMode, string> = {
   new: '記録を追加',
@@ -78,7 +79,12 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   };
 
   // ナッジは作業時間（開始からの差分）を増減する → 完了 = 開始 + 作業時間 に反映
+  // 0 は差分加算ではなく「作業時間を 0 に戻す」アンカー（開始＝完了から数え直す）
   const handleNudge = (deltaMinutes: number) => {
+    if (deltaMinutes === 0) {
+      setDurationMinutes(0);
+      return;
+    }
     setDurationMinutes((prev) => Math.max(0, prev + deltaMinutes));
   };
 
@@ -181,10 +187,14 @@ export const EditorModal: React.FC<EditorModalProps> = ({
                   type="button"
                   onClick={() => handleNudge(m)}
                   aria-label={
-                    m > 0 ? `${endLabel}を${m}分後ろへ` : `${endLabel}を${Math.abs(m)}分手前へ`
+                    m === 0
+                      ? `作業時間を0分に戻す`
+                      : m > 0
+                        ? `${endLabel}を${m}分後ろへ`
+                        : `${endLabel}を${Math.abs(m)}分手前へ`
                   }
                 >
-                  {m > 0 ? `+${m}分` : `${m}分`}
+                  {m === 0 ? `0分` : m > 0 ? `+${m}分` : `${m}分`}
                 </button>
               ))}
             </div>
