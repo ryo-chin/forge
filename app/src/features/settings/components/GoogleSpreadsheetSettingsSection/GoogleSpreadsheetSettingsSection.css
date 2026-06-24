@@ -47,6 +47,38 @@
 .settings-section__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.settings-section__danger-button {
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 0.9rem;
+  background: #ffffff;
+  color: #b91c1c;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.settings-section__danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.settings-section__danger-button:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: rgba(185, 28, 28, 0.5);
+  transform: translateY(-1px);
+}
+
+.settings-section__danger-button:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 3px;
 }
 
 .settings-section__primary-button {

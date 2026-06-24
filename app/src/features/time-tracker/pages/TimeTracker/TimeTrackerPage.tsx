@@ -63,6 +63,8 @@ export function TimeTrackerPage() {
     adjustDuration,
     reset,
   } = useRunningSession({ userId: user?.id ?? null });
+  const { settings: googleSettings } = useGoogleSpreadsheetOptions();
+  const isGoogleConnected = googleSettings.data?.connectionStatus === 'active';
   const {
     state: syncState,
     syncSession,
@@ -70,8 +72,7 @@ export function TimeTrackerPage() {
     syncRunningSessionUpdate,
     syncRunningSessionCancel,
     deleteSessionRow,
-  } = useGoogleSpreadsheetSync();
-  const { settings: googleSettings } = useGoogleSpreadsheetOptions();
+  } = useGoogleSpreadsheetSync({ isConnected: isGoogleConnected });
   const navigate = useNavigate();
 
   // 「削除→元に戻す」用
@@ -416,7 +417,6 @@ export function TimeTrackerPage() {
     void syncSession(lastSyncedSession);
   }, [lastSyncedSession, syncSession]);
 
-  const isGoogleConnected = googleSettings.data?.connectionStatus === 'active';
   const settingsButtonLabel = isGoogleConnected ? '⚙️ 設定 (連携中)' : '⚙️ 設定';
 
   useEffect(() => {

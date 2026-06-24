@@ -5,6 +5,7 @@ import {
   listSheets,
   listSpreadsheets,
   type OAuthStartResponse,
+  revokeOAuth,
   startOAuth,
   type UpdateGoogleSettingsPayload,
   updateSettings,
@@ -95,6 +96,23 @@ export const useGoogleSpreadsheetOptions = () => {
     [updateSettingsMutation],
   );
 
+  const disconnectMutation = useMutation({
+    mutationFn: async () => {
+      const token = await getAccessToken();
+      await revokeOAuth(token);
+    },
+    onSuccess: async () => {
+      // 連携解除後は接続状態を最新化する。シート選択自体はサーバー側に残るため、
+      // 再連携すれば同じ同期先で復帰できる。
+      await queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
+    },
+  });
+
+  const disconnect = useCallback(
+    async () => disconnectMutation.mutateAsync(),
+    [disconnectMutation],
+  );
+
   const fetchSpreadsheetsFn = useCallback(
     async (query?: string): Promise<FetchSpreadsheetsResult> => {
       const token = await getAccessToken();
@@ -121,6 +139,8 @@ export const useGoogleSpreadsheetOptions = () => {
     settings: settingsQuery,
     updateSelection,
     isUpdating: updateSettingsMutation.isPending,
+    disconnect,
+    isDisconnecting: disconnectMutation.isPending,
     fetchSpreadsheets: fetchSpreadsheetsFn,
     fetchSheets: fetchSheetsFn,
     startOAuth: startOAuthFlow,

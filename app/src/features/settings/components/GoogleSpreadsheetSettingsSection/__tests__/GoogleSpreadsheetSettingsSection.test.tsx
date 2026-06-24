@@ -34,6 +34,7 @@ describe('GoogleSpreadsheetSettingsSection', () => {
     currentColumnMapping: undefined,
     onSave: vi.fn(),
     onStartOAuth: vi.fn(),
+    onDisconnect: vi.fn(),
     onFetchSpreadsheets: vi.fn().mockResolvedValue({ items: mockSpreadsheets }),
     onFetchSheets: vi.fn().mockResolvedValue({ items: mockSheets }),
     isSaving: false,
@@ -41,6 +42,7 @@ describe('GoogleSpreadsheetSettingsSection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders section title', async () => {
@@ -138,6 +140,34 @@ describe('GoogleSpreadsheetSettingsSection', () => {
 
     const saveButton = await screen.findByRole('button', { name: '保存' });
     expect(saveButton).toBeDisabled();
+  });
+
+  it('shows disconnect button when connected and triggers disconnect after confirm', async () => {
+    const user = userEvent.setup();
+    render(<GoogleSpreadsheetSettingsSection {...defaultProps} />);
+
+    const disconnectButton = await screen.findByRole('button', { name: '連携を解除' });
+    await user.click(disconnectButton);
+
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(defaultProps.onDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not disconnect when confirm is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const user = userEvent.setup();
+    render(<GoogleSpreadsheetSettingsSection {...defaultProps} />);
+
+    const disconnectButton = await screen.findByRole('button', { name: '連携を解除' });
+    await user.click(disconnectButton);
+
+    expect(defaultProps.onDisconnect).not.toHaveBeenCalled();
+  });
+
+  it('hides disconnect button when not connected', () => {
+    render(<GoogleSpreadsheetSettingsSection {...defaultProps} isConnected={false} />);
+
+    expect(screen.queryByRole('button', { name: '連携を解除' })).not.toBeInTheDocument();
   });
 
   it('shows reconnect prompt when spreadsheet fetch returns 401', async () => {

@@ -56,8 +56,18 @@ const hasGoogleSheetsConfig = (): boolean => {
   }
 };
 
-export const useGoogleSpreadsheetSync = () => {
+export type UseGoogleSpreadsheetSyncOptions = {
+  /**
+   * Google 連携が有効（接続中）かどうか。連携を解除している間は同期を行わず、
+   * 解除中に同期エラーを表示しないために false を渡す。
+   * 省略時は true（接続状態を考慮しない従来挙動）。
+   */
+  isConnected?: boolean;
+};
+
+export const useGoogleSpreadsheetSync = (options?: UseGoogleSpreadsheetSyncOptions) => {
   const { status: authStatus } = useAuth();
+  const isConnected = options?.isConnected ?? true;
   const [state, setState] = useState<SyncState>(initialState);
   const updateDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -68,8 +78,11 @@ export const useGoogleSpreadsheetSync = () => {
     if (!getGoogleSyncApiBaseUrl()) {
       return false;
     }
+    if (!isConnected) {
+      return false;
+    }
     return authStatus === 'authenticated';
-  }, [authStatus]);
+  }, [authStatus, isConnected]);
 
   const mutation = useMutation({
     mutationFn: async (session: TimeTrackerSession) => {

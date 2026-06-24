@@ -13,8 +13,16 @@ type FeedbackState = {
 };
 
 export function SettingsPage(): JSX.Element {
-  const { settings, updateSelection, isUpdating, fetchSpreadsheets, fetchSheets, startOAuth } =
-    useGoogleSpreadsheetOptions();
+  const {
+    settings,
+    updateSelection,
+    isUpdating,
+    disconnect,
+    isDisconnecting,
+    fetchSpreadsheets,
+    fetchSheets,
+    startOAuth,
+  } = useGoogleSpreadsheetOptions();
   const mcpTokens = useMcpTokens();
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
@@ -58,6 +66,23 @@ export function SettingsPage(): JSX.Element {
       });
     }
   }, [startOAuth]);
+
+  const handleDisconnect = useCallback(async () => {
+    setFeedback(null);
+    try {
+      await disconnect();
+      setFeedback({ type: 'success', message: 'Google アカウントとの連携を解除しました。' });
+    } catch (error) {
+      if (import.meta.env.MODE !== 'test') {
+        // eslint-disable-next-line no-console
+        console.error('Failed to disconnect Google integration:', error);
+      }
+      setFeedback({
+        type: 'error',
+        message: '連携の解除に失敗しました。時間をおいて再度お試しください。',
+      });
+    }
+  }, [disconnect]);
 
   const isSyncAvailable = isGoogleSyncEnabled();
   const isLoading = settings.isLoading && !settings.data;
@@ -104,9 +129,11 @@ export function SettingsPage(): JSX.Element {
             currentColumnMapping={settings.data?.columnMapping?.mappings}
             onSave={handleSave}
             onStartOAuth={handleStartOAuth}
+            onDisconnect={handleDisconnect}
             onFetchSpreadsheets={fetchSpreadsheets}
             onFetchSheets={fetchSheets}
             isSaving={isUpdating}
+            isDisconnecting={isDisconnecting}
           />
         )}
 
