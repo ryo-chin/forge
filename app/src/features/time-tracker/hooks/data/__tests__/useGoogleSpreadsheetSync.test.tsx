@@ -106,6 +106,21 @@ describe('useGoogleSpreadsheetSync', () => {
     expect(result.current.state.error).toBeNull();
   });
 
+  it('does not sync while the connection is disconnected', async () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useGoogleSpreadsheetSync({ isConnected: false }), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.syncSession(buildSession());
+    });
+
+    expect(mocks.syncSessionMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(result.current.state.status).toBe('disabled'));
+    expect(result.current.state.error).toBeNull();
+  });
+
   it('captures errors when sync fails', async () => {
     const wrapper = createWrapper();
     const error = new Error('append failed');

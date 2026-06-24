@@ -37,9 +37,11 @@ export type GoogleSpreadsheetSettingsSectionProps = {
   currentColumnMapping?: ColumnMapping;
   onSave: (selection: SavePayload) => void | Promise<void>;
   onStartOAuth: () => void | Promise<void>;
+  onDisconnect: () => void | Promise<void>;
   onFetchSpreadsheets: (query?: string) => Promise<FetchSpreadsheetsResult>;
   onFetchSheets: (spreadsheetId: string) => Promise<FetchSheetsResult>;
   isSaving?: boolean;
+  isDisconnecting?: boolean;
 };
 
 const REAUTH_MESSAGE =
@@ -64,9 +66,11 @@ export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSetting
   currentColumnMapping,
   onSave,
   onStartOAuth,
+  onDisconnect,
   onFetchSpreadsheets,
   onFetchSheets,
   isSaving = false,
+  isDisconnecting = false,
 }) => {
   const [spreadsheets, setSpreadsheets] = useState<SpreadsheetOption[]>([]);
   const [sheets, setSheets] = useState<SheetOption[]>([]);
@@ -225,6 +229,21 @@ export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSetting
     }
   };
 
+  const handleDisconnect = async () => {
+    if (isDisconnecting) {
+      return;
+    }
+    const confirmed =
+      typeof window === 'undefined' ||
+      window.confirm(
+        'Google アカウントとの連携を解除しますか？解除している間はスプレッドシートへの同期が停止します。選択中のシートは保持され、再連携すれば同じ同期先で再開できます。',
+      );
+    if (!confirmed) {
+      return;
+    }
+    await onDisconnect();
+  };
+
   const saveDisabled = !selectedSpreadsheetId || selectedSheetId === undefined || isSaving;
 
   const showReconnectPrompt = needsReconnect || !isConnected;
@@ -310,6 +329,14 @@ export const GoogleSpreadsheetSettingsSection: React.FC<GoogleSpreadsheetSetting
           ) : null}
 
           <div className="settings-section__actions">
+            <button
+              type="button"
+              className="settings-section__danger-button"
+              onClick={() => void handleDisconnect()}
+              disabled={isDisconnecting}
+            >
+              {isDisconnecting ? '解除しています...' : '連携を解除'}
+            </button>
             <button
               type="button"
               className="settings-section__primary-button"

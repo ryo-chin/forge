@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => {
   const listSpreadsheets = vi.fn();
   const listSheets = vi.fn();
   const startOAuth = vi.fn();
+  const revokeOAuth = vi.fn();
   const getAccessToken = vi.fn(() => Promise.resolve('test-token'));
   return {
     fetchSettings,
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => {
     listSpreadsheets,
     listSheets,
     startOAuth,
+    revokeOAuth,
     getAccessToken,
   };
 });
@@ -28,6 +30,7 @@ vi.mock('@infra/repository/GoogleSheets', () => ({
   listSpreadsheets: mocks.listSpreadsheets,
   listSheets: mocks.listSheets,
   startOAuth: mocks.startOAuth,
+  revokeOAuth: mocks.revokeOAuth,
 }));
 
 vi.mock('@infra/config', () => ({
@@ -100,6 +103,7 @@ describe('useGoogleSpreadsheetOptions', () => {
     mocks.startOAuth.mockResolvedValue({
       authorizationUrl: 'https://accounts.google.com/o/oauth2/auth?foo=bar',
     });
+    mocks.revokeOAuth.mockResolvedValue(undefined);
     mocks.getAccessToken.mockResolvedValue('supabase-access-token');
   });
 
@@ -186,5 +190,28 @@ describe('useGoogleSpreadsheetOptions', () => {
     const response = await result.current.startOAuth('/app/dashboard');
     expect(mocks.startOAuth).toHaveBeenCalledWith('supabase-access-token', '/app/dashboard');
     expect(response.authorizationUrl).toContain('https://accounts.google.com');
+  });
+
+  it('disconnects by revoking OAuth and refetches connection status', async () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useGoogleSpreadsheetOptions(), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.settings.data?.connectionStatus).toBe('active');
+    });
+
+    // 解除後の再取得では revoked 状態が返る（シート選択自体はサーバー側に残る想定）
+    mocks.fetchSettings.mockResolvedValue(mockSettings({ connectionStatus: 'revoked' }));
+
+    await act(async () => {
+      await result.current.disconnect();
+    });
+
+    expect(mocks.revokeOAuth).toHaveBeenCalledWith('supabase-access-token');
+    await waitFor(() => {
+      expect(result.current.settings.data?.connectionStatus).toBe('revoked');
+    });
   });
 });
