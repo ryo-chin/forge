@@ -10,3 +10,7 @@ enabled = true
 SUPABASE_URL = "https://elcsvuylornzhgtfkqnu.supabase.co"
 GOOGLE_CLIENT_ID = "700773988304-5d5vtest0iu8dhse94dd9f9mvepgvgq4.apps.googleusercontent.com"
 GOOGLE_REDIRECT_URI = "https://forge-api.h031203yama.workers.dev/integrations/google/oauth/callback"
+
+# Supabase Free は 7 日間アクティビティがないと一時停止されるため、毎日軽いクエリを投げる
+[triggers]
+crons = ["0 0 * * *"]

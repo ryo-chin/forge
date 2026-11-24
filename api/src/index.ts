@@ -26,6 +26,7 @@ import {
   handleUpdateRunningSession,
 } from './handlers/timeTracker';
 import { getCorsHeaders, handleOptions } from './http/response';
+import { pingSupabase } from './repositories/keepalive';
 
 const ROUTES = {
   SYNC: '/integrations/google/sync',
@@ -63,6 +64,11 @@ const respond = async (response: Promise<Response>, request: Request): Promise<R
   withCors(await response, request);
 
 export default {
+  // Supabase Free の自動一時停止（7 日間アクティビティなし）を防ぐ。wrangler.toml の [triggers] で起動
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await pingSupabase(env);
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
