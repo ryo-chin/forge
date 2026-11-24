@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Time Tracker with Google Spreadsheet integration",
+  "packageManager": "pnpm@10.34.9",
   "scripts": {
     "format": "biome format --write .",
     "format:check": "biome check .",
